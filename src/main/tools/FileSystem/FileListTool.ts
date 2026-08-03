@@ -1,7 +1,7 @@
 import { readdir, stat } from 'fs/promises'
 import { resolve, normalize, relative, join } from 'path'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 interface FileEntry {
   name: string

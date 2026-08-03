@@ -6,7 +6,7 @@ import {
   Sparkles,
   MessageSquareText
 } from 'lucide-react'
-import type { AppSettings, ModelId, ReasoningEffort } from '../../../../shared/types'
+import type { AppSettings, ModelId, ReasoningEffort } from '@shared/types'
 import {
   SectionTitle,
   Divider,

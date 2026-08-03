@@ -1,6 +1,6 @@
-import type { ToolCall } from '../../shared/types'
+import type { ToolCall } from '@shared/types'
 import type { SingleCallResult } from './types'
-import { truncateToolResult as _truncate, type AgentConfig } from '../../shared/context-compress'
+import { truncateToolResult as _truncate, type AgentConfig } from '@shared/context-compress'
 
 // ---------- 常量 ----------
 

@@ -1,6 +1,6 @@
-import type { Mode } from '../../../../shared/types'
-import designSystemsCatalog from '../design/design-systems-catalog.json'
-import uiComponentsCatalog from '../design/ui-components-catalog.json'
+import type { Mode } from '@shared/types'
+import designSystemsCatalog from '@renderer/components/design/design-systems-catalog.json'
+import uiComponentsCatalog from '@renderer/components/design/ui-components-catalog.json'
 
 /** 每种模式的占位符文案 */
 export const MODE_PLACEHOLDERS: Record<Mode, string> = {

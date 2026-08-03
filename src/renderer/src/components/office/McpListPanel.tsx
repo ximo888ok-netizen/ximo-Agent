@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type React from 'react'
 import { Upload, Server, Trash2, Power, X, ChevronDown, ChevronRight, Terminal, Globe } from 'lucide-react'
-import type { McpServerConfig } from '../../../../shared/types'
+import type { McpServerConfig } from '@shared/types'
 
 /**
  * McpListPanel — MCP 服务器列表面板

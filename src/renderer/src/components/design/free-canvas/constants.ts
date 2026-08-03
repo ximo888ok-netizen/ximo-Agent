@@ -1,7 +1,7 @@
 import { Globe, Smartphone, Monitor, Layout } from 'lucide-react'
-import designSystemsCatalog from '../design-systems-catalog.json'
-import uiComponentsCatalog from '../ui-components-catalog.json'
-import scenarioLayoutsData from '../scenario-layouts.json'
+import designSystemsCatalog from '@renderer/components/design/design-systems-catalog.json'
+import uiComponentsCatalog from '@renderer/components/design/ui-components-catalog.json'
+import scenarioLayoutsData from '@renderer/components/design/scenario-layouts.json'
 import type { StyleEntry, ComponentMeta, ScenarioEntry } from './types'
 
 export const STYLES = designSystemsCatalog as StyleEntry[]

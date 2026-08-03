@@ -1,125 +1,21 @@
-import { useState, useEffect, useMemo } from 'react'
 import {
   Cpu,
   Zap,
   Bot,
   Clock,
-  Users,
-  Search,
   Sparkles,
-  MessageSquareText,
-  Shield,
-  Globe,
-  RotateCcw,
-  Layers,
-  Gauge,
-  Type,
-  Brain
+  MessageSquareText
 } from 'lucide-react'
-import { ensureAgentsLoaded, getAgentById, searchAgents, ALL_AGENTS } from '@renderer/agents'
-import type { AppSettings, ModelId, ReasoningEffort } from '../../../../shared/types'
+import type { AppSettings, ModelId, ReasoningEffort } from '@shared/types'
 import {
   SectionTitle,
   Divider,
   ModelCard,
   ToggleRow,
-  CollapsibleSection,
-  NumberInputRow
 } from './shared-components'
-
-// ==================== 主 Agent 专家选择器 ====================
-
-function MainAgentExpertPicker({ selectedId, onSelect }: {
-  selectedId: string | undefined
-  onSelect: (id: string | undefined) => void
-}): React.ReactElement {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    if (open && !ready) {
-      ensureAgentsLoaded().then(() => setReady(true))
-    }
-  }, [open, ready])
-
-  const selected = selectedId ? getAgentById(selectedId) : undefined
-
-  const filtered = useMemo(() => {
-    if (!ready) return []
-    if (search.trim()) return searchAgents(search)
-    return ALL_AGENTS.slice(0, 50)
-  }, [search, ready])
-
-  return (
-    <div className="ios-card p-3.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className={selected ? 'text-accent' : 'text-text-muted'}><Users size={15} /></span>
-          <div>
-            <p className="text-sm font-medium text-text-primary">专家注入</p>
-            <p className="text-xs text-text-muted">
-              {selected ? `${selected.emoji} ${selected.name}` : '未选择专家，主 Agent 使用默认行为'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {selected && (
-            <button
-              onClick={() => onSelect(undefined)}
-              className="rounded-lg px-2 py-1 text-xs text-text-muted hover:text-red-400 transition-colors"
-            >
-              清除
-            </button>
-          )}
-          <button
-            onClick={() => setOpen(!open)}
-            className="rounded-lg bg-bg-elevated px-3 py-1.5 text-xs text-text-primary hover:bg-bg-hover transition-colors"
-          >
-            {open ? '收起' : '选择'}
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-input px-2.5 py-1.5">
-            <Search size={13} className="text-text-muted" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="搜索专家..."
-              className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
-            />
-          </div>
-          <div className="max-h-[200px] overflow-y-auto space-y-1">
-            {!ready ? (
-              <div className="py-4 text-center text-xs text-text-muted">加载中...</div>
-            ) : filtered.length === 0 ? (
-              <div className="py-4 text-center text-xs text-text-muted">未找到匹配的专家</div>
-            ) : (
-              filtered.map((agent) => (
-                <button
-                  key={agent.id}
-                  onClick={() => { onSelect(agent.id); setOpen(false) }}
-                  className={`flex w-full items-center gap-2 rounded-lg p-2 text-left transition-colors ${
-                    selectedId === agent.id ? 'bg-accent/15 text-accent' : 'hover:bg-bg-hover'
-                  }`}
-                >
-                  <span className="text-base flex-shrink-0">{agent.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{agent.name}</p>
-                    <p className="text-[10px] text-text-muted truncate">{agent.description}</p>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+import { MainAgentExpertPicker } from './MainAgentExpertPicker'
+import { AgentLoopSettings } from './AgentLoopSettings'
+import { AgentSafetySettings } from './AgentSafetySettings'
 
 // ==================== Agent 编排标签 ====================
 
@@ -293,152 +189,8 @@ export function AgentTab({
         </p>
       </div>
 
-      <CollapsibleSection
-        icon={<Layers size={15} />}
-        title="Agent 循环与上下文"
-        desc="工具调用循环次数、上下文压缩策略"
-      >
-        <NumberInputRow
-          icon={<Layers size={15} />}
-          label="最大工具调用轮次"
-          desc="防止死循环的安全上限"
-          value={local.maxToolRounds ?? 30}
-          min={5}
-          max={100}
-          step={5}
-          unit="轮"
-          onChange={(v) => update({ maxToolRounds: v })}
-        />
-        <NumberInputRow
-          icon={<Gauge size={15} />}
-          label="上下文窗口上限"
-          desc="超限自动压缩旧消息"
-          value={local.maxContextChars ?? 300000}
-          min={100000}
-          max={800000}
-          step={50000}
-          unit="字符"
-          onChange={(v) => update({ maxContextChars: v })}
-        />
-        <NumberInputRow
-          icon={<Type size={15} />}
-          label="工具结果截断长度"
-          desc="单个工具返回结果的最大字符数"
-          value={local.maxToolResultChars ?? 16000}
-          min={4000}
-          max={50000}
-          step={2000}
-          unit="字符"
-          onChange={(v) => update({ maxToolResultChars: v })}
-        />
-        <NumberInputRow
-          icon={<Shield size={15} />}
-          label="上下文保护窗口"
-          desc="最近 N 条消息不会被压缩"
-          value={local.contextRecentKeep ?? 8}
-          min={4}
-          max={20}
-          step={1}
-          unit="条"
-          onChange={(v) => update({ contextRecentKeep: v })}
-        />
-        <NumberInputRow
-          icon={<Sparkles size={15} />}
-          label="Snip 保留字符数"
-          desc="软阈值：旧工具结果截断为前 N 字符"
-          value={local.contextSnippedKeep ?? 200}
-          min={100}
-          max={500}
-          step={50}
-          unit="字符"
-          onChange={(v) => update({ contextSnippedKeep: v })}
-        />
-        <NumberInputRow
-          icon={<Sparkles size={15} />}
-          label="Prune 保留字符数"
-          desc="硬阈值：进一步缩短到前 N 字符"
-          value={local.contextPrunedKeep ?? 80}
-          min={50}
-          max={200}
-          step={10}
-          unit="字符"
-          onChange={(v) => update({ contextPrunedKeep: v })}
-        />
-      </CollapsibleSection>
-
-      <CollapsibleSection
-        icon={<Shield size={15} />}
-        title="自动化与安全"
-        desc="Auto Mode、联网搜索、检查点快照"
-      >
-        <div className="ios-card p-3.5 space-y-3 my-2">
-          <div className="flex items-center gap-2">
-            <Zap size={15} className="text-accent" />
-            <div>
-              <p className="text-sm font-medium text-text-primary">Auto Mode 默认等级</p>
-              <p className="text-xs text-text-muted">每次启动应用后的默认自动化等级</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {([
-              { value: 'off', label: '手动确认', desc: '每次操作需确认' },
-              { value: 'safe', label: '安全模式', desc: '读操作自动' },
-              { value: 'yolo', label: 'YOLO', desc: '全部自动' }
-            ]).map((level) => (
-              <button
-                key={level.value}
-                onClick={() => update({ defaultAutoModeLevel: level.value as 'off' | 'safe' | 'yolo' })}
-                className={`flex-1 rounded-lg border p-2.5 text-center transition-all duration-200 ${
-                  (local.defaultAutoModeLevel ?? 'off') === level.value
-                    ? level.value === 'yolo'
-                      ? 'border-accent bg-accent/15 shadow-[0_0_12px_color-mix(in_srgb,var(--theme-color)_40%,transparent)]'
-                      : level.value === 'safe'
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-border-hover'
-                }`}
-              >
-                <p className={`text-xs font-semibold ${
-                  (local.defaultAutoModeLevel ?? 'off') === level.value ? 'text-accent' : 'text-text-primary'
-                }`}>
-                  {level.label}
-                </p>
-                <p className="text-[10px] text-text-muted mt-0.5">{level.desc}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <ToggleRow
-          icon={<Globe size={15} />}
-          label="联网搜索默认开启"
-          desc="每次启动应用后联网搜索是否默认开启"
-          active={local.defaultNetworkSearchOn ?? false}
-          onToggle={() => update({ defaultNetworkSearchOn: !(local.defaultNetworkSearchOn ?? false) })}
-          activeText="已开启 · 默认联网搜索"
-          inactiveText="已关闭 · 默认不联网"
-        />
-
-        <ToggleRow
-          icon={<RotateCcw size={15} />}
-          label="检查点自动快照"
-          desc="文件编辑前自动创建检查点快照，支持代码回退"
-          active={local.checkpointEnabled ?? true}
-          onToggle={() => update({ checkpointEnabled: !(local.checkpointEnabled ?? true) })}
-          activeText="已开启 · 支持代码回退"
-          inactiveText="已关闭 · 无法回退代码"
-        />
-
-        <ToggleRow
-          icon={<Brain size={15} />}
-          label="长期记忆"
-          desc="每个模式独立的跨会话记忆，Agent 自主记录用户习惯、踩过的坑、工具语法，每次对话自动注入"
-          active={local.memoryEnabled ?? true}
-          onToggle={() => update({ memoryEnabled: !(local.memoryEnabled ?? true) })}
-          activeText="已开启 · Agent 跨会话学习"
-          inactiveText="已关闭 · 无持久记忆"
-        />
-      </CollapsibleSection>
+      <AgentLoopSettings local={local} update={update} />
+      <AgentSafetySettings local={local} update={update} />
     </div>
   )
 }

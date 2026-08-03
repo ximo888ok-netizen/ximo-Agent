@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Users, Search } from 'lucide-react'
-import { ensureAgentsLoaded, getAgentById, searchAgents, ALL_AGENTS } from '../../agents'
+import { ensureAgentsLoaded, getAgentById, searchAgents, ALL_AGENTS } from '@renderer/agents'
 
 export function MainAgentExpertPicker({ selectedId, onSelect }: {
   selectedId: string | undefined

@@ -1,5 +1,5 @@
 import type { Tool } from './Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../shared/types'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { templateLoader } from './Design/TemplateLoader'
 
 /**

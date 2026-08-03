@@ -1,8 +1,9 @@
-import { memo, useState, useMemo } from 'react'
-import { Plus, Users, Brain, RefreshCw, MoreHorizontal, Trash2, Pencil, Settings, BarChart3, ChevronRight, ChevronDown, Folder, X } from 'lucide-react'
-import { useStore } from '../store/useStore'
-import { MODE_CONFIGS } from '../modes'
-import type { Conversation, Mode } from '../../../shared/types'
+import { useState, useMemo } from 'react'
+import { Plus, Users, Brain, Library, RefreshCw, BarChart3, Settings, Folder } from 'lucide-react'
+import { useStore } from '@renderer/store/useStore'
+import { MODE_CONFIGS } from '@renderer/modes'
+import { ProjectGroup } from './sidebar/ProjectGroup'
+import { ConversationItem } from './sidebar/ConversationItem'
 
 export function Sidebar(): React.ReactElement {
   const allConversations = useStore((s) => s.conversations)
@@ -50,10 +51,14 @@ export function Sidebar(): React.ReactElement {
     useStore.getState().setShowMemoryPanel(true)
   }
 
+  const handleKnowledge = (): void => {
+    useStore.getState().setShowKnowledgePanel(true)
+  }
+
   // coding/design 模式：按 projectPath 分组
   const projectGroups = useMemo(() => {
     if (!isProjectMode) return []
-    const groups: Record<string, Conversation[]> = {}
+    const groups: Record<string, typeof conversations> = {}
     for (const conv of conversations) {
       const path = conv.projectPath || ''
       if (!groups[path]) groups[path] = []
@@ -96,6 +101,15 @@ export function Sidebar(): React.ReactElement {
             title="记忆"
           >
             <Brain size={14} />
+          </button>
+        )}
+        {memoryEnabled && (
+          <button
+            onClick={handleKnowledge}
+            className="btn-ghost flex items-center justify-center rounded-xl px-2 py-2 text-xs"
+            title="知识库"
+          >
+            <Library size={14} />
           </button>
         )}
       </div>
@@ -223,191 +237,3 @@ export function Sidebar(): React.ReactElement {
     </aside>
   )
 }
-
-// 项目分组组件
-const ProjectGroup = memo(function ProjectGroup({
-  projectPath,
-  folderName,
-  conversations,
-  isCollapsed,
-  activeId,
-  onSelect,
-  onDelete,
-  onRename,
-  onToggle,
-  onNewConversation,
-  onRemove,
-  contextMenuId,
-  onContextMenu
-}: {
-  projectPath: string
-  folderName: string
-  conversations: Conversation[]
-  isCollapsed: boolean
-  activeId: string | null
-  onSelect: (id: string) => void
-  onDelete: (id: string) => void
-  onRename: (id: string, title: string) => void
-  onToggle: (projectPath: string) => void
-  onNewConversation: () => void
-  onRemove: () => void
-  contextMenuId: string | null
-  onContextMenu: (id: string | null) => void
-}): React.ReactElement {
-  return (
-    <div className="mb-1">
-      {/* 项目头部 */}
-      <div className="group flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-bg-hover transition-colors">
-        <button
-          onClick={() => onToggle(projectPath)}
-          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
-        >
-          {isCollapsed ? <ChevronRight size={12} className="text-text-muted shrink-0" /> : <ChevronDown size={12} className="text-text-muted shrink-0" />}
-          <Folder size={13} className="text-accent shrink-0" />
-          <span className="truncate text-xs font-medium text-text-primary">{folderName}</span>
-          <span className="shrink-0 text-[10px] text-text-muted">({conversations.length})</span>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onNewConversation()
-          }}
-          className="shrink-0 text-text-muted hover:text-accent rounded p-0.5 hover:bg-bg-hover transition-colors"
-          title="在此项目下新建会话"
-        >
-          <Plus size={12} />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onRemove()
-          }}
-          className="shrink-0 text-text-muted hover:text-red-400 rounded p-0.5 hover:bg-bg-hover transition-colors"
-          title="从列表中移除项目"
-        >
-          <X size={12} />
-        </button>
-      </div>
-      {/* 会话列表 */}
-      {!isCollapsed && (
-        <div className="ml-[18px] border-l border-border-subtle">
-          {conversations.map((conv) => (
-            <ConversationItem
-              key={conv.id}
-              conv={conv}
-              activeId={activeId}
-              onSelect={onSelect}
-              onDelete={onDelete}
-              onRename={onRename}
-              contextMenuId={contextMenuId}
-              onContextMenu={onContextMenu}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-})
-
-// 对话列表项
-const ConversationItem = memo(function ConversationItem({
-  conv,
-  activeId,
-  onSelect,
-  onDelete,
-  onRename,
-  contextMenuId,
-  onContextMenu
-}: {
-  conv: { id: string; title: string; mode: string; projectPath?: string; contextTokens?: number }
-  activeId: string | null
-  onSelect: (id: string) => void
-  onDelete: (id: string) => void
-  onRename: (id: string, title: string) => void
-  contextMenuId: string | null
-  onContextMenu: (id: string | null) => void
-}): React.ReactElement {
-  const isActive = conv.id === activeId
-
-  // 上下文窗口占用指示器
-  const CONTEXT_WINDOW = 1_000_000
-  const ctxTokens = conv.contextTokens ?? 0
-  const ctxPct = ctxTokens > 0 ? (ctxTokens / CONTEXT_WINDOW) * 100 : 0
-  const ctxColor = ctxPct >= 80 ? '#ef4444'
-    : ctxPct >= 60 ? '#f97316'
-    : ctxPct >= 30 ? '#f59e0b'
-    : '#22c55e'
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => onSelect(conv.id)}
-        onContextMenu={(e) => {
-          e.preventDefault()
-          onContextMenu(contextMenuId === conv.id ? null : conv.id)
-        }}
-        className={`group flex w-full items-center gap-2 rounded-xl py-2 text-left text-sm transition-all duration-200 ease-out-quart ${
-          isActive
-            ? 'bg-accent/10 text-accent shadow-[inset_0_1px_0_var(--glass-highlight)] border border-accent/25'
-            : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary border border-transparent'
-        }`}
-        style={{ paddingLeft: '12px', paddingRight: '8px' }}
-      >
-        <span className={`h-2 w-2 shrink-0 rounded-full transition-shadow ${
-          conv.mode === 'office' ? 'bg-blue-400' :
-          conv.mode === 'coding' ? 'bg-emerald-400' : 'bg-purple-400'
-        } ${isActive ? 'shadow-glow animate-pulse-dot' : ''}`} />
-        <span className="truncate flex-1">{conv.title}</span>
-        {ctxTokens > 0 && (
-          <span
-            className="shrink-0 h-1 w-8 rounded-full bg-border overflow-hidden inline-flex"
-            title={`上下文占用 ${ctxPct.toFixed(1)}% (${ctxTokens.toLocaleString()} / ${CONTEXT_WINDOW.toLocaleString()})`}
-          >
-            <span
-              className="h-full rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(ctxPct, 100)}%`, backgroundColor: ctxColor }}
-            />
-          </span>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onContextMenu(contextMenuId === conv.id ? null : conv.id)
-          }}
-          className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary shrink-0 rounded p-0.5 hover:bg-bg-hover transition-opacity"
-        >
-          <MoreHorizontal size={12} />
-        </button>
-      </button>
-      {/* 右键菜单 */}
-      {contextMenuId === conv.id && (
-        <div
-          className="glass-strong absolute left-0 top-full z-50 mt-1 w-full rounded-xl border border-border py-1 shadow-glass animate-scale-in"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => {
-              const newTitle = prompt('重命名：', conv.title)
-              if (newTitle?.trim()) {
-                onRename(conv.id, newTitle.trim())
-              }
-              onContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
-          >
-            <Pencil size={11} /> 重命名
-          </button>
-          <button
-            onClick={() => {
-              onDelete(conv.id)
-              onContextMenu(null)
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            <Trash2 size={11} /> 删除
-          </button>
-        </div>
-      )}
-    </div>
-  )
-})

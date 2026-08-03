@@ -41,6 +41,12 @@ function copyStaticAssets() {
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin(), copyStaticAssets()],
+    resolve: {
+      alias: {
+        '@main': resolve(__dirname, 'src/main'),
+        '@shared': resolve(__dirname, 'src/shared')
+      }
+    },
     build: {
       rollupOptions: {
         input: {
@@ -63,7 +69,8 @@ export default defineConfig({
     root: 'src/renderer',
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@renderer': resolve('src/renderer/src'),
+        '@shared': resolve('src/shared')
       }
     },
     plugins: [react()],

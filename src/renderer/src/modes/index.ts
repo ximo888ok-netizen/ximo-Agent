@@ -1,4 +1,4 @@
-import type { ModeConfig } from '../../../shared/types'
+import type { ModeConfig } from '@shared/types'
 
 /**
  * 三大模式配置：系统提示词 + 快捷操作模板

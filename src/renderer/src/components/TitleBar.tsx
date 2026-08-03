@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Minus, X, Briefcase, Code2, PenTool } from 'lucide-react'
-import { useStore } from '../store/useStore'
-import type { Mode } from '../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { Mode } from '@shared/types'
 
 // 自定义 Windows 窗口控制图标（还原按钮：两个重叠方框）
 function RestoreIcon({ size = 16 }: { size?: number }): React.ReactElement {

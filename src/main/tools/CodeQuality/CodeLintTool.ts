@@ -1,8 +1,8 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { join } from 'path'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 const execAsync = promisify(exec)
 

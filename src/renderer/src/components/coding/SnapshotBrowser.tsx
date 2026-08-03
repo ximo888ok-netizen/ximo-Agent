@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { History, ChevronDown, RotateCcw, Clock, X } from 'lucide-react'
+import { formatRelativeTime, formatBytes } from '@shared/utils'
 
 interface SnapshotInfo {
   name: string
@@ -60,21 +61,6 @@ export function SnapshotBrowser({ projectPath }: SnapshotBrowserProps): React.Re
 
   if (!projectPath) return null
 
-  const formatTime = (ts: number): string => {
-    const date = new Date(ts)
-    const now = Date.now()
-    const diff = now - ts
-    if (diff < 60_000) return '刚刚'
-    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
-    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
-    return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-  }
-
-  const formatSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes}B`
-    return `${(bytes / 1024).toFixed(1)}KB`
-  }
-
   return (
     <div className="rounded-xl border border-border-subtle bg-bg-surface/40 overflow-hidden">
       {/* 标题栏 */}
@@ -106,7 +92,7 @@ export function SnapshotBrowser({ projectPath }: SnapshotBrowserProps): React.Re
               {snapshots.map((snap, i) => {
                 // 从快照名提取原始文件名
                 const originalName = snap.name.replace(/\.snapshot-\d+\.bak$/, '')
-                const timeStr = formatTime(snap.mtime)
+                const timeStr = formatRelativeTime(snap.mtime)
                 const isReverting = revertingPath === snap.path
 
                 return (
@@ -119,7 +105,7 @@ export function SnapshotBrowser({ projectPath }: SnapshotBrowserProps): React.Re
                       {originalName}
                     </span>
                     <span className="text-[10px] text-text-muted shrink-0">{timeStr}</span>
-                    <span className="text-[10px] text-text-muted/60 shrink-0">{formatSize(snap.size)}</span>
+                    <span className="text-[10px] text-text-muted/60 shrink-0">{formatBytes(snap.size)}</span>
                     <button
                       onClick={() => handleRevert(snap)}
                       disabled={isReverting}

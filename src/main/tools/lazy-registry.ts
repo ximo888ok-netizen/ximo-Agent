@@ -76,8 +76,8 @@ const moduleFactories: Record<string, ToolFactory> = {
 
   // Design — 设计审查 + 模板系统 + 组件库
   design: async () => {
-    const { DesignCritiqueTool, DesignAuditTool, DesignA11yTool, DesignColorTool, DesignPreviewTool, DesignTemplateTool, DesignStyleTool, DesignComponentTool } = await import('./Design')
-    return [new DesignCritiqueTool(), new DesignAuditTool(), new DesignA11yTool(), new DesignColorTool(), new DesignPreviewTool(), new DesignTemplateTool(), new DesignStyleTool(), new DesignComponentTool()]
+    const { DesignCritiqueTool, DesignAuditTool, DesignA11yTool, DesignColorTool, DesignPreviewTool, DesignTemplateTool, DesignStyleTool, DesignComponentTool, ThemeDesignTool } = await import('./Design')
+    return [new DesignCritiqueTool(), new DesignAuditTool(), new DesignA11yTool(), new DesignColorTool(), new DesignPreviewTool(), new DesignTemplateTool(), new DesignStyleTool(), new DesignComponentTool(), new ThemeDesignTool()]
   },
 
   // ComputerUse — 一体化桌面操控 + 兼容旧工具
@@ -92,10 +92,11 @@ const moduleFactories: Record<string, ToolFactory> = {
     return [new NetworkCaptureTool(), new NetworkReplayTool(), new StorageInspectTool(), new JSHookTool(), new APIExtractTool()]
   },
 
-  // Skill — 技能系统 + AI 专家库
+  // Skill — 技能系统 + AI 专家库 + 动态工具创建
   skill: async () => {
     const { SkillRecordTool, SkillInvokeTool, AgentExpertTool } = await import('./Skill')
-    return [new SkillRecordTool(), new SkillInvokeTool(), new AgentExpertTool()]
+    const { CreateToolTool } = await import('./DynamicTool')
+    return [new SkillRecordTool(), new SkillInvokeTool(), new AgentExpertTool(), new CreateToolTool()]
   },
 
   // Vision — 视觉模型（Agnes 2.5 Flash），Agent 的「眼睛」
@@ -104,10 +105,11 @@ const moduleFactories: Record<string, ToolFactory> = {
     return [new VisionTool()]
   },
 
-  // Memory — 模式记忆读写
+  // Memory — 模式记忆 + 知识库
   memory: async () => {
     const { MemoryTool } = await import('./MemoryTool')
-    return [new MemoryTool()]
+    const { KnowledgeTool } = await import('./KnowledgeTool')
+    return [new MemoryTool(), new KnowledgeTool()]
   },
 
   // PlanSpec — 任务规划提问与规范审核
@@ -123,7 +125,7 @@ const moduleFactories: Record<string, ToolFactory> = {
 
 const modeModules: Record<string, string[]> = {
   office: [
-    'web_intelligence', 'browser', 'computer_use', 'network',
+    'web_intelligence', 'computer_use',
     'file_system', 'terminal', 'git', 'code_quality', 'skill', 'vision', 'memory'
   ],
   coding: [
@@ -142,13 +144,8 @@ export const modeToolNames: Record<string, string[]> = {
   office: [
     // 联网搜索
     'web_search', 'web_fetch', 'web_cache', 'web_research',
-    // 浏览器自动化
-    'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
-    'browser_get_content', 'browser_execute_js', 'browser_network_monitor',
     // 桌面 UI 操控（computer_use 为一体化工具，优先使用）
     'computer_use', 'find_roots', 'observe_ui', 'search_ui', 'act_ui', 'read_text', 'wait_for',
-    // 网络抓包
-    'network_capture', 'network_replay', 'storage_inspect', 'js_hook', 'api_extract',
     // 文件系统（全部权限）
     'file_read', 'file_write', 'file_list', 'file_search', 'file_edit', 'file_delete',
     'multi_edit', 'move_file', 'todo_write',
@@ -156,25 +153,25 @@ export const modeToolNames: Record<string, string[]> = {
     'terminal_exec',
     // Git 操作
     'git_operations',
-    // 代码执行与质量
-    'code_execute', 'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
-    // 技能系统 + AI 专家库
-    'skill_record', 'skill_invoke', 'agent_expert',
+    // 代码质量
+    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
+    // 技能系统 + AI 专家库 + 动态工具
+    'skill_record', 'skill_invoke', 'agent_expert', 'create_tool',
     // 视觉模型（Agent 的「眼睛」）
     'vision_analyze',
-    // 模式记忆
-    'memory_update'
+    // 模式记忆 + 知识库
+    'memory_update', 'knowledge'
   ],
   coding: [
-    'code_execute', 'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
+    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
     'file_read', 'file_write', 'file_list', 'file_search', 'file_edit', 'file_delete',
     'multi_edit', 'move_file', 'todo_write',
     'terminal_exec', 'git_operations',
     'web_search', 'web_fetch',
-    'agent_expert',
+    'agent_expert', 'create_tool',
     'vision_analyze',
-    // 模式记忆
-    'memory_update',
+    // 模式记忆 + 知识库
+    'memory_update', 'knowledge',
     // 任务规划与规范
     'plan_ask', 'spec_review'
   ],
@@ -182,12 +179,13 @@ export const modeToolNames: Record<string, string[]> = {
     'ui_generate', 'design_preview', 'design_critique',
     'design_audit', 'design_a11y', 'design_color', 'design_template', 'design_style',
     'design_component',
+    'theme_design',
     'file_read', 'file_write', 'file_list', 'todo_write',
     'web_search', 'web_fetch',
-    'agent_expert',
+    'agent_expert', 'create_tool',
     'vision_analyze',
-    // 模式记忆
-    'memory_update'
+    // 模式记忆 + 知识库
+    'memory_update', 'knowledge'
   ]
 }
 

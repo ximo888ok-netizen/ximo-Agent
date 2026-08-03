@@ -50,6 +50,8 @@ export const CODING_DEFAULT_CONFIG: PermissionConfig = {
     { tool: 'web_search' },
     { tool: 'web_fetch' },
     { tool: 'todo_write' },
+    { tool: 'create_tool' },
+    { tool: 'knowledge' },
     // 编程基础写操作 — 直接执行（有 checkpoint 回退保障）
     { tool: 'file_write' },
     { tool: 'file_edit' },
@@ -72,14 +74,18 @@ export const CODING_DEFAULT_CONFIG: PermissionConfig = {
 }
 
 /**
- * Safe 模式权限配置 — 所有工具自动执行（allow），仅 deny 极度危险操作
- * 用于 autoModeLevel === 'safe'：读操作和常规写操作自动执行，仅拦截系统级危险操作
+ * Safe 模式权限配置 — 读操作和常规写操作自动执行，仅拦截系统级危险操作
+ * 用于 autoModeLevel === 'safe'：
+ *   - allow（defaultDecision）：大部分工具自动执行
+ *   - ask：不可逆操作（file_delete）需用户确认
+ *   - deny：系统级危险操作禁止执行
  */
 export const SAFE_CONFIG: PermissionConfig = {
   allow: [],
-  ask: [],
-  deny: [
+  ask: [
     { tool: 'file_delete' },
+  ],
+  deny: [
     { tool: 'act_ui' },
     { tool: 'network_replay' },
     { tool: 'browser_execute_js' },
@@ -98,6 +104,9 @@ export const OFFICE_DEFAULT_CONFIG: PermissionConfig = {
     { tool: 'file_list' },
     { tool: 'file_search' },
     { tool: 'todo_write' },
+    { tool: 'create_tool' },
+    { tool: 'knowledge' },
+    { tool: 'theme_design' },
   ],
   ask: [
     { tool: 'terminal_exec' },

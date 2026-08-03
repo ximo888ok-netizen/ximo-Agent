@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -7,7 +7,7 @@ import { cleanBrowserError } from './index'
 export class BrowserExecuteJSTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_execute_js',
-    description: '在当前页面中执行 JavaScript 代码并获取返回值。用于提取页面动态数据、操作 DOM 等。返回值会被 JSON.stringify 序列化。',
+    description: '在当前页面中执行 JavaScript 代码并获取返回值。适合批量提取数据或执行复杂 DOM 操作，用一次调用替代多步 browser_click/type。返回值会被 JSON.stringify 序列化。',
     parameters: {
       type: 'object',
       properties: {

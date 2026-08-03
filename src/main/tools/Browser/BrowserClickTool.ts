@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -7,7 +7,7 @@ import { cleanBrowserError } from './index'
 export class BrowserClickTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_click',
-    description: '点击页面中的元素。支持 CSS 选择器、XPath 和文本匹配（如 "button:has-text(\"登录\")"）。',
+    description: '点击页面中的元素。支持 CSS 选择器、XPath 和文本匹配。点击后自动返回截图。选择器优先级：#id > .class > text=文本 > XPath。操作失败时先调用 browser_get_content 检查页面结构。',
     parameters: {
       type: 'object',
       properties: {
@@ -29,7 +29,7 @@ export class BrowserClickTool implements Tool {
         const result = await executeWebviewCommand('click', { selector }) as boolean
         const screenshot = await executeWebviewCommand('screenshot', {}) as string | undefined
         if (!result) {
-          return this.error(toolCall.id, `未找到元素：${selector}`)
+          return this.error(toolCall.id, `未找到元素：${selector}。建议：1) 调用 browser_get_content 检查当前页面结构 2) 确认页面已加载完成 3) 尝试更简单的选择器（如 #id 或 text=文本内容）`)
         }
         return {
           toolCallId: toolCall.id, toolName: 'browser_click',
@@ -65,7 +65,7 @@ export class BrowserClickTool implements Tool {
         metadata: { selector }
       }
     } catch (e) {
-      return this.error(toolCall.id, `点击失败：${cleanBrowserError((e as Error).message)}`)
+      return this.error(toolCall.id, `点击失败：${cleanBrowserError((e as Error).message)}。建议：调用 browser_get_content 检查页面结构后重试。`)
     }
   }
 

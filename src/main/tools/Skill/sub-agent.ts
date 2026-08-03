@@ -1,6 +1,6 @@
-import type { ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
-import { toolRegistry } from '../ToolRegistry'
-import { toApiEffort } from '../../deepseek/api'
+import type { ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
+import { toolRegistry } from '@main/tools/ToolRegistry'
+import { toApiEffort } from '@main/deepseek/api'
 import { MAX_SUB_AGENT_ROUNDS, MAX_SUB_TOOL_RESULT } from './expert-config'
 
 interface SubMessage {

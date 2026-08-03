@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
-import type { Skill, RecordingSession } from '../../../../shared/types'
-import type { StoreState } from '../types'
+import type { Skill, RecordingSession } from '@renderer/store/shared/types'
+import type { StoreState } from '@renderer/store/types'
 
 export type SkillsSlice = Pick<StoreState,
   | 'skills'

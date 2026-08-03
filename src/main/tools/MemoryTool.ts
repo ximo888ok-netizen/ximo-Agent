@@ -1,7 +1,7 @@
 import type { Tool } from './Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../shared/types'
-import { loadMemory, saveMemory } from '../store'
-import type { Mode } from '../../shared/types'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
+import { loadMemory, saveMemory } from '@main/store'
+import type { Mode } from '@shared/types'
 
 /**
  * MemoryTool — 模式记忆读写工具

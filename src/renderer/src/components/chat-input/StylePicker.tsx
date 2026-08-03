@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Palette, Search, Check, X, ChevronDown } from 'lucide-react'
-import { useStore } from '../../store/useStore'
+import { useStore } from '@renderer/store/useStore'
 import { STYLE_CATALOG } from './constants'
 
 export function StylePicker(): React.ReactElement {

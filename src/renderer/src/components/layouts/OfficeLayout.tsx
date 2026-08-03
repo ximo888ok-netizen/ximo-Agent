@@ -1,17 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { FolderOpen, X } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import { MODE_CONFIGS } from '../../modes'
-import { MessageItem } from '../MessageItem'
-import { ToolPanel } from '../ToolPanel'
-import type { Mode } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import { MODE_CONFIGS } from '@renderer/modes'
+import { MessageItem } from '@renderer/components/MessageItem'
+import { ToolPanel } from '@renderer/components/ToolPanel'
+import type { Mode } from '@shared/types'
 
 // 功能胶囊按钮（空状态下隐藏导出，因为无内容可导出）
 const CAPSULE_ACTIONS = [
-    { id: 'ppt', label: '生成 PPT', icon: '📊', prompt: '请帮我生成一份PPT大纲和内容。主题：[请填写主题]\n\n请先给出PPT的目录结构，然后逐页生成内容（每页包含标题、要点和备注）。' },
-    { id: 'data', label: '数据分析', icon: '📈', prompt: '请帮我进行数据分析。请先描述数据来源和分析目的，我将使用搜索工具获取相关数据并进行分析：\n\n分析主题：[请填写]\n关注指标：[请填写]' },
-    { id: 'research', label: '深度研究', icon: '🔍', prompt: '请对以下话题进行深度研究：[话题]\n\n请搜索多个来源、综合分析后生成研究摘要，包含背景、现状、趋势和结论。' },
-    { id: 'doc', label: '生成文档', icon: '📝', prompt: '请帮我生成一份专业文档。\n\n文档类型：[报告/方案/纪要/说明书]\n主题：[请填写]\n受众：[请填写]\n\n请输出结构清晰、专业得体的文档。' }
+    { id: 'ppt', label: '生成 PPT', icon: '📊', prompt: '请帮我生成一份PPT大纲和内容。请先询问我PPT的主题、页数和受众，然后根据我的回答逐页生成内容（每页包含标题、要点和备注）。' },
+    { id: 'data', label: '数据分析', icon: '📈', prompt: '请帮我进行数据分析。请先询问我数据来源、分析主题和关注指标，然后使用搜索工具获取相关数据并进行分析。' },
+    { id: 'research', label: '深度研究', icon: '🔍', prompt: '请帮我进行深度研究。请先询问我研究话题，然后搜索多个来源、综合分析后生成研究摘要，包含背景、现状、趋势和结论。' },
+    { id: 'doc', label: '生成文档', icon: '📝', prompt: '请帮我生成一份专业文档。请先询问我文档类型（报告/方案/纪要/说明书）、主题和受众，然后输出结构清晰、专业得体的文档。' }
   ]
 
 /** 技能录制与复用 + 语义化桌面操控 — 后台工具切换（不发 Prompt 给 Agent） */

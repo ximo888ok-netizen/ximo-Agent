@@ -1,6 +1,6 @@
 import { GripVertical, X } from 'lucide-react'
 import type { MouseEvent } from 'react'
-import type { CanvasItem } from '../../../store/useStore'
+import type { CanvasItem } from '@renderer/store/useStore'
 import { CAT_COLORS } from './constants'
 
 /** 画布上的组件卡片 — 可拖拽移动 */

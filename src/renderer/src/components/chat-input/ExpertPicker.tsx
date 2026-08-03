@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Users, Search, Check, X } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import { AGENT_DIVISIONS, AGENTS_BY_DIVISION, searchAgents, getAgentById, ensureAgentsLoaded } from '../../agents'
+import { useStore } from '@renderer/store/useStore'
+import { AGENT_DIVISIONS, AGENTS_BY_DIVISION, searchAgents, getAgentById, ensureAgentsLoaded } from '@renderer/agents'
 
 export function ExpertPicker(): React.ReactElement {
   const activeExperts = useStore((s) => s.activeExperts)

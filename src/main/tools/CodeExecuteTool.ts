@@ -1,6 +1,6 @@
 import vm from 'vm'
 import type { Tool } from './Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../shared/types'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * CodeExecuteTool — 代码执行工具

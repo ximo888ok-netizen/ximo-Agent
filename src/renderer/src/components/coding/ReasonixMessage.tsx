@@ -1,9 +1,9 @@
 import { memo, useState } from 'react'
 import { ChevronDown, CheckCircle } from 'lucide-react'
-import { MessageItem } from '../MessageItem'
+import { MessageItem } from '@renderer/components/MessageItem'
 import { InlineFileEdit } from './InlineFileEdit'
 import { InlineTerminalOutput } from './InlineTerminalOutput'
-import type { ChatMessage, ToolResult, StreamingSegment } from '../../../../shared/types'
+import type { ChatMessage, ToolResult, StreamingSegment } from '@shared/types'
 
 interface ReasonixMessageProps {
   message: ChatMessage

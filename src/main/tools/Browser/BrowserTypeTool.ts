@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -7,11 +7,11 @@ import { cleanBrowserError } from './index'
 export class BrowserTypeTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_type',
-    description: '在输入框中输入文本。会先清空输入框再填入。支持 CSS 选择器定位输入框。',
+    description: '在输入框中输入文本。会先清空再填入。支持 CSS 选择器。填写多字段表单时可在同一轮并行调用多个 browser_type（每个针对不同 selector），减少操作轮次。',
     parameters: {
       type: 'object',
       properties: {
-        selector: { type: 'string', description: '输入框的 CSS 选择器，如 "#email", "input[name=\'q\']"' },
+        selector: { type: 'string', description: '输入框的 CSS 选择器。优先使用 #id，其次 input[name=xxx] 或 textarea' },
         text: { type: 'string', description: '要输入的文本' }
       },
       required: ['selector', 'text']
@@ -31,7 +31,7 @@ export class BrowserTypeTool implements Tool {
       if (isEmbeddedBrowserActive()) {
         const result = await executeWebviewCommand('type', { selector, text }) as boolean
         if (!result) {
-          return this.error(toolCall.id, `未找到输入框：${selector}`)
+          return this.error(toolCall.id, `未找到输入框：${selector}。建议：1) 调用 browser_get_content 检查页面结构 2) 确认输入框选择器正确 3) 尝试 input[type] 或 textarea 等通用选择器`)
         }
         return {
           toolCallId: toolCall.id, toolName: 'browser_type',
@@ -51,7 +51,7 @@ export class BrowserTypeTool implements Tool {
         metadata: { selector, textLength: text.length }
       }
     } catch (e) {
-      return this.error(toolCall.id, `输入失败：${cleanBrowserError((e as Error).message)}`)
+      return this.error(toolCall.id, `输入失败：${cleanBrowserError((e as Error).message)}。建议：调用 browser_get_content 检查页面结构后重试。`)
     }
   }
 

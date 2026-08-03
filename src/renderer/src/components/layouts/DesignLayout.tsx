@@ -1,13 +1,13 @@
 import { useEffect, useRef, useMemo, lazy, Suspense } from 'react'
-import { useStore } from '../../store/useStore'
-import { MODE_CONFIGS } from '../../modes'
-import { MessageItem } from '../MessageItem'
-import { Icon } from '../Icon'
-import { ToolPanel } from '../ToolPanel'
-import type { Mode, ChatMessage } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import { MODE_CONFIGS } from '@renderer/modes'
+import { MessageItem } from '@renderer/components/MessageItem'
+import { Icon } from '@renderer/components/Icon'
+import { ToolPanel } from '@renderer/components/ToolPanel'
+import type { Mode, ChatMessage } from '@shared/types'
 
 // 懒加载空状态欢迎页
-const DesignWelcome = lazy(() => import('../../DesignWelcome').then(m => ({ default: m.DesignWelcome })))
+const DesignWelcome = lazy(() => import('@renderer/DesignWelcome').then(m => ({ default: m.DesignWelcome })))
 
 /** 稳定的流式占位消息对象 */
 const STREAMING_MSG: ChatMessage = { id: 'streaming', role: 'assistant', content: '', timestamp: 0 }

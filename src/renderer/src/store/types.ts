@@ -8,7 +8,7 @@ import type {
   CapturedRequest,
   ImportedSkill,
   StreamingSegment
-} from '../../../shared/types'
+} from '@shared/types'
 
 /** UI 组件元数据 — 镜像 catalog 中的结构 */
 export interface ComponentMeta {
@@ -76,7 +76,7 @@ export interface StoreState {
   streamingCacheMissTokens: number | null
   /** 流式期间累积 prompt token */
   streamingPromptTokens: number | null
-  /** 流式期间上下文 token 累计 — 每轮 API 调用的 total_tokens 累加值 */
+  /** 流式期间上下文占用 — 最近一轮 API 调用的 promptTokens */
   streamingContextTokens: number | null
   /** 当前正在执行的工具调用列表 */
   streamingToolCalls: StreamingToolCall[]
@@ -100,6 +100,8 @@ export interface StoreState {
   showAgentPanel: boolean
   /** 记忆面板是否显示 */
   showMemoryPanel: boolean
+  /** 知识库面板是否显示 */
+  showKnowledgePanel: boolean
   /** 已激活的专家 ID 列表 */
   activeExperts: string[]
 
@@ -196,6 +198,7 @@ export interface StoreState {
   // ---- AI 专家库 ----
   setShowAgentPanel: (show: boolean) => void
   setShowMemoryPanel: (show: boolean) => void
+  setShowKnowledgePanel: (show: boolean) => void
   toggleExpert: (expertId: string) => void
 
   // ---- 设计风格绑定 ----

@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../shared/types'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 
 /**
  * 工具抽象接口 — 所有工具必须实现此接口

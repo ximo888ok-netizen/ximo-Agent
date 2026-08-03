@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'child_process'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 
 /**
  * CommandWhitelist — 安全命令白名单

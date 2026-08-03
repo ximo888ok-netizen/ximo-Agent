@@ -1,6 +1,6 @@
 import type React from 'react'
-import type { ActionGroup, QuickAction } from '../../../../shared/types'
-import { Icon } from '../Icon'
+import type { ActionGroup, QuickAction } from '@shared/types'
+import { Icon } from '@renderer/components/Icon'
 
 interface QuickActionCardsProps {
   actionGroups: ActionGroup[]

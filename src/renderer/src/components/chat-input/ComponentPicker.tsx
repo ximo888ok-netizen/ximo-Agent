@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Box, Search, Check, X, ChevronDown } from 'lucide-react'
-import { useStore } from '../../store/useStore'
+import { useStore } from '@renderer/store/useStore'
 import { COMPONENT_CATALOG } from './constants'
 
 export function ComponentPicker(): React.ReactElement {

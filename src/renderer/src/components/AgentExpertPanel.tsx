@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { X, Search, ChevronRight, Users, Sparkles, Star } from 'lucide-react'
-import { useStore } from '../store/useStore'
-import { AGENT_DIVISIONS, AGENTS_BY_DIVISION, searchAgents, getAgentById, ensureAgentsLoaded } from '../agents'
-import type { AgentExpert } from '../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import { AGENT_DIVISIONS, AGENTS_BY_DIVISION, searchAgents, getAgentById, ensureAgentsLoaded } from '@renderer/agents'
+import type { AgentExpert } from '@shared/types'
 
 /**
  * AgentExpertPanel — AI 专家库面板（替换原插件市场）

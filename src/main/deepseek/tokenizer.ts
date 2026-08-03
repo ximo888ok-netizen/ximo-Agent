@@ -117,10 +117,6 @@ function loadTokenizer(): TokenizerData {
   tokenizerData = { vocab, mergeRanks }
   byteEncoder = initByteEncoder()
 
-  console.log(
-    `[Tokenizer] 已加载 ${vocab.size} 条词表, ${mergeRanks.size} 条合并规则`
-  )
-
   return tokenizerData
 }
 

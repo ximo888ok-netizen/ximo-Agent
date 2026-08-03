@@ -1,7 +1,9 @@
 import { join } from 'path'
 import { fileURLToPath } from 'url'
+import { readFile } from 'fs/promises'
 import type { Page } from 'playwright'
-import { appendRrwebEvent } from '../../SkillStore'
+import { appendRrwebEvent } from '@main/SkillStore'
+import { executeWebviewCommand } from '@main/tools/Browser/WebviewBridge'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -19,6 +21,7 @@ const RRWEB_BUNDLE_PATH = join(__dirname, '../../../node_modules/rrweb/dist/rrwe
 export class RrwebRecorder {
   private static instance: RrwebRecorder
   private recordingPage: Page | null = null
+  private recordingInWebview = false
 
   static getInstance(): RrwebRecorder {
     if (!RrwebRecorder.instance) {
@@ -60,6 +63,11 @@ export class RrwebRecorder {
    * 停止 rrweb 录制，调用页面上的 stopFn
    */
   async stopRecording(): Promise<void> {
+    if (this.recordingInWebview) {
+      await this.stopRecordingInWebview()
+      return
+    }
+
     if (!this.recordingPage) {
       return
     }
@@ -79,6 +87,39 @@ export class RrwebRecorder {
     }
 
     this.recordingPage = null
+  }
+
+  /**
+   * 在内嵌浏览器 webview 中启动 rrweb 录制
+   * 通过 WebviewBridge 的 injectScript + executeJS 命令注入 rrweb bundle 并启动录制
+   * 事件通过 console.log('[XIMO_RRWEB]' + ...) 回传，由前端的 console-message 监听器转发到 SkillStore
+   */
+  async startRecordingInWebview(): Promise<void> {
+    this.recordingInWebview = true
+
+    // 1. 读取 rrweb UMD bundle 文件内容
+    const bundleCode = await readFile(RRWEB_BUNDLE_PATH, 'utf-8')
+
+    // 2. 通过 injectScript 命令注入 bundle（不包裹 IIFE，保持 UMD 原样）
+    await executeWebviewCommand('injectScript', { code: bundleCode })
+
+    // 3. 启动 rrweb 录制 — 事件通过 console.log 回传
+    await executeWebviewCommand('executeJS', {
+      code: 'window.__rrwebStopFn = rrweb.record({ emit(e) { console.log("[XIMO_RRWEB]" + JSON.stringify(e)) } })'
+    })
+  }
+
+  /** 停止内嵌浏览器 webview 中的 rrweb 录制 */
+  private async stopRecordingInWebview(): Promise<void> {
+    this.recordingInWebview = false
+
+    try {
+      await executeWebviewCommand('executeJS', {
+        code: 'window.__rrwebStopFn && window.__rrwebStopFn()'
+      })
+    } catch {
+      // webview 可能已关闭，忽略错误
+    }
   }
 
   /**

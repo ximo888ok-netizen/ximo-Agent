@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import type { Skill } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { Skill } from '@shared/types'
 
 export function SkillPicker(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)

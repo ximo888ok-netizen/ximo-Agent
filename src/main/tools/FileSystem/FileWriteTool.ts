@@ -2,8 +2,8 @@ import { writeFile, mkdir, copyFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { dirname, resolve, normalize, basename, join } from 'path'
 import { tmpdir } from 'os'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /** 在写入前备份已有文件到系统临时目录（不污染项目目录），返回快照路径 */
 async function snapshotIfExists(filePath: string): Promise<string | null> {

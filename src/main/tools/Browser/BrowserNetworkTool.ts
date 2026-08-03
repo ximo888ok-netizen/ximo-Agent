@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'

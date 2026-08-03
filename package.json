@@ -1,6 +1,6 @@
 {
   "name": "ximo-agent",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "DeepSeek-V4 驱动的全能 Agent 工作台 - 办公/编程/设计三模式",
   "author": "ximo",
   "main": "out/main/index.js",
@@ -21,10 +21,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "cheerio": "^1.2.0",
-    "chroma-js": "^3.2.0",
-    "fast-glob": "^3.3.3",
-    "jschardet": "^3.1.4",
+    "@orama/orama": "^3.1.18",
     "lucide-react": "^0.469.0",
     "mermaid": "^11.4.1",
     "playwright": "^1.61.1",
@@ -39,7 +36,6 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@types/chroma-js": "^3.1.2",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

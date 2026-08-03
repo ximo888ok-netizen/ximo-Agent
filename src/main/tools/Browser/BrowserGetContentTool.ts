@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -7,7 +7,7 @@ import { cleanBrowserError } from './index'
 export class BrowserGetContentTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_get_content',
-    description: '获取当前页面的文本内容。返回纯文本（已清理 HTML 标签和脚本）。可选择提取特定元素的内容。',
+    description: '获取当前页面的文本内容（纯文本，已清理 HTML 标签）。建议在操作不熟悉的页面前调用以了解页面结构，选择正确的选择器，减少错误操作和失败重试。可选择提取特定元素。',
     parameters: {
       type: 'object',
       properties: {

@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowDown } from 'lucide-react'
-import type { QuestionAnchor } from '../../lib/transcriptGrouping'
+import type { QuestionAnchor } from '@renderer/lib/transcriptGrouping'
 
 interface QuestionJumpBarProps {
   questions: QuestionAnchor[]

@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * JSHookTool — JS Hook 注入
@@ -39,7 +39,7 @@ export class JSHookTool implements Tool {
     onChunk?.({ toolStatus: 'calling', toolName: 'js_hook' })
 
     try {
-      const { BrowserManager } = await import('../Browser/BrowserManager')
+      const { BrowserManager } = await import('@main/tools/Browser/BrowserManager')
       const page = await BrowserManager.getInstance().getPage()
 
       // 刷新前注入

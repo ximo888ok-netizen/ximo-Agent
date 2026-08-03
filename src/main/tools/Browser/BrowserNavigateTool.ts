@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -10,7 +10,7 @@ import { cleanBrowserError } from './index'
 export class BrowserNavigateTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_navigate',
-    description: '在浏览器中打开指定 URL。用于网页自动化操作的起点。导航完成后返回页面标题和 URL。',
+    description: '在浏览器中打开指定 URL。导航完成后自动返回页面标题、URL 和截图 — 无需额外调用 browser_screenshot。',
     parameters: {
       type: 'object',
       properties: {

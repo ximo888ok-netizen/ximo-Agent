@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * NetworkReplayTool — 请求重放/修改
@@ -33,7 +33,7 @@ export class NetworkReplayTool implements Tool {
       let headers: Record<string, string> = {}
       try { headers = JSON.parse(headersStr) } catch { headers = { 'Content-Type': 'application/json' } }
 
-      const { BrowserManager } = await import('../Browser/BrowserManager')
+      const { BrowserManager } = await import('@main/tools/Browser/BrowserManager')
       const page = await BrowserManager.getInstance().getPage()
 
       const evalCode = `

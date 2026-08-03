@@ -1,8 +1,8 @@
 import { rename, stat, mkdir, copyFile, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import { resolve, normalize, dirname } from 'path'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * MoveFileTool — 移动或重命名文件

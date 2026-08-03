@@ -3,8 +3,8 @@ import { readFile as readFileAsync } from 'fs/promises'
 import { resolve, join } from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 const execAsync = promisify(exec)
 

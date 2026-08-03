@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * DesignPreviewTool — UI 组件实时预览

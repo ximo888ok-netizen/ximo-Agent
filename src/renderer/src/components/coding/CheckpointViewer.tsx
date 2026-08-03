@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { History, ChevronDown, RotateCcw, Clock, AlertCircle } from 'lucide-react'
+import { formatRelativeTime } from '@shared/utils'
 
 interface CheckpointInfo {
   turn: number
@@ -72,16 +73,6 @@ export function CheckpointViewer({ sessionId, onRestore }: CheckpointViewerProps
     }
   }
 
-  const formatTime = (ts: number): string => {
-    const date = new Date(ts)
-    const now = Date.now()
-    const diff = now - ts
-    if (diff < 60_000) return '刚刚'
-    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`
-    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`
-    return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-  }
-
   if (!sessionId) return null
 
   return (
@@ -113,7 +104,7 @@ export function CheckpointViewer({ sessionId, onRestore }: CheckpointViewerProps
           ) : (
             <div className="py-1">
               {[...checkpoints].reverse().map((cp) => {
-                const timeStr = formatTime(cp.time)
+                const timeStr = formatRelativeTime(cp.time)
                 const isRestoring = restoring === cp.turn
                 const fileCount = cp.paths.length
                 const promptPreview = cp.prompt.slice(0, 60) + (cp.prompt.length > 60 ? '...' : '')

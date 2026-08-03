@@ -1,17 +1,9 @@
-import { app } from 'electron'
 import { join } from 'path'
 import { mkdir, readFile, writeFile } from 'fs/promises'
-import type { AppSettings, Conversation, Mode } from '../shared/types'
+import type { AppSettings, Conversation, Mode } from '@shared/types'
 import { DEFAULT_SETTINGS } from './constants'
-
-const dataDir = join(app.getPath('userData'), 'ximo-agent')
-const settingsFile = join(dataDir, 'settings.json')
-const conversationsFile = join(dataDir, 'conversations.json')
-const memoryDir = join(dataDir, 'memory')
-
-async function ensureDir(): Promise<void> {
-  await mkdir(dataDir, { recursive: true })
-}
+import { settingsFile, conversationsFile, memoryDir } from './paths'
+import { ensureDir, ensureDirPath } from './ensureDir'
 
 // ---------- 设置 ----------
 
@@ -98,7 +90,7 @@ export async function flushSaveConversations(): Promise<void> {
 /** 加载指定模式的记忆内容（Markdown 纯文本） */
 export async function loadMemory(mode: Mode): Promise<string> {
   try {
-    await mkdir(memoryDir, { recursive: true })
+    await ensureDirPath(memoryDir)
     return await readFile(join(memoryDir, `${mode}.md`), 'utf-8')
   } catch {
     // 文件不存在时返回空字符串
@@ -109,7 +101,7 @@ export async function loadMemory(mode: Mode): Promise<string> {
 /** 保存指定模式的记忆内容 */
 export async function saveMemory(mode: Mode, content: string): Promise<void> {
   try {
-    await mkdir(memoryDir, { recursive: true })
+    await ensureDirPath(memoryDir)
     await writeFile(join(memoryDir, `${mode}.md`), content, 'utf-8')
   } catch (e) {
     console.error('保存记忆失败：', e)

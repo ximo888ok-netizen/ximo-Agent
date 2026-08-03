@@ -1,7 +1,7 @@
 import type React from 'react'
-import type { ToolResult } from '../../../../shared/types'
-import { CodeBlock } from '../CodeBlock'
-import { InlineFileEdit } from '../coding/InlineFileEdit'
+import type { ToolResult } from '@shared/types'
+import { CodeBlock } from '@renderer/components/CodeBlock'
+import { InlineFileEdit } from '@renderer/components/coding/InlineFileEdit'
 
 interface ToolResultCardProps {
   result: ToolResult

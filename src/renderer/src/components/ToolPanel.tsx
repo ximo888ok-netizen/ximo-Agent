@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useStore } from '../store/useStore'
+import { useStore } from '@renderer/store/useStore'
 import { Cpu, Loader2 } from 'lucide-react'
 
 /** 工具名 → 中文标签映射 */

@@ -1,8 +1,8 @@
 import { unlink, rm, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { resolve, normalize } from 'path'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * FileDeleteTool — 删除文件或目录

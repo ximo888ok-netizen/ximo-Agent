@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
-import type { ToolDefinition } from '../../shared/types/tools'
-import { normalizeToolSchemas } from '../../shared/cache/tool-normalize'
-import type { PrefixShape, CacheDiagnostics, NormalizedUsage } from '../../shared/cache/types'
+import type { ToolDefinition } from '@shared/types/tools'
+import { normalizeToolSchemas } from '@shared/cache/tool-normalize'
+import type { PrefixShape, CacheDiagnostics, NormalizedUsage } from '@shared/cache/types'
 
 /**
  * PrefixShape 哈希诊断 — 参考 Reasonix 的 cache_shape.go

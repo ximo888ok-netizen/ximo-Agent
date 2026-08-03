@@ -1,5 +1,5 @@
-import type { StreamChunk, ToolCall } from '../../shared/types'
-import type { NormalizedUsage } from '../../shared/cache'
+import type { StreamChunk, ToolCall } from '@shared/types'
+import type { NormalizedUsage } from '@shared/cache'
 
 // ---------- 类型 ----------
 

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ChatRequest, StreamChunk, AppSettings, Conversation, TestResult, FileTreeNode, Skill, RecordingSession, CapturedRequest, McpServerConfig, ImportedSkill, Mode } from '../shared/types'
+import type { ChatRequest, StreamChunk, AppSettings, Conversation, TestResult, FileTreeNode, Skill, RecordingSession, CapturedRequest, McpServerConfig, ImportedSkill, Mode } from '@shared/types'
 
 // 通过 contextBridge 暴露安全的 API 给渲染进程
 const api = {
@@ -52,7 +52,10 @@ const api = {
     startRecording: (url?: string): Promise<RecordingSession> =>
       ipcRenderer.invoke('skills:startRecording', url),
     stopRecording: (): Promise<RecordingSession | null> =>
-      ipcRenderer.invoke('skills:stopRecording')
+      ipcRenderer.invoke('skills:stopRecording'),
+    appendRrwebEvent: (event: Record<string, unknown>): void => {
+      ipcRenderer.send('skill:append-rrweb-event', event)
+    }
   },
   mcp: {
     load: (): Promise<McpServerConfig[]> => ipcRenderer.invoke('mcp:load'),
@@ -173,6 +176,7 @@ const api = {
       steps: Array<{ tool: string; arguments: Record<string, unknown>; timestamp: number; description?: string }>
       apiEndpoints: string[]
       startUrl?: string
+      rrwebEvents?: Record<string, unknown>[]
     }): Promise<{ success: boolean; skill: Skill }> =>
       ipcRenderer.invoke('skill-recording:save', data)
   },
@@ -198,6 +202,43 @@ const api = {
   memory: {
     load: (mode: Mode): Promise<string> => ipcRenderer.invoke('memory:load', mode),
     save: (mode: Mode, content: string): Promise<boolean> => ipcRenderer.invoke('memory:save', mode, content)
+  },
+  // 知识库 — Orama BM25 全文搜索，每个模式独立
+  knowledge: {
+    list: (mode: Mode, page: number, pageSize: number): Promise<{
+      items: { id: string; title: string; content: string; tags: string[]; source: string; createdAt: number; updatedAt: number }[]
+      total: number; page: number; pageSize: number; totalPages: number
+    }> => ipcRenderer.invoke('knowledge:list', mode, page, pageSize),
+    search: (mode: Mode, query: string, page: number, pageSize: number): Promise<{
+      results: { id: string; title: string; content: string; tags: string[]; source: string; score: number; createdAt: number; updatedAt: number }[]
+      total: number; page: number; pageSize: number; totalPages: number
+    }> => ipcRenderer.invoke('knowledge:search', mode, query, page, pageSize),
+    add: (mode: Mode, data: { title: string; content: string; tags?: string[]; source?: string }): Promise<{
+      id: string; title: string; content: string; tags: string[]; source: string; createdAt: number; updatedAt: number
+    }> => ipcRenderer.invoke('knowledge:add', mode, data),
+    update: (mode: Mode, id: string, updates: { title?: string; content?: string; tags?: string[]; source?: string }): Promise<{
+      id: string; title: string; content: string; tags: string[]; source: string; createdAt: number; updatedAt: number
+    } | null> => ipcRenderer.invoke('knowledge:update', mode, id, updates),
+    delete: (mode: Mode, id: string): Promise<boolean> => ipcRenderer.invoke('knowledge:delete', mode, id)
+  },
+  // 主题包 — 自定义 UI 主题导入与管理
+  themePack: {
+    list: (): Promise<{ id: string; name: string; description?: string; author?: string; light?: Record<string, string>; dark?: Record<string, string> }[]> =>
+      ipcRenderer.invoke('theme-pack:list'),
+    import: (jsonStr: string): Promise<{ id: string; name: string; description?: string; author?: string; light?: Record<string, string>; dark?: Record<string, string> }> =>
+      ipcRenderer.invoke('theme-pack:import', jsonStr),
+    delete: (id: string): Promise<boolean> => ipcRenderer.invoke('theme-pack:delete', id)
+  },
+  // 背景图 — 导入/删除/列表/选择
+  background: {
+    select: (): Promise<{ path: string; type: 'static' | 'dynamic'; fileName: string } | null> =>
+      ipcRenderer.invoke('background:select'),
+    import: (srcPath: string): Promise<{ path: string; type: 'static' | 'dynamic'; fileName: string }> =>
+      ipcRenderer.invoke('background:import', srcPath),
+    delete: (filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke('background:delete', filePath),
+    list: (): Promise<{ path: string; fileName: string; type: 'static' | 'dynamic'; size: number }[]> =>
+      ipcRenderer.invoke('background:list'),
   },
   // 检查更新 — 查询 GitHub Releases 最新版本
   update: {

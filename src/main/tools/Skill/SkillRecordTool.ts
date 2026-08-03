@@ -1,5 +1,5 @@
-import type { ToolDefinition, ToolCall, ToolResult } from '../../../shared/types'
-import type { Tool } from '../Tool'
+import type { ToolDefinition, ToolCall, ToolResult } from '@shared/types'
+import type { Tool } from '@main/tools/Tool'
 import {
   startRecording,
   stopRecording,
@@ -9,10 +9,11 @@ import {
   loadSkills,
   saveSkills,
   getRrwebEventCount
-} from '../../SkillStore'
-import type { Skill } from '../../../shared/types'
+} from '@main/SkillStore'
+import type { Skill } from '@shared/types'
 import { RrwebRecorder } from './RrwebRecorder'
-import { BrowserManager } from '../Browser/BrowserManager'
+import { BrowserManager } from '@main/tools/Browser/BrowserManager'
+import { isEmbeddedBrowserActive, executeWebviewCommand } from '@main/tools/Browser/WebviewBridge'
 
 /**
  * SkillRecordTool — 技能录制工具（基于 rrweb）
@@ -68,13 +69,32 @@ export class SkillRecordTool implements Tool {
 
         // 注入 rrweb 录制到浏览器页面
         try {
+          const recorder = RrwebRecorder.getInstance()
+
+          // 优先使用内嵌浏览器 webview
+          if (isEmbeddedBrowserActive()) {
+            // 如果指定了 URL，先导航到该 URL
+            if (url) {
+              await executeWebviewCommand('navigate', { url: url as string })
+              await new Promise(r => setTimeout(r, 1500))
+            }
+            await recorder.startRecordingInWebview()
+
+            return {
+              toolCallId: toolCall.id,
+              toolName: 'skill_record',
+              content: `🔴 录制已开始！会话 ID: ${session.id}\n\nrrweb 已在内嵌浏览器中注入，正在捕获页面的所有 DOM 变更和用户交互。\nAgent 执行的浏览器操作也会被同步记录。\n起始 URL: ${url || '当前页面'}\n\n完成后请调用 skill_record(action="stop") 结束录制并生成技能。`,
+              success: true
+            }
+          }
+
+          // 回退到 Playwright
           const browserManager = BrowserManager.getInstance()
           browserManager.setHeadless(false)
           const page = url
             ? await browserManager.getPageForUrl(url as string)
             : await browserManager.getPage()
 
-          const recorder = RrwebRecorder.getInstance()
           await recorder.startRecording(page)
 
           return {

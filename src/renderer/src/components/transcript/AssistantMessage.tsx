@@ -3,8 +3,8 @@
 
 import { memo, useState, useRef, useEffect, useCallback, createContext, useContext } from 'react'
 import { ChevronRight, Brain } from 'lucide-react'
-import type { AssistantItem, LiveStream } from '../../lib/transcriptTypes'
-import { MarkdownRenderer } from '../MarkdownRenderer'
+import type { AssistantItem, LiveStream } from '@renderer/lib/transcriptTypes'
+import { MarkdownRenderer } from '@renderer/components/MarkdownRenderer'
 
 interface AssistantMessageProps {
   item: AssistantItem

@@ -8,7 +8,7 @@ import {
   XCircle,
   ExternalLink
 } from 'lucide-react'
-import type { AppSettings, TestResult } from '../../../../shared/types'
+import type { AppSettings, TestResult } from '@shared/types'
 import { SectionTitle } from './shared-components'
 import type { TestState } from './shared-components'
 

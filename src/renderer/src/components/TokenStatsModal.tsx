@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { BarChart3, X, TrendingUp, MessageSquare, Coins } from 'lucide-react'
-import { useStore } from '../store/useStore'
-import type { Mode } from '../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { Mode } from '@shared/types'
 
 const MODE_LABELS: Record<Mode, string> = {
   office: '办公',

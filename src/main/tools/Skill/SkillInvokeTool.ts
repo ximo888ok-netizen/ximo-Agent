@@ -1,10 +1,10 @@
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
-import type { Tool } from '../Tool'
-import { loadSkills, saveSkills } from '../../SkillStore'
-import { BrowserManager } from '../Browser/BrowserManager'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
+import type { Tool } from '@main/tools/Tool'
+import { loadSkills, saveSkills } from '@main/SkillStore'
+import { BrowserManager } from '@main/tools/Browser/BrowserManager'
 import { RrwebReplayer } from './RrwebReplayer'
 import { callSubAgentWithTools } from './AgentExpertTool'
-import type { Skill } from '../../../shared/types'
+import type { Skill } from '@shared/types'
 
 /**
  * SkillInvokeTool — 技能调用工具（支持 rrweb 回放）

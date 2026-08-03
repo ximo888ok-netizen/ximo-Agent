@@ -18,3 +18,8 @@ known_hosts_tmp
 
 # 翻译缓存
 .translate-cache.json
+
+# 审查/工作产物
+.workbuddy/
+deliverables/
+

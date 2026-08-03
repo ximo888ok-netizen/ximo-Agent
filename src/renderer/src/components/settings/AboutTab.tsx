@@ -7,13 +7,9 @@ import {
   FeatureRow,
   LinkRow
 } from './shared-components'
+import { formatBytes } from '@shared/utils'
 
 type UpdateState = 'idle' | 'checking' | 'up-to-date' | 'downloading' | 'downloaded' | 'error'
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 export function AboutTab(): React.ReactElement {
   const [updateState, setUpdateState] = useState<UpdateState>('idle')
@@ -171,8 +167,8 @@ export function AboutTab(): React.ReactElement {
             <div className="flex justify-between text-xs text-text-muted">
               <span>{progressPercent}%</span>
               <span>
-                {formatSize(progress.downloaded)}
-                {progress.total > 0 ? ` / ${formatSize(progress.total)}` : ''}
+                {formatBytes(progress.downloaded)}
+                {progress.total > 0 ? ` / ${formatBytes(progress.total)}` : ''}
               </span>
             </div>
           </div>

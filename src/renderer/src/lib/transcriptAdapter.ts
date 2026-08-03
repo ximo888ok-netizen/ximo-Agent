@@ -2,7 +2,7 @@
 // 把我们的嵌套 ChatMessage[] (toolCalls/toolResults 挂在消息上)
 // 转成 DeepSeek-Reasonix 风格的扁平 Item[] (每个工具/通知是独立条目)
 
-import type { ChatMessage, ToolResult } from '../../../shared/types'
+import type { ChatMessage, ToolResult } from '@shared/types'
 import type { TranscriptItem, ToolItem, AssistantItem, LiveStream } from './transcriptTypes'
 
 // 工具名 → 中文标签

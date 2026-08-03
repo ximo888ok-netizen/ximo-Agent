@@ -1,0 +1,63 @@
+import { Search, Code2, PenTool, FileText, Edit3, Pencil, FolderTree, SearchCode, Terminal, GitBranch, CheckCircle, FolderSearch, Cpu } from 'lucide-react'
+
+/** 工具名称 → 图标映射 */
+export const TOOL_ICONS: Record<string, React.ReactNode> = {
+  web_search: <Search size={14} />,
+  code_execute: <Code2 size={14} />,
+  ui_generate: <PenTool size={14} />,
+  file_read: <FileText size={14} />,
+  file_write: <Edit3 size={14} />,
+  file_edit: <Pencil size={14} />,
+  file_delete: <Edit3 size={14} />,
+  multi_edit: <Pencil size={14} />,
+  move_file: <FolderTree size={14} />,
+  todo_write: <CheckCircle size={14} />,
+  file_list: <FolderTree size={14} />,
+  file_search: <SearchCode size={14} />,
+  terminal_exec: <Terminal size={14} />,
+  git_operations: <GitBranch size={14} />,
+  code_lint: <CheckCircle size={14} />,
+  project_context: <FolderSearch size={14} />,
+  screen_capture: <Cpu size={14} />,
+  browser_screenshot: <Search size={14} />,
+  browser_navigate: <Search size={14} />,
+  design_preview: <PenTool size={14} />,
+  design_critique: <PenTool size={14} />,
+  design_audit: <PenTool size={14} />,
+  design_a11y: <PenTool size={14} />,
+  design_color: <PenTool size={14} />,
+  network_capture: <Search size={14} />,
+  web_fetch: <Search size={14} />,
+  web_research: <Search size={14} />
+}
+
+/** 工具名称 → 中文标签映射 */
+export const TOOL_LABELS: Record<string, string> = {
+  web_search: '联网搜索',
+  code_execute: '代码执行',
+  ui_generate: 'UI 生成',
+  file_read: '读取文件',
+  file_write: '写入文件',
+  file_edit: '编辑文件',
+  file_delete: '删除文件',
+  multi_edit: '批量编辑',
+  move_file: '移动文件',
+  todo_write: '任务列表',
+  file_list: '列出文件',
+  file_search: '搜索文件',
+  terminal_exec: '终端执行',
+  git_operations: 'Git 操作',
+  code_lint: '代码检查',
+  project_context: '项目上下文',
+  screen_capture: '屏幕截图',
+  browser_screenshot: '浏览器截图',
+  browser_navigate: '浏览器导航',
+  design_preview: '设计预览',
+  design_critique: '设计审查',
+  design_audit: '质量审计',
+  design_a11y: '无障碍检查',
+  design_color: '颜色分析',
+  network_capture: '网络抓包',
+  web_fetch: '网页抓取',
+  web_research: '深度研究'
+}

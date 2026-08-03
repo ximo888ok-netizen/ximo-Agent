@@ -1,8 +1,8 @@
-import type { ChatRequest, StreamChunk, TestResult, ToolDefinition, ReasoningEffort } from '../../shared/types'
+import type { ChatRequest, StreamChunk, TestResult, ToolDefinition, ReasoningEffort } from '@shared/types'
 import { errorResult, collectToolCalls, sanitizeContent } from './context'
 import type { StreamHandlers, SingleCallResult } from './types'
-import { normaliseUsage, normalizeToolSchemas } from '../../shared/cache'
-import type { NormalizedUsage } from '../../shared/cache'
+import { normaliseUsage } from '@shared/cache'
+import type { NormalizedUsage } from '@shared/cache'
 
 // ---------- 常量 ----------
 
@@ -56,10 +56,9 @@ async function callDeepSeekStreamOnce(
     stream_options: { include_usage: true }
   }
 
-  // A4 工具 schema 字典序归一化排序 — 保持 tools JSON 字节稳定，避免破坏缓存前缀
+  // A4 工具 schema 已由 chat-handler.ts 在调用前完成字典序归一化排序，此处直接使用
   if (tools && tools.length > 0) {
-    const sortedTools = normalizeToolSchemas(tools)
-    body.tools = sortedTools.map((t) => ({
+    body.tools = tools.map((t) => ({
       type: 'function',
       function: {
         name: t.name,

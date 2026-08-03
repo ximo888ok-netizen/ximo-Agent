@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, Brain, Save, Check } from 'lucide-react'
-import { useStore } from '../store/useStore'
-import { MODE_CONFIGS } from '../modes'
-import type { Mode } from '../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import { MODE_CONFIGS } from '@renderer/modes'
+import type { Mode } from '@shared/types'
 
 /**
  * MemoryPanel — 模式记忆编辑面板

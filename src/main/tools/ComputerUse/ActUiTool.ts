@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { piBridge } from './PiBridge'
 
 /**
@@ -67,7 +67,7 @@ export class ActUiTool implements Tool {
       // 将每个 action 转换为 Helper 的 act 命令格式
       // Helper 的 act 命令接受单个 action，我们逐个执行
       const results: string[] = []
-      let currentLookId = 'look' // Helper 使用 look ID 来定位元素
+      let currentLookId = stateId || 'look' // 使用 observe_ui 返回的 stateId 作为 look 会话 ID
 
       for (let i = 0; i < actions.length; i++) {
         const action = actions[i]

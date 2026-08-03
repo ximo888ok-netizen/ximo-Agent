@@ -1,13 +1,28 @@
-import { getAgentById, getExpertSystemPrompt } from '../agents'
+import { getAgentById, getExpertSystemPrompt } from '@renderer/agents'
 import type {
   ApiMessage,
   Conversation,
   ImportedSkill,
   Mode,
   ReasoningEffort
-} from '../../../shared/types'
-import { GLM_PARADIGM_PROMPT } from '../../../shared/glm-paradigm'
-import { trimContext, truncateToolResult, type AgentConfig } from '../../../shared/context-compress'
+} from '@shared/types'
+import { GLM_PARADIGM_PROMPT } from '@shared/glm-paradigm'
+import { trimContext, truncateToolResult, type AgentConfig } from '@shared/context-compress'
+
+// ── 导入技能缓存 — 避免每次发消息都通过 IPC 从磁盘读取 ──
+let _importedSkillsCache: ImportedSkill[] | null = null
+
+/** 获取导入技能列表（带缓存） */
+async function getImportedSkills(): Promise<ImportedSkill[]> {
+  if (_importedSkillsCache !== null) return _importedSkillsCache
+  _importedSkillsCache = await window.api.importedSkills.load()
+  return _importedSkillsCache
+}
+
+/** 使导入技能缓存失效 — 在技能列表变更后调用 */
+export function invalidateImportedSkillsCache(): void {
+  _importedSkillsCache = null
+}
 
 /** 默认上下文配置 — 与 deepseek.ts 中 agentConfig 默认值保持一致 */
 const DEFAULT_CONFIG: AgentConfig = {
@@ -54,7 +69,7 @@ export async function buildApiMessages(
   const config: AgentConfig = { ...DEFAULT_CONFIG, ...contextConfig }
 
   // 延迟加载系统提示词（~25KB），避免打入首屏 bundle
-  const { SYSTEM_PROMPTS } = await import('../modes/prompts')
+  const { SYSTEM_PROMPTS } = await import('@renderer/modes/prompts')
   const systemPrompt = SYSTEM_PROMPTS[conversation.mode as Mode]
   let systemContent = customPrompt
     ? `${systemPrompt}\n\n--- 附加指令 ---\n${customPrompt}`
@@ -98,15 +113,10 @@ export async function buildApiMessages(
   // 收集运行时工具状态 — 作为独立 system 消息放在 system prompt 之后、对话历史之前
   // 成为稳定前缀的一部分：状态变化时缓存断裂一次，但后续轮次立即恢复
   const runtimeStatusLines: string[] = []
-  if (browserOpen) {
-    runtimeStatusLines.push('🌐 内嵌浏览器：已开启 — 你的 browser_* 工具已直接连接到右侧栏内嵌浏览器。用户在此浏览器中的操作和你通过 browser_navigate / browser_click / browser_type 等工具执行的操作共享同一个页面。当用户问你能否看到某个网页时，直接使用 browser_screenshot 或 browser_get_content 查看当前页面内容，不要使用 find_roots（那是桌面操控工具，不是浏览器工具）。')
-  } else {
-    runtimeStatusLines.push('🌐 内嵌浏览器：未开启 — browser_* 工具将使用独立的无头浏览器。如需查看用户可见的页面，请提示用户在输入框下方点击"浏览器"按钮开启内嵌浏览器。')
-  }
   if (computerUseRunning) {
-    runtimeStatusLines.push('🖥️ 操控电脑：已启动 — find_roots / observe_ui / act_ui 等桌面操控工具可用。')
+    runtimeStatusLines.push('🖥️ 操控电脑：已启动 — computer_use 等桌面操控工具可用。')
   } else {
-    runtimeStatusLines.push('🖥️ 操控电脑：未启动 — find_roots 等工具不可用，如需桌面操控请提示用户在输入框下方点击"操控电脑"按钮。')
+    runtimeStatusLines.push('🖥️ 操控电脑：未启动 — computer_use 等工具不可用，如需桌面操控请提示用户在输入框下方点击"操控电脑"按钮。')
   }
 
   // AI 专家系统提示词注入
@@ -132,8 +142,7 @@ export async function buildApiMessages(
 
   // 导入技能注入 — 将用户启用的 ImportedSkill 的指令体注入系统提示词
   try {
-    const importedSkills = await window.api.importedSkills.load()
-    const enabledSkills = importedSkills.filter((s: ImportedSkill) => s.enabled)
+    const enabledSkills = (await getImportedSkills()).filter((s: ImportedSkill) => s.enabled)
     if (enabledSkills.length > 0) {
       const skillBlocks = enabledSkills.map((skill: ImportedSkill) => {
         const triggerLine = skill.triggers.length > 0

@@ -7,8 +7,8 @@ import type { CompactionStats } from './types'
  * 四档 compaction（按 prompt 占窗口比例）：
  *   50% soft  — 仅通知，不动前缀（保持缓存命中）
  *   60% snip  — 机械裁剪陈旧 tool results（保留配对，前缀大部分仍命中）
- *   80% compact — 进一步 prune + 截断旧 assistant 内容
- *   90% force  — 强制 compact，跳过价值判断
+ *   80% compact — 调用 LLM 生成摘要替换旧消息（由 agent-loop 执行）
+ *   90% force  — 强制 compact，跳过经济性检查
  *
  * stuck 保护：连续 ≥ 2 次 compact 后仍未降到 trigger 以下 → 暂停自动压缩，
  * 让 prefix append-only 增长，命中率自然恢复。
@@ -94,22 +94,18 @@ export class ContextManager {
       return empty
     }
 
-    // ── compact / force 阶段 ──
+    // ── compact / force 阶段 — 不做机械裁剪，返回信号由 agentLoop 调用 LLM 摘要 ──
     if (this.compactStuck) {
       return { ...empty, stuckPaused: true }
     }
 
     const isForce = promptTokens >= force
-    const stats = this.compactMessages(messages, config, isForce)
-    if (stats.snippedResults > 0 || stats.prunedResults > 0) {
-      this.rewriteVersion++
-      this.consecutiveCompacts++
-      // 连续 2 次 compact 仍未降到 trigger 以下 → stuck
-      if (this.consecutiveCompacts >= 2) {
-        this.compactStuck = true
-      }
+    this.rewriteVersion++
+    this.consecutiveCompacts++
+    if (this.consecutiveCompacts >= 2) {
+      this.compactStuck = true
     }
-    return { ...stats, tier: isForce ? 'force' : 'compact', stuckPaused: this.compactStuck }
+    return { ...empty, tier: isForce ? 'force' : 'compact', stuckPaused: this.compactStuck }
   }
 
   /** 重置状态 — 切换会话时调用 */
@@ -129,7 +125,8 @@ export class ContextManager {
 
     for (let i = 1; i < protectFrom; i++) {
       const m = messages[i]
-      if (m.role === 'tool' && m.content && m.content.length > config.snippedKeep + 100) {
+      // 跳过已被 trimContext 或前一轮 snip 截断的内容，避免双重截断
+      if (m.role === 'tool' && m.content && m.content.length > config.snippedKeep + 100 && !m.content.includes('[...已自动截断') && !m.content.includes('[...已省略')) {
         savedChars += m.content.length - (config.snippedKeep + 40)
         m.content = m.content.slice(0, config.snippedKeep) + '\n[...已自动截断以节省上下文空间]'
         snipped++
@@ -138,34 +135,4 @@ export class ContextManager {
     return { tier: 'snip', snippedResults: snipped, prunedResults: 0, savedChars, stuckPaused: false }
   }
 
-  private compactMessages(messages: MutableMessage[], config: AgentConfig, force: boolean): CompactionStats {
-    const protectFrom = Math.max(1, messages.length - config.recentKeep)
-    let pruned = 0
-    let snipped = 0
-    let savedChars = 0
-
-    // prune 阶段：将所有旧 tool results 缩短到最小占位符
-    for (let i = 1; i < protectFrom; i++) {
-      const m = messages[i]
-      if (m.role === 'tool' && m.content && m.content.length > config.prunedKeep) {
-        savedChars += m.content.length - (config.prunedKeep + 20)
-        m.content = m.content.slice(0, config.prunedKeep) + '\n[...已省略]'
-        pruned++
-      }
-    }
-
-    // force 阶段：截断旧 assistant 内容（保留 tool_calls 结构）
-    if (force) {
-      for (let i = 1; i < protectFrom; i++) {
-        const m = messages[i]
-        if (m.role === 'assistant' && m.content && m.content.length > 500 && !m.tool_calls) {
-          savedChars += m.content.length - 220
-          m.content = m.content.slice(0, 200) + '\n[...已省略]'
-          snipped++
-        }
-      }
-    }
-
-    return { tier: 'compact', snippedResults: snipped, prunedResults: pruned, savedChars, stuckPaused: false }
-  }
 }

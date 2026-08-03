@@ -10,7 +10,7 @@
  * 若发现问题则将纠正指令注入主 Agent 的上下文。
  */
 
-import type { ReasoningEffort } from '../../shared/types'
+import type { ReasoningEffort } from '@shared/types'
 import { toApiEffort } from './api'
 
 // ---------- 类型 ----------

@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { fileURLToPath } from 'url'
-import { BrowserManager } from '../Browser/BrowserManager'
+import { BrowserManager } from '@main/tools/Browser/BrowserManager'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 

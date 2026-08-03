@@ -1,14 +1,50 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { streamChat, agentLoop, testConnection, configureAgentLoop } from '../deepseek'
-import type { ChatRequest, StreamChunk, ToolContext, ApiMessage } from '../../shared/types'
-import { loadSettings } from '../store'
-import { toolRegistry } from '../tools'
-import { modeToolNames, ensureModeToolsLoaded } from '../tools/lazy-registry'
-import { normalizeToolSchemas } from '../../shared/cache'
+import { streamChat, agentLoop, testConnection, configureAgentLoop } from '@main/deepseek'
+import type { ChatRequest, StreamChunk, ToolContext, ApiMessage } from '@shared/types'
+import { loadSettings } from '@main/store'
+import { toolRegistry } from '@main/tools'
+import { modeToolNames, ensureModeToolsLoaded } from '@main/tools/lazy-registry'
+import { normalizeToolSchemas } from '@shared/cache'
 import * as os from 'os'
 
 // 当前流式请求的 AbortController（用于取消）
 let currentController: AbortController | null = null
+
+// ── MCP 全局单例 ──
+// 避免每次 chat:start 都重新连接所有 MCP 服务器（减少连接延迟和开销）
+let _mcpSession: import('@main/tools/Mcp/McpClient').McpSession | null = null
+let _mcpConnected = false
+
+async function getMcpSession(timeoutMs: number): Promise<import('@main/tools/Mcp/McpClient').McpSession> {
+  const { McpSession } = await import('@main/tools/Mcp/McpClient')
+  if (!_mcpSession) {
+    _mcpSession = new McpSession(timeoutMs)
+    _mcpConnected = false
+  }
+  if (!_mcpConnected) {
+    const result = await _mcpSession.connectAll()
+    if (result.errors.length > 0) {
+      console.warn('[MCP] 部分服务器连接失败:', result.errors)
+    }
+    _mcpConnected = true
+    // 将 MCP 工具动态注册到 toolRegistry
+    for (const tool of _mcpSession.getTools()) {
+      if (!toolRegistry.has(tool.definition.name)) {
+        toolRegistry.register(tool)
+      }
+    }
+  }
+  return _mcpSession
+}
+
+/** MCP 设置变更时调用，强制下次重连 */
+export function invalidateMcpSession(): void {
+  if (_mcpSession) {
+    _mcpSession.disconnectAll().catch(() => {})
+    _mcpSession = null
+    _mcpConnected = false
+  }
+}
 
 export function registerChatHandlers(): void {
   // 流式聊天：渲染进程通过 invoke 触发，主进程逐块通过 send 回传
@@ -43,7 +79,7 @@ export function registerChatHandlers(): void {
             finish(result)
           }
           const onClosed = (): void => finish(false)
-          ipcMain.on('confirm:response', listener)
+          ipcMain.once('confirm:response', listener)
           win.once('closed' as never, onClosed as never)
         })
       },
@@ -63,7 +99,7 @@ export function registerChatHandlers(): void {
             finish(result)
           }
           const onClosed = (): void => finish({ confirmed: false })
-          ipcMain.on('user-input:response', listener)
+          ipcMain.once('user-input:response', listener)
           win.once('closed' as never, onClosed as never)
         })
       }
@@ -85,11 +121,11 @@ export function registerChatHandlers(): void {
     })
 
     // 注入 PiBridge 命令超时
-    const { setDefaultCommandTimeout } = await import('../tools/ComputerUse/PiBridge')
+    const { setDefaultCommandTimeout } = await import('@main/tools/ComputerUse/PiBridge')
     setDefaultCommandTimeout(settings.helperCommandTimeout ?? 30)
 
     // 注入网页缓存配置
-    const { configureCacheManager } = await import('../tools/WebIntelligence/WebCacheManager')
+    const { configureCacheManager } = await import('@main/tools/WebIntelligence/WebCacheManager')
     configureCacheManager({
       enabled: settings.webCacheEnabled ?? true,
       maxSizeMB: settings.webCacheMaxSizeMB ?? 100
@@ -97,7 +133,7 @@ export function registerChatHandlers(): void {
 
     // 操控电脑未启动时，从工具列表中移除桌面操控工具 — Agent 完全感知不到
     if (toolNames.includes('find_roots')) {
-      const { piBridge } = await import('../tools/ComputerUse/PiBridge')
+      const { piBridge } = await import('@main/tools/ComputerUse/PiBridge')
       if (!piBridge.ready) {
         const COMPUTER_USE_TOOLS = new Set(['find_roots', 'observe_ui', 'search_ui', 'act_ui', 'read_text', 'wait_for'])
         toolNames = toolNames.filter((n) => !COMPUTER_USE_TOOLS.has(n))
@@ -111,21 +147,8 @@ export function registerChatHandlers(): void {
 
     const modeTools = toolNames.length > 0 ? toolRegistry.getByNames(toolNames).map((t) => t.definition) : undefined
 
-    // 连接所有启用的 MCP 服务器，收集其工具
-    const { McpSession } = await import('../tools/Mcp/McpClient')
-    const mcpSession = new McpSession((settings.mcpConnectTimeout ?? 30) * 1000)
-    const mcpResult = await mcpSession.connectAll()
-    if (mcpResult.errors.length > 0) {
-      console.warn('[MCP] 部分服务器连接失败:', mcpResult.errors)
-    }
-
-    // 将 MCP 工具动态注册到 toolRegistry
-    const mcpTools = mcpSession.getTools()
-    for (const tool of mcpTools) {
-      if (!toolRegistry.has(tool.definition.name)) {
-        toolRegistry.register(tool)
-      }
-    }
+    // 连接所有启用的 MCP 服务器（全局单例，避免每次重连）
+    const mcpSession = await getMcpSession((settings.mcpConnectTimeout ?? 30) * 1000)
     const mcpToolDefs = mcpSession.getToolDefinitions()
 
     // 合并模式工具 + MCP 工具
@@ -169,7 +192,7 @@ export function registerChatHandlers(): void {
           webCacheMaxSizeMB: settings.webCacheMaxSizeMB ?? 100,
           helperCommandTimeout: settings.helperCommandTimeout ?? 30,
           mcpConnectTimeout: settings.mcpConnectTimeout ?? 30,
-          visionApiKey: settings.visionApiKey ?? 'sk-qeSAXtALEYUpoGzpOFtGQwpgCV4kmvv2lKak57q6PKF1Zj9m',
+          visionApiKey: settings.visionApiKey ?? 'sk-qeSAXtALEYUpoGzpOFtGQwpgCV4kmvv2lKak57q6PKF1Zj9m', // 免费视觉模型，无需理会
           visionBaseUrl: settings.visionBaseUrl ?? 'https://api.agnes-ai.cn/v1',
           visionModel: settings.visionModel ?? 'agnes-2.5-flash',
           mode: request.mode,
@@ -180,8 +203,7 @@ export function registerChatHandlers(): void {
         await streamChat(settings.apiKey, settings.baseUrl, { ...request, messages: messagesWithEnv }, handlers)
       }
     } finally {
-      // 会话结束后断开所有 MCP 连接
-      await mcpSession.disconnectAll()
+      // MCP 连接保持复用，不在此断开
     }
 
     currentController = null

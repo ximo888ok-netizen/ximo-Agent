@@ -3,9 +3,9 @@
 
 import { memo, useState } from 'react'
 import { ChevronRight, Loader2, CheckCircle, XCircle, Terminal, FileText, Search, Edit3, GitBranch, Cpu } from 'lucide-react'
-import type { ToolItem, ToolGroupKind } from '../../lib/transcriptTypes'
-import { toolLabel } from '../../lib/transcriptAdapter'
-import { isCreationGroupableTool, toolGroupKind } from '../../lib/transcriptTypes'
+import type { ToolItem, ToolGroupKind } from '@renderer/lib/transcriptTypes'
+import { toolLabel } from '@renderer/lib/transcriptAdapter'
+import { isCreationGroupableTool, toolGroupKind } from '@renderer/lib/transcriptTypes'
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   file_read: <FileText size={13} />,

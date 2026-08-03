@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { piBridge } from './PiBridge'
 
 /**
@@ -42,7 +42,7 @@ export class ObserveUiTool implements Tool {
 
       // 解析 Helper 返回的 outline
       const outline = result?.outline
-      const stateId = result?.stateId || ''
+      const stateId = (result as any)?.stateId || (result as any)?.lookId || ''
       const note = (result?.note as string) || ''
       const image = result?.image
 

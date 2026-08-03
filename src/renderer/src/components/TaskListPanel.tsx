@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
 import { ChevronDown, Check, Loader2, Circle, Users } from 'lucide-react'
-import { useStore, type AgentTodo } from '../store/useStore'
+import { useStore, type AgentTodo } from '@renderer/store/useStore'
 
 /** 稳定的空数组引用 — 避免 Zustand 选择器每次返回新 [] 导致无限重渲染 */
 const EMPTY_TODOS: AgentTodo[] = []

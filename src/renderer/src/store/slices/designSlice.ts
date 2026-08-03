@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
-import type { StoreState, CanvasItem, ComponentMeta } from '../types'
-import uiComponentsCatalog from '../../components/design/ui-components-catalog.json'
+import type { StoreState, CanvasItem, ComponentMeta } from '@renderer/store/types'
+import uiComponentsCatalog from '@renderer/components/design/ui-components-catalog.json'
 
 export type DesignSlice = Pick<StoreState,
   | 'activeStyleId'

@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 
 /**
  * VisionTool — Agent 的「眼睛」
@@ -109,7 +109,7 @@ export class VisionTool implements Tool {
 
     // 获取视觉模型配置
     const apiKey = context?.visionApiKey
-    const baseUrl = context?.visionBaseUrl ?? 'https://api.agnes-ai.cn/v1'
+    const baseUrl = context?.visionBaseUrl ?? 'https://api.agnes-ai.cn/v1' // 免费视觉模型，无需理会
     const model = context?.visionModel ?? 'agnes-2.5-flash'
 
     if (!apiKey) {
@@ -323,14 +323,14 @@ export class VisionTool implements Tool {
   private async takeBrowserScreenshot(): Promise<string | null> {
     try {
       // 优先使用内嵌浏览器
-      const { isEmbeddedBrowserActive, executeWebviewCommand } = await import('../Browser/WebviewBridge')
+      const { isEmbeddedBrowserActive, executeWebviewCommand } = await import('@main/tools/Browser/WebviewBridge')
       if (isEmbeddedBrowserActive()) {
         const dataUrl = await executeWebviewCommand('screenshot', {}) as string
         return dataUrl || null
       }
 
       // 回退到 Playwright
-      const { BrowserManager } = await import('../Browser/BrowserManager')
+      const { BrowserManager } = await import('@main/tools/Browser/BrowserManager')
       const page = await BrowserManager.getInstance().getPage()
       const buffer = await page.screenshot({ type: 'png', fullPage: false })
       return `data:image/png;base64,${buffer.toString('base64')}`

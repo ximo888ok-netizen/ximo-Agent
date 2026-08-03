@@ -3,7 +3,7 @@
 
 import { memo, useState, useRef, useCallback, useEffect } from 'react'
 import { Copy, Check, Pencil, CornerDownRight } from 'lucide-react'
-import type { UserItem } from '../../lib/transcriptTypes'
+import type { UserItem } from '@renderer/lib/transcriptTypes'
 
 interface UserMessageProps {
   item: UserItem

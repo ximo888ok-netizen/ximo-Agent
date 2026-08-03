@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Minus, Plus, ChevronDown, ExternalLink } from 'lucide-react'
+import { Minus, Plus, ChevronDown } from 'lucide-react'
 // 默认设置统一从 shared/defaults 引用，主进程与渲染进程共用单一数据源
-export { DEFAULT_SETTINGS as FALLBACK_SETTINGS } from '../../../../shared/defaults'
+export { DEFAULT_SETTINGS as FALLBACK_SETTINGS } from '@shared/defaults'
 
 // 主题颜色预设
 export const THEME_PRESETS: { name: string; value: string }[] = [
@@ -18,18 +18,8 @@ export const THEME_PRESETS: { name: string; value: string }[] = [
 export type TabId = 'api' | 'model' | 'agent' | 'tools' | 'appearance' | 'about'
 export type TestState = 'idle' | 'testing' | 'success' | 'error'
 
-export function SectionTitle({ title, desc }: { title: string; desc?: string }): React.ReactElement {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
-      {desc && <p className="mt-0.5 text-xs text-text-muted">{desc}</p>}
-    </div>
-  )
-}
-
-export function Divider(): React.ReactElement {
-  return <div className="border-t border-border-subtle" />
-}
+// 简单展示型组件从 shared-primitives 复用
+export { SectionTitle, Divider, InfoCard, FeatureRow, LinkRow, DataRow } from './shared-primitives'
 
 export function NumberInputRow({
   icon,
@@ -231,77 +221,5 @@ export function ToggleRow({
       </div>
       <p className="mt-2 text-xs text-text-muted">{desc}</p>
     </div>
-  )
-}
-
-export function DataRow({
-  icon,
-  title,
-  desc,
-  children,
-  danger
-}: {
-  icon: React.ReactNode
-  title: string
-  desc: string
-  children: React.ReactNode
-  danger?: boolean
-}): React.ReactElement {
-  return (
-    <div className="ios-card flex items-center justify-between p-3.5">
-      <div className="flex items-start gap-2.5">
-        <span className={danger ? 'text-red-400' : 'text-text-muted'}>{icon}</span>
-        <div>
-          <p className={`text-sm font-medium ${danger ? 'text-red-400' : 'text-text-primary'}`}>
-            {title}
-          </p>
-          <p className="text-xs text-text-muted">{desc}</p>
-        </div>
-      </div>
-      {children}
-    </div>
-  )
-}
-
-export function InfoCard({ label, value }: { label: string; value: string }): React.ReactElement {
-  return (
-    <div className="ios-card p-3">
-      <p className="text-xs text-text-muted">{label}</p>
-      <p className="mt-1 text-sm font-medium text-text-primary">{value}</p>
-    </div>
-  )
-}
-
-export function FeatureRow({
-  icon,
-  title,
-  desc
-}: {
-  icon: string
-  title: string
-  desc: string
-}): React.ReactElement {
-  return (
-    <div className="ios-card flex items-center gap-3 p-3">
-      <span className="text-lg">{icon}</span>
-      <div>
-        <p className="text-sm font-medium text-text-primary">{title}</p>
-        <p className="text-xs text-text-muted">{desc}</p>
-      </div>
-    </div>
-  )
-}
-
-export function LinkRow({ href, label }: { href: string; label: string }): React.ReactElement {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="ios-card flex items-center justify-between px-3 py-2.5 transition-all hover:border-accent/40"
-    >
-      <span className="text-sm text-text-secondary">{label}</span>
-      <ExternalLink size={14} className="text-text-muted" />
-    </a>
   )
 }

@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /**
  * StorageInspectTool — 浏览器存储检查
@@ -38,7 +38,7 @@ export class StorageInspectTool implements Tool {
     evalCode += `JSON.stringify({ localStorage: ${storageType === 'localStorage' || storageType === 'all' ? 'ls' : '{}'}, sessionStorage: ${storageType === 'sessionStorage' || storageType === 'all' ? 'ss' : '{}'}, cookies: ${storageType === 'cookies' || storageType === 'all' ? 'ck' : '""'} })`
 
     try {
-      const { BrowserManager } = await import('../Browser/BrowserManager')
+      const { BrowserManager } = await import('@main/tools/Browser/BrowserManager')
       const page = await BrowserManager.getInstance().getPage()
       const result = await page.evaluate(evalCode)
       const data = JSON.parse(result as string)

@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from 'fs/promises'
 import { resolve, relative, join, extname } from 'path'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 interface ProjectFile {
   path: string

@@ -119,7 +119,7 @@ webview {
 
   /* 真圆角窗口 — #root 裁剪内容为圆角，最大化时移除 */
   #root {
-    border-radius: 10px;
+    border-radius: 20px;
     overflow: hidden;
   }
   .window-maximized #root {
@@ -183,8 +183,6 @@ webview {
   /* 卡片 — 悬浮玻璃卡 */
   .ios-card {
     background: var(--bg-elevated);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    backdrop-filter: blur(10px) saturate(120%);
     border: 1px solid var(--glass-border);
     box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 16px rgba(0, 0, 0, 0.06);
     border-radius: 18px;
@@ -1208,6 +1206,8 @@ webview {
   background: var(--bg-surface);
   overflow: hidden;
   transition: border-color 0.2s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
 }
 .warm-turn:hover {
   border-color: var(--border-DEFAULT);

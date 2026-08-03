@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { access, constants as fsConstants, mkdir } from 'fs/promises'
 import { join, dirname } from 'path'
 import { app } from 'electron'
+import { piHelperDir } from '@main/paths'
 
 // ---------------------------------------------------------------------------
 // 常量
@@ -19,7 +20,7 @@ export function setDefaultCommandTimeout(seconds: number): void {
 }
 
 /** Windows Helper 安装路径 */
-const HELPER_DIR = join(app.getPath('userData'), 'pi-computer-use')
+const HELPER_DIR = piHelperDir
 export const WINDOWS_HELPER_PATH = join(HELPER_DIR, 'windows-bridge.exe')
 
 // ---------------------------------------------------------------------------
@@ -159,7 +160,6 @@ class PiComputerUseBridge {
       await mkdir(dirname(WINDOWS_HELPER_PATH), { recursive: true })
       const { copyFileSync } = await import('fs')
       copyFileSync(src, WINDOWS_HELPER_PATH)
-      console.log(`[pi-computer-use] Windows Helper 已自动部署到：${WINDOWS_HELPER_PATH}`)
       return true
     } catch (e) {
       console.warn(`[pi-computer-use] 从 ${src} 复制失败：`, (e as Error).message)

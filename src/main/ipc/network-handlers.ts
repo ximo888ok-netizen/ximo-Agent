@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import type { CapturedRequest } from '../../shared/types'
-import { loadSettings } from '../store'
+import type { CapturedRequest } from '@shared/types'
+import { loadSettings } from '@main/store'
 
 /** 抓包状态 */
 let networkCapturing = false

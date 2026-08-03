@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 import type { BingEngine } from './SearchEngines/BingEngine'
 import type { BaiduEngine } from './SearchEngines/BaiduEngine'
 import type { DuckDuckGoEngine } from './SearchEngines/DuckDuckGoEngine'

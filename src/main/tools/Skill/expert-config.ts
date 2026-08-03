@@ -1,4 +1,4 @@
-import agentsRawData from '../../../shared/agents-raw.json'
+import agentsRawData from '@shared/agents-raw.json'
 
 export interface AgentEntry {
   id: string; division: string; name: string; description: string

@@ -1,14 +1,7 @@
-import { app } from 'electron'
-import { join } from 'path'
-import { mkdir, readFile, writeFile } from 'fs/promises'
-import type { McpServerConfig, McpTransport } from '../shared/types'
-
-const dataDir = join(app.getPath('userData'), 'ximo-agent')
-const mcpFile = join(dataDir, 'mcp-config.json')
-
-async function ensureDir(): Promise<void> {
-  await mkdir(dataDir, { recursive: true })
-}
+import { readFile, writeFile } from 'fs/promises'
+import type { McpServerConfig, McpTransport } from '@shared/types'
+import { mcpFile } from './paths'
+import { ensureDir } from './ensureDir'
 
 // ---------- MCP 服务器配置持久化 ----------
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Cpu, Bolt, ChevronDown } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import type { ModelId } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { ModelId } from '@shared/types'
 
 /** 自定义模型选择器 — 毛玻璃风格下拉面板 */
 const MODEL_OPTIONS: { id: ModelId; label: string; shortLabel: string; icon: typeof Cpu; desc: string }[] = [

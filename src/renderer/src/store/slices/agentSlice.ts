@@ -1,9 +1,10 @@
 import type { StateCreator } from 'zustand'
-import type { StoreState, AgentTodo } from '../types'
+import type { StoreState, AgentTodo } from '@renderer/store/types'
 
 export type AgentSlice = Pick<StoreState,
   | 'showAgentPanel'
   | 'showMemoryPanel'
+  | 'showKnowledgePanel'
   | 'activeExperts'
   | 'agentTodosByConv'
   | 'taskListCollapsedByConv'
@@ -11,6 +12,7 @@ export type AgentSlice = Pick<StoreState,
   | 'pendingDraft'
   | 'setShowAgentPanel'
   | 'setShowMemoryPanel'
+  | 'setShowKnowledgePanel'
   | 'toggleExpert'
   | 'toggleTaskListCollapsed'
   | 'restoreAgentTodos'
@@ -23,6 +25,7 @@ export type AgentSlice = Pick<StoreState,
 export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (set, get) => ({
   showAgentPanel: false,
   showMemoryPanel: false,
+  showKnowledgePanel: false,
   activeExperts: [],
   agentTodosByConv: {},
   taskListCollapsedByConv: {},
@@ -32,6 +35,8 @@ export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (s
   setShowAgentPanel: (show) => set({ showAgentPanel: show }),
 
   setShowMemoryPanel: (show) => set({ showMemoryPanel: show }),
+
+  setShowKnowledgePanel: (show) => set({ showKnowledgePanel: show }),
 
   toggleExpert: (expertId) => set((s) => ({
     activeExperts: s.activeExperts.includes(expertId)
@@ -81,13 +86,13 @@ export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (s
     if (!convId) return
     const todos = get().agentTodosByConv[convId]
     if (!todos || todos.length === 0) return
-    // 只在有 in_progress 项时才更新，避免无意义的 setState
-    if (!todos.some((t) => t.status === 'in_progress')) return
+    // 只在有未完成项时才更新，避免无意义的 setState
+    if (todos.every((t) => t.status === 'completed')) return
     set((s) => ({
       agentTodosByConv: {
         ...s.agentTodosByConv,
         [convId]: s.agentTodosByConv[convId].map((t) =>
-          t.status === 'in_progress' ? { ...t, status: 'completed' as const } : t
+          t.status === 'completed' ? t : { ...t, status: 'completed' as const }
         )
       }
     }))

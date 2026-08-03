@@ -1,6 +1,6 @@
 import { Activity, Database, TrendingUp, MessagesSquare, Gauge } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import type { Conversation } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { Conversation } from '@shared/types'
 
 /** DeepSeek-V4 系列上下文窗口大小（1M tokens） */
 const CONTEXT_WINDOW = 1_000_000
@@ -16,7 +16,7 @@ interface Props {
  * - 流式期间 = 会话已有累计 + 当前流式增量
  * - 非流式 = 会话累计
  *
- * 上下文占用为各轮 API 调用 total_tokens 的累计值（跨会话叠加）。
+ * 上下文占用为最近一轮 API 调用的 promptTokens（当前上下文窗口实际使用量）。
  * 缓存命中率 = Σhit / Σ(hit+miss)，比单轮更稳定。
  */
 export function SessionTokenStats({ conversation }: Props): React.ReactElement {
@@ -49,9 +49,9 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
     ? convPrompt + (streamingPrompt ?? 0)
     : convPrompt
 
-  // 上下文窗口占用 — 流式期间 = 会话已有累计 + 当前流式增量
+  // 上下文窗口占用 — 最近一轮 promptTokens（流式期间优先用最新值）
   const contextTokens = isThisStreaming
-    ? (conversation?.contextTokens ?? 0) + (streamingContext ?? 0)
+    ? (streamingContext ?? 0) || (conversation?.contextTokens ?? 0)
     : (conversation?.contextTokens ?? 0)
   const contextPct = contextTokens > 0 ? (contextTokens / CONTEXT_WINDOW) * 100 : 0
   const contextColor = contextPct >= 80 ? '#ef4444'

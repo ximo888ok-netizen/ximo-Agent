@@ -1,17 +1,14 @@
-import type { ChatRequest, StreamChunk, ToolCall, ToolResult, ToolContext } from '../../shared/types'
-import { toolRegistry } from '../tools'
-import { isRecording, appendStep } from '../SkillStore'
-import { getCheckpointStore } from '../CheckpointStore'
-import { evaluate, extractSubject, getConfigForMode, YOLO_CONFIG, SAFE_CONFIG } from '../Permission'
+import type { ChatRequest, ToolDefinition, ToolContext } from '@shared/types'
+import { getCheckpointStore } from '@main/CheckpointStore'
 import { callDeepSeekStream } from './api'
-import { agentConfig, truncateToolResult, sanitizeContent } from './context'
+import { agentConfig } from './context'
 import type { StreamHandlers } from './types'
-import { ContextManager } from '../../shared/cache'
-import type { MutableMessage } from '../../shared/cache'
-import { captureShape, compareShape } from '../cache/prefix-shape'
-import type { PrefixShape } from '../../shared/cache/types'
-import { runSupervisionCheck, needsCorrection, buildCorrectionMessage } from './supervisor'
-import type { AgentRoundSnapshot } from './supervisor'
+import { ContextManager, compactWithSummary } from '@shared/cache'
+import type { MutableMessage } from '@shared/cache'
+import { captureShape, compareShape } from '@main/cache/prefix-shape'
+import type { PrefixShape } from '@shared/cache/types'
+import { runPlanningPhase } from './planning-phase'
+import { executeToolCalls } from './tool-execution'
 
 // ---------- Agent Loop：工具调用循环 ----------
 
@@ -51,7 +48,7 @@ export async function agentLoop(
   }
 
   // 获取该模式对应的工具
-  const tools = request.tools && request.tools.length > 0 ? request.tools : undefined
+  let tools = request.tools && request.tools.length > 0 ? request.tools : undefined
 
   // A1 字节稳定前缀 — 消息列表只追加，不重排序、不重写字段
   const messages: MutableMessage[] = [
@@ -63,6 +60,18 @@ export async function agentLoop(
     }))
   ]
 
+  // ── Phase 0: 规划轮 ──
+  // 用文本目录（~300 tokens）替代完整工具 schema（~15000 tokens），让 Agent 先理解任务、选出所需工具
+  // 触发条件：工具数 > 5 且用户消息较长（复杂任务才值得规划往返开销）
+  const lastUserMsg = messages.filter(m => m.role === 'user').pop()
+  const userMsgLen = lastUserMsg?.content?.length ?? 0
+  if (tools && tools.length > 5 && userMsgLen > 30 && !signal?.aborted) {
+    const filtered = await runPlanningPhase(apiKey, baseUrl, request, messages, tools, handlers)
+    if (filtered && filtered.length > 0) {
+      tools = filtered
+    }
+  }
+
   // 监督审查 — ultra 思考强度时启用
   const supervisionEnabled = request.reasoningEffort === 'ultra'
   const originalTask = messages.find(m => m.role === 'user')?.content?.slice(0, 1000) || ''
@@ -73,10 +82,8 @@ export async function agentLoop(
   // D2 PrefixShape 哈希诊断
   let lastPrefixShape: PrefixShape | null = null
 
-  // 上下文窗口估算（tokens）— 从 maxContextChars 近似推导
-  const contextWindow = agentConfig.maxContextChars > 0
-    ? Math.floor(agentConfig.maxContextChars / 4)
-    : 0
+  // DeepSeek-V4 系列上下文窗口 1M tokens — 与前端 CONTEXT_WINDOW 一致
+  const contextWindow = 1_000_000
 
   let round = 0
 
@@ -95,16 +102,9 @@ export async function agentLoop(
 
     // 单次 API 调用
     const result = await callDeepSeekStream(
-      apiKey,
-      baseUrl,
-      request.model,
-      messages,
-      tools,
-      request.thinkingMode,
-      request.reasoningEffort,
-      request.temperature,
-      request.maxTokens,
-      handlers
+      apiKey, baseUrl, request.model, messages, tools,
+      request.thinkingMode, request.reasoningEffort, request.temperature,
+      request.maxTokens, handlers
     )
 
     // D2 诊断对比 — 每轮 API 调用后
@@ -131,6 +131,13 @@ export async function agentLoop(
       if (compactStats.tier === 'soft') {
         onChunk({ toolStatus: 'thinking', toolName: 'context' })
       }
+      // compact/force 阶段 — 调用 LLM 生成摘要替换旧消息
+      if (compactStats.tier === 'compact' || compactStats.tier === 'force') {
+        await compactWithSummary(
+          apiKey, baseUrl, request.model,
+          messages, contextWindow, agentConfig.recentKeep, signal
+        )
+      }
     }
 
     // 错误处理
@@ -145,193 +152,12 @@ export async function agentLoop(
       return
     }
 
-    // LLM 请求调用工具
+    // LLM 请求调用工具 — 委托给 tool-execution 模块
     if (result.finishReason === 'tool_calls' && result.toolCalls.length > 0) {
-      // 通知前端：正在执行工具
-      for (const tc of result.toolCalls) {
-        onChunk({ toolStatus: 'calling', toolName: tc.name, toolCall: tc })
-      }
-
-      // A2 reasoning_content 本地保留请求剥离（空字符串 key）
-      // DeepSeek thinking 模式下 assistant tool_calls turn 缺 reasoning_content key 会 400
-      // 策略：key 必存在，值恒为空字符串 — 既满足 API 又不污染前缀
-      const assistantMsg: MutableMessage = {
-        role: 'assistant',
-        content: result.content || '',
-        tool_calls: result.toolCalls.map((tc) => ({
-          id: tc.id,
-          type: 'function',
-          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) }
-        }))
-      }
-      // thinking 模式下 tool_calls turn 必须带 reasoning_content key（空字符串）
-      if (request.thinkingMode && request.reasoningEffort !== 'off') {
-        assistantMsg.reasoning_content = ''
-      }
-      messages.push(assistantMsg)
-
-      // 监督审查 — 在工具执行期间并行运行（非阻塞）
-      let supervisionPromise: ReturnType<typeof runSupervisionCheck> | null = null
-      if (supervisionEnabled && !signal?.aborted) {
-        const snapshot: AgentRoundSnapshot = {
-          round,
-          originalTask,
-          reasoning: result.reasoningContent,
-          content: result.content,
-          toolCalls: result.toolCalls.map(tc => ({ name: tc.name, args: JSON.stringify(tc.arguments).slice(0, 300) })),
-          toolResults: []
-        }
-        supervisionPromise = runSupervisionCheck(apiKey, baseUrl, request.model, request.reasoningEffort, snapshot, signal)
-      }
-
-      // 权限引擎 — 按规则评估每个工具调用：allow / ask / deny
-      const permConfig = handlers.autoModeLevel === 'yolo' || handlers.yoloMode
-        ? YOLO_CONFIG
-        : handlers.autoModeLevel === 'safe'
-          ? SAFE_CONFIG
-          : getConfigForMode(request.mode)
-      const cancelledIds = new Set<string>()
-      for (const tc of result.toolCalls) {
-        const subject = extractSubject(tc.name, tc.arguments)
-        const decision = evaluate(permConfig, tc.name, subject)
-
-        if (decision === 'deny') {
-          cancelledIds.add(tc.id)
-          const deniedResult: ToolResult = {
-            toolCallId: tc.id,
-            toolName: tc.name,
-            content: '此工具在当前模式下被禁止执行',
-            success: false,
-            error: '权限拒绝：该工具在当前模式下不可用'
-          }
-          onChunk({ toolResult: deniedResult, toolStatus: 'done', toolName: tc.name })
-          messages.push({
-            role: 'tool',
-            content: '此工具在当前模式下被禁止执行',
-            tool_call_id: tc.id
-          })
-        } else if (decision === 'ask' && handlers.requestConfirmation) {
-          const toolLabel = tc.name.replace(/_/g, ' ')
-          const argSummary = Object.entries(tc.arguments)
-            .slice(0, 3)
-            .map(([k, v]) => `${k}: ${typeof v === 'string' ? v.slice(0, 60) : JSON.stringify(v)?.slice(0, 60)}`)
-            .join(', ')
-          const confirmed = await handlers.requestConfirmation(tc.name, `工具: ${toolLabel}\n参数: ${argSummary || '(无)'}`)
-          if (!confirmed) {
-            cancelledIds.add(tc.id)
-            const cancelledResult: ToolResult = {
-              toolCallId: tc.id,
-              toolName: tc.name,
-              content: '用户取消了此操作',
-              success: false,
-              error: '用户取消执行'
-            }
-            onChunk({ toolResult: cancelledResult, toolStatus: 'done', toolName: tc.name })
-            messages.push({
-              role: 'tool',
-              content: '用户取消了此操作',
-              tool_call_id: tc.id
-            })
-          }
-        }
-      }
-
-      // 并行执行所有未取消的工具调用
-      const activeCalls = result.toolCalls.filter((tc) => !cancelledIds.has(tc.id))
-      const execResults = await Promise.allSettled(
-        activeCalls.map(async (tc): Promise<{ tc: ToolCall; result: ToolResult }> => {
-          const tool = toolRegistry.get(tc.name)
-          if (!tool) {
-            return { tc, result: { toolCallId: tc.id, toolName: tc.name, content: '', success: false, error: `未知工具：${tc.name}` } }
-          }
-
-          // Checkpoint: writer 工具执行前记录文件快照
-          if (sessionId && agentConfig.checkpointEnabled) {
-            const store = getCheckpointStore(sessionId)
-            const writerTools = ['file_edit', 'file_write', 'multi_edit', 'move_file', 'file_delete']
-            if (writerTools.includes(tc.name)) {
-              const filePath = (tc.arguments.filePath as string) || (tc.arguments.sourcePath as string) || ''
-              if (filePath) {
-                const { resolve, normalize } = await import('path')
-                await store.snapshot(normalize(resolve(filePath)))
-              }
-            }
-          }
-
-          const toolResult = await tool.execute(tc, onChunk, signal, context)
-          return { tc, result: toolResult }
-        })
-      )
-
-      // 按顺序处理结果
-      for (let i = 0; i < execResults.length; i++) {
-        const item = execResults[i]
-        const tc = activeCalls[i]
-
-        if (item.status === 'fulfilled') {
-          const { result: toolResult } = item.value
-          onChunk({ toolResult, toolStatus: 'done', toolName: tc.name })
-
-          // 录制钩子
-          if (isRecording() && tc.name !== 'skill_record' && tc.name !== 'skill_invoke') {
-            appendStep({
-              tool: tc.name,
-              arguments: tc.arguments,
-              description: toolResult.success ? undefined : toolResult.error
-            })
-          }
-
-          // 工具执行失败时，将 error 信息作为 content 传给 LLM
-          const toolContent = toolResult.success
-            ? toolResult.content
-            : (toolResult.error || toolResult.content || '工具执行失败')
-          messages.push({
-            role: 'tool',
-            content: sanitizeContent(truncateToolResult(toolContent)),
-            tool_call_id: tc.id
-          })
-        } else {
-          const msg = item.reason instanceof Error ? item.reason.message : String(item.reason)
-          const errorResult: ToolResult = {
-            toolCallId: tc.id,
-            toolName: tc.name,
-            content: '',
-            success: false,
-            error: msg
-          }
-          onChunk({ toolResult: errorResult, toolStatus: 'done', toolName: tc.name })
-          messages.push({
-            role: 'tool',
-            content: `Error: ${msg}`,
-            tool_call_id: tc.id
-          })
-        }
-      }
-
-      // 监督审查 — 收集并行运行的监督结果（工具执行期间已完成或即将完成）
-      if (supervisionPromise) {
-        const supervisionResult = await supervisionPromise
-        if (supervisionResult) {
-          onChunk({
-            supervision: {
-              verdict: supervisionResult.verdict,
-              issues: supervisionResult.issues,
-              correction: supervisionResult.correction,
-              severity: supervisionResult.severity,
-              round
-            }
-          })
-          if (needsCorrection(supervisionResult)) {
-            messages.push({
-              role: 'system',
-              content: buildCorrectionMessage(supervisionResult, round)
-            })
-          }
-        }
-      }
-
-      // 工具执行完毕，继续下一轮循环
-      onChunk({ toolStatus: 'thinking' })
+      tools = await executeToolCalls({
+        result, messages, tools, request, handlers, context, sessionId,
+        round, originalTask, supervisionEnabled, apiKey, baseUrl
+      })
       continue
     }
 

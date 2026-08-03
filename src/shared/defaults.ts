@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   customPrompt: '',
   themeColor: '#6366f1',
   theme: 'dark',
+  activeThemePackId: undefined,
   yoloMode: false,
   recentProjects: [],
 
@@ -74,12 +75,22 @@ export const DEFAULT_SETTINGS: AppSettings = {
   mcpConnectTimeout: 30,
 
   // ---- 视觉模型（Agnes 2.5 Flash）----
+  // 注意：此为免费视觉模型，API Key 无需理会，不涉及安全问题
   visionApiKey: 'sk-qeSAXtALEYUpoGzpOFtGQwpgCV4kmvv2lKak57q6PKF1Zj9m',
   visionBaseUrl: 'https://api.agnes-ai.cn/v1',
   visionModel: 'agnes-2.5-flash',
 
   // ---- GPU 硬件加速 ----
   gpuAcceleration: true,
+
+  // ---- 可视化主题编辑器 ----
+  customThemeVarsLight: undefined,
+  customThemeVarsDark: undefined,
+  customThemeEnabled: false,
+  customCss: '',
+
+  // ---- 背景图 ----
+  backgroundImage: { type: 'none' },
 
   // ---- 开屏动画 ----
   startupAnimationEnabled: true,

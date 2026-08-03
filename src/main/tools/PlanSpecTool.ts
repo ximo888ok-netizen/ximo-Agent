@@ -1,5 +1,5 @@
 import type { Tool } from './Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '../../shared/types'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
 
 /**
  * PlanAskTool — 向用户实时提问（弹窗）

@@ -1,24 +1,12 @@
 import { spawn, type ChildProcess } from 'child_process'
 import { app } from 'electron'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext, ToolParamProperty } from '../../../shared/types'
-import type { McpServerConfig } from '../../../shared/types'
+import type { McpServerConfig } from '@shared/types'
+import type { McpToolSchema } from './mcp-session'
 
 // ---------------------------------------------------------------------------
 // MCP JSON-RPC 客户端 — 轻量级实现，不依赖 @modelcontextprotocol/sdk
 // 支持 stdio 和 http(sse) 两种传输方式
 // ---------------------------------------------------------------------------
-
-/** MCP 工具 schema（来自 tools/list 响应） */
-interface McpToolSchema {
-  name: string
-  description?: string
-  inputSchema?: {
-    type: string
-    properties?: Record<string, unknown>
-    required?: string[]
-  }
-}
 
 /** JSON-RPC 2.0 请求 */
 interface JsonRpcRequest {
@@ -103,7 +91,7 @@ export class McpClient {
     })
 
     this.proc.on('exit', (code: number | null) => {
-      console.log(`[MCP:${this.server.name}] 进程退出，code=${code}`)
+      console.warn(`[MCP:${this.server.name}] 进程退出，code=${code}`)
       this.connected = false
       for (const { reject } of this.pending.values()) {
         reject(new Error(`MCP 服务器进程已退出 (code=${code})`))
@@ -292,152 +280,5 @@ export class McpClient {
   }
 }
 
-// ---------------------------------------------------------------------------
-// MCP 工具适配器 — 将 MCP 工具适配为项目的 Tool 接口
-// ---------------------------------------------------------------------------
-
-/**
- * McpToolAdapter — 将单个 MCP 工具包装为项目 Tool 接口
- *
- * Agent 调用 execute() 时，通过 McpClient 转发请求到 MCP 服务器，
- * 并将返回的 content 转换为 ToolResult。
- */
-export class McpToolAdapter implements Tool {
-  readonly definition: ToolDefinition
-  private client: McpClient
-  private toolName: string
-
-  constructor(client: McpClient, schema: McpToolSchema) {
-    this.client = client
-    this.toolName = schema.name
-
-    // 将 MCP inputSchema 转换为项目的 ToolParamProperty 格式
-    const properties: Record<string, ToolParamProperty> = {}
-    if (schema.inputSchema?.properties) {
-      for (const [key, value] of Object.entries(schema.inputSchema.properties)) {
-        properties[key] = value as ToolParamProperty
-      }
-    }
-
-    this.definition = {
-      name: `mcp__${schema.name}`,
-      description: schema.description || `MCP 工具: ${schema.name}`,
-      parameters: {
-        type: 'object',
-        properties,
-        required: schema.inputSchema?.required || []
-      }
-    }
-  }
-
-  async execute(
-    toolCall: ToolCall,
-    _onChunk?: (chunk: StreamChunk) => void,
-    _signal?: AbortSignal,
-    _context?: ToolContext
-  ): Promise<ToolResult> {
-    try {
-      const result = await this.client.callTool(this.toolName, toolCall.arguments)
-
-      // MCP 返回的 content 可能是文本、图片等，统一提取文本
-      let contentStr = ''
-      if (typeof result.content === 'string') {
-        contentStr = result.content
-      } else if (Array.isArray(result.content)) {
-        // MCP content 数组 — 每项有 type 字段
-        const texts: string[] = []
-        for (const item of result.content as Array<Record<string, unknown>>) {
-          if (item.type === 'text' && typeof item.text === 'string') {
-            texts.push(item.text)
-          } else if (item.type === 'image' && typeof item.data === 'string') {
-            texts.push(`[图片: ${item.mimeType || 'image'}]`)
-          } else {
-            texts.push(JSON.stringify(item))
-          }
-        }
-        contentStr = texts.join('\n')
-      } else {
-        contentStr = JSON.stringify(result.content, null, 2)
-      }
-
-      return {
-        toolCallId: toolCall.id,
-        toolName: this.definition.name,
-        content: contentStr,
-        success: !result.isError
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      return {
-        toolCallId: toolCall.id,
-        toolName: this.definition.name,
-        content: `MCP 工具调用失败: ${msg}`,
-        success: false,
-        error: msg
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// MCP 会话管理 — 连接所有启用的服务器，收集工具，会话结束后断开
-// ---------------------------------------------------------------------------
-
-/** MCP 会话 — 管理一次 Agent 会话中所有 MCP 连接 */
-export class McpSession {
-  private clients: McpClient[] = []
-  private tools: McpToolAdapter[] = []
-  private serverNames: string[] = []
-  private requestTimeoutMs: number
-
-  constructor(requestTimeoutMs?: number) {
-    this.requestTimeoutMs = requestTimeoutMs ?? 30000
-  }
-
-  /** 连接所有启用的 MCP 服务器并收集工具 */
-  async connectAll(): Promise<{ toolCount: number; errors: string[] }> {
-    const { loadMcpServers } = await import('../../McpStore')
-    const servers = await loadMcpServers()
-    const enabled = servers.filter(s => s.enabled)
-
-    const errors: string[] = []
-
-    for (const server of enabled) {
-      try {
-        const client = new McpClient(server, this.requestTimeoutMs)
-        await client.connect()
-        const toolSchemas = await client.listTools()
-
-        const adapters = toolSchemas.map(schema => new McpToolAdapter(client, schema))
-        this.clients.push(client)
-        this.tools.push(...adapters)
-        this.serverNames.push(server.name)
-
-        console.log(`[MCP] 已连接 "${server.name}" — ${toolSchemas.length} 个工具`)
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
-        errors.push(`"${server.name}": ${msg}`)
-        console.error(`[MCP] 连接 "${server.name}" 失败:`, msg)
-      }
-    }
-
-    return { toolCount: this.tools.length, errors }
-  }
-
-  /** 获取所有 MCP 工具定义 */
-  getToolDefinitions(): ToolDefinition[] {
-    return this.tools.map(t => t.definition)
-  }
-
-  /** 获取所有 MCP 工具实例 */
-  getTools(): McpToolAdapter[] {
-    return this.tools
-  }
-
-  /** 断开所有 MCP 连接 */
-  async disconnectAll(): Promise<void> {
-    await Promise.allSettled(this.clients.map(c => c.disconnect()))
-    this.clients = []
-    this.tools = []
-  }
-}
+// McpToolAdapter 和 McpSession 已提取到 ./mcp-session.ts
+export { McpToolAdapter, McpSession, type McpToolSchema } from './mcp-session'

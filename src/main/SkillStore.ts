@@ -1,14 +1,7 @@
-import { app } from 'electron'
-import { join } from 'path'
-import { mkdir, readFile, writeFile } from 'fs/promises'
-import type { Skill, RecordingSession } from '../shared/types'
-
-const dataDir = join(app.getPath('userData'), 'ximo-agent')
-const skillsFile = join(dataDir, 'skills.json')
-
-async function ensureDir(): Promise<void> {
-  await mkdir(dataDir, { recursive: true })
-}
+import { readFile, writeFile } from 'fs/promises'
+import type { Skill, RecordingSession } from '@shared/types'
+import { skillsFile } from './paths'
+import { ensureDir } from './ensureDir'
 
 // ---------- 技能持久化 ----------
 

@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
-import type { CapturedRequest } from '../../../../shared/types'
-import type { StoreState } from '../types'
+import type { CapturedRequest } from '@renderer/store/shared/types'
+import type { StoreState } from '@renderer/store/types'
 
 export type BrowserSlice = Pick<StoreState,
   | 'browserOpen'

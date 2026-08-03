@@ -3,7 +3,7 @@ import { join, resolve, normalize, dirname, basename } from 'path'
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { readdir, stat, readFile, writeFile, mkdir, unlink, rm, rename, copyFile } from 'fs/promises'
 import { tmpdir } from 'os'
-import type { FileTreeNode } from '../../shared/types'
+import type { FileTreeNode } from '@shared/types'
 
 const excludeDirs = new Set([
   'node_modules', '.git', '.svn', 'dist', 'out', 'build', 'release',

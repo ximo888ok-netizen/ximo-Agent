@@ -16,6 +16,8 @@ export interface AppSettings {
   themeColor: string
   /** 明暗主题 */
   theme: 'dark' | 'light'
+  /** 活跃的自定义主题包 ID（undefined = 使用默认主题） */
+  activeThemePackId?: string
   /** YOLO 模式：关闭所有操作确认 */
   yoloMode?: boolean
   /** 最近打开的项目路径列表（coding 模式） */
@@ -140,4 +142,32 @@ export interface AppSettings {
   // ---- GPU 硬件加速 ----
   /** GPU 硬件加速开关（优先调用独显，无独显则调用核显） */
   gpuAcceleration?: boolean
+
+  // ---- 可视化主题编辑器 ----
+  /** 自定义主题变量（浅色模式），键为 CSS 变量名如 --theme-color */
+  customThemeVarsLight?: Record<string, string>
+  /** 自定义主题变量（深色模式） */
+  customThemeVarsDark?: Record<string, string>
+  /** 自定义主题编辑器开关（关闭则不注入任何自定义变量） */
+  customThemeEnabled?: boolean
+  /** 自定义 CSS 注入（追加到全局样式末尾，最高优先级） */
+  customCss?: string
+
+  // ---- 背景图 ----
+  /** 背景图配置 */
+  backgroundImage?: BackgroundImageConfig
+}
+
+/** 背景图配置 */
+export interface BackgroundImageConfig {
+  /** 背景类型：none=无, static=静态图片, dynamic=动态视频/GIF */
+  type: 'none' | 'static' | 'dynamic'
+  /** 文件路径（本地绝对路径，由主进程导入到 userData） */
+  path?: string
+  /** 不透明度 0~1 */
+  opacity?: number
+  /** 模糊半径（px） */
+  blur?: number
+  /** 缩放模式 */
+  fit?: 'cover' | 'contain' | 'center' | 'tile'
 }

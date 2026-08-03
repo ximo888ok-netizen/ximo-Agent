@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Zap } from 'lucide-react'
-import { useStore } from '../../store/useStore'
-import type { ReasoningEffort } from '../../../../shared/types'
+import { useStore } from '@renderer/store/useStore'
+import type { ReasoningEffort } from '@shared/types'
 
 /** 思考强度调节器 — 点击向上展开横向滑块，支持拖拽 */
 const EFFORT_LEVELS: { value: ReasoningEffort; label: string; desc: string }[] = [

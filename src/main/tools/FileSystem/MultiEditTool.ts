@@ -2,8 +2,8 @@ import { readFile, writeFile, copyFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { resolve, normalize, basename, dirname, join } from 'path'
 import { tmpdir } from 'os'
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
 /** 编辑前备份到临时目录 */
 async function snapshotFile(filePath: string): Promise<string | null> {

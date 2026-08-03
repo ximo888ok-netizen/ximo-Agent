@@ -97,7 +97,7 @@ export class BrowserManager {
       // Playwright 的 "Executable doesn't exist" 错误 — 自动安装后重试
       if (msg.includes("Executable doesn't exist") && !this.installAttempted) {
         this.installAttempted = true
-        console.log('[BrowserManager] 浏览器未安装，正在自动下载...')
+        console.warn('[BrowserManager] 浏览器未安装，正在自动下载...')
         try {
           const { execSync } = await import('child_process')
           execSync('npx playwright install chromium', {
@@ -105,7 +105,6 @@ export class BrowserManager {
             timeout: 300_000, // 5 分钟超时
             windowsHide: true
           })
-          console.log('[BrowserManager] 浏览器安装完成，重试启动')
           await this.launchBrowser(chromium)
           return
         } catch (installErr) {

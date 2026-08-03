@@ -15,8 +15,8 @@ interface ResearchSource {
   relevance: string
 }
 
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { WebSearchTool } from './WebSearchTool'
 import { WebFetchTool } from './WebFetchTool'
 

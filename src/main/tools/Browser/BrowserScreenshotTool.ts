@@ -1,5 +1,5 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '../../../shared/types'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 import { BrowserManager } from './BrowserManager'
 import { isEmbeddedBrowserActive, executeWebviewCommand } from './WebviewBridge'
 import { cleanBrowserError } from './index'
@@ -7,7 +7,7 @@ import { cleanBrowserError } from './index'
 export class BrowserScreenshotTool implements Tool {
   readonly definition: ToolDefinition = {
     name: 'browser_screenshot',
-    description: '截取当前浏览器页面的截图（返回 base64）。可选择截取整个页面或特定 CSS 选择器对应的元素。',
+    description: '截取当前浏览器页面的截图。注意：browser_navigate 和 browser_click 已自动返回截图，仅在需要额外视觉确认时使用此工具，避免冗余截图浪费上下文。',
     parameters: {
       type: 'object',
       properties: {

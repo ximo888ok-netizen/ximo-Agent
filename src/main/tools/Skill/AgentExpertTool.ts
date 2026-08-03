@@ -1,8 +1,9 @@
-import type { Tool } from '../Tool'
-import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext, Skill } from '../../../shared/types'
-import { loadSkills, saveSkills } from '../../SkillStore'
+import type { Tool } from '@main/tools/Tool'
+import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext, Skill } from '@shared/types'
+import { loadSkills, saveSkills } from '@main/SkillStore'
 import { agentsData, analyzeExpert, buildExpertSystemPrompt, type AgentEntry } from './expert-config'
 import { callSubAgentWithTools } from './sub-agent'
+import { loadCustomExperts, saveCustomExpert, deleteCustomExpert } from '@main/CustomDesignStore'
 
 // 重导出以保持向后兼容（SkillInvokeTool 等从此模块导入）
 export { callSubAgentWithTools } from './sub-agent'
@@ -14,7 +15,7 @@ export { callSubAgentWithTools } from './sub-agent'
 const DEFINITION: ToolDefinition = {
   name: 'agent_expert',
   description:
-    '调度 AI 专家子 Agent 协同工作。可列出/搜索 254 位专家，也可激活指定专家并附带任务描述让其独立处理子任务。\n\n' +
+    '调度 AI 专家子 Agent 协同工作。可列出/搜索 254+ 位专家，也可激活指定专家并附带任务描述让其独立处理子任务。支持创建/更新/删除自定义专家。\n\n' +
     '## 激活流程\n' +
     '当 action=activate 时，工具会自动完成以下分析：\n' +
     '1. 提取专家系统提示词（含人格、能力、工作风格）\n' +
@@ -28,8 +29,8 @@ const DEFINITION: ToolDefinition = {
     properties: {
       action: {
         type: 'string',
-        description: '操作类型：activate=激活专家（自动分析提示词、配置工具、预设工作流），deactivate=停用专家，list=列出专家，search=搜索专家',
-        enum: ['activate', 'deactivate', 'list', 'search']
+        description: '操作类型：activate=激活专家（自动分析提示词、配置工具、预设工作流），deactivate=停用专家，list=列出专家，search=搜索专家，create=创建自定义专家，update=更新专家，delete=删除自定义专家',
+        enum: ['activate', 'deactivate', 'list', 'search', 'create', 'update', 'delete']
       },
       expert_id: {
         type: 'string',
@@ -46,6 +47,36 @@ const DEFINITION: ToolDefinition = {
       query: {
         type: 'string',
         description: '搜索关键词，search 时必填'
+      },
+      // ── create / update ──
+      expert_name: {
+        type: 'string',
+        description: '专家名称（create 时必填），如"前端架构师"'
+      },
+      emoji: {
+        type: 'string',
+        description: '专家 emoji 图标（create 时可选，默认✨），如🎨、💻、📊'
+      },
+      description: {
+        type: 'string',
+        description: '专家简介（create 时必填）'
+      },
+      personality: {
+        type: 'string',
+        description: '人格设定（create 时必填），描述专家的性格特征和工作风格'
+      },
+      vibe: {
+        type: 'string',
+        description: '工作风格（create 时必填），如"严谨细致，注重代码质量"'
+      },
+      color: {
+        type: 'string',
+        description: '主题色 hex（create 时可选，默认 #6366f1），如 #ff6b6b'
+      },
+      expert_tools: {
+        type: 'array',
+        description: '专家推荐工具列表（create 时可选），如 ["file_read", "code_execute"]',
+        items: { type: 'string' }
       }
     },
     required: ['action']
@@ -74,13 +105,19 @@ export class AgentExpertTool implements Tool {
     }
 
     const data = agentsData
+    // 合并自定义专家（同 ID 覆盖内置）
+    const customExperts = loadCustomExperts()
+    const customIds = new Set(customExperts.map(a => a.id))
+    const builtinAgents = data.agents.filter(a => !customIds.has(a.id))
+    const allAgents = [...builtinAgents, ...customExperts]
+    const mergedData = { agents: allAgents, total: allAgents.length }
 
     switch (action) {
       case 'activate': {
         if (!expert_id) {
           return { toolCallId: toolCall.id, toolName: 'agent_expert', content: '错误：activate 需要 expert_id 参数', success: false, error: '缺少 expert_id' }
         }
-        const agent = data.agents.find(a => a.id === expert_id)
+        const agent = mergedData.agents.find(a => a.id === expert_id)
         if (!agent) {
           return { toolCallId: toolCall.id, toolName: 'agent_expert', content: `未找到专家：${expert_id}`, success: false, error: '专家不存在' }
         }
@@ -170,8 +207,8 @@ export class AgentExpertTool implements Tool {
 
       case 'list': {
         const filtered = division
-          ? data.agents.filter(a => a.division === division)
-          : data.agents
+          ? mergedData.agents.filter(a => a.division === division)
+          : mergedData.agents
 
         // 按部门分组
         const groups: Record<string, typeof data.agents> = {}
@@ -180,7 +217,7 @@ export class AgentExpertTool implements Tool {
           groups[agent.division].push(agent)
         }
 
-        let content = `## AI 专家库（共 ${data.total} 位专家）\n\n`
+        let content = `## AI 专家库（共 ${mergedData.total} 位专家）\n\n`
         for (const [div, agents] of Object.entries(groups)) {
           content += `### ${div}（${agents.length} 位）\n`
           for (const a of agents) {
@@ -197,7 +234,7 @@ export class AgentExpertTool implements Tool {
           return { toolCallId: toolCall.id, toolName: 'agent_expert', content: '错误：search 需要 query 参数', success: false, error: '缺少 query' }
         }
         const q = query.toLowerCase()
-        const results = data.agents.filter(a =>
+        const results = mergedData.agents.filter(a =>
           a.name.toLowerCase().includes(q) ||
           a.description.toLowerCase().includes(q) ||
           a.division.toLowerCase().includes(q) ||
@@ -216,9 +253,65 @@ export class AgentExpertTool implements Tool {
         return { toolCallId: toolCall.id, toolName: 'agent_expert', content, success: true }
       }
 
+      case 'create':
+      case 'update': {
+        return await this.handleCreate(toolCall.arguments as {
+          expert_id?: string; expert_name?: string; division?: string
+          emoji?: string; description?: string; personality?: string
+          vibe?: string; color?: string; expert_tools?: string[]
+        }, toolCall.id)
+      }
+
+      case 'delete': {
+        return await this.handleDelete(expert_id || '', toolCall.id)
+      }
+
       default:
         return { toolCallId: toolCall.id, toolName: 'agent_expert', content: `未知操作：${action}`, success: false, error: '无效的 action' }
     }
+  }
+
+  // ── 创建/更新自定义专家 ──
+  private async handleCreate(args: {
+    expert_id?: string; expert_name?: string; division?: string
+    emoji?: string; description?: string; personality?: string
+    vibe?: string; color?: string; expert_tools?: string[]
+  }, toolCallId: string): Promise<ToolResult> {
+    const id = args.expert_id || ''
+    const name = args.expert_name || ''
+    const div = args.division || ''
+    const desc = args.description || ''
+    const personality = args.personality || ''
+    const vibe = args.vibe || ''
+
+    if (!id || !name || !div || !desc || !personality || !vibe) {
+      return { toolCallId, toolName: 'agent_expert', content: '', success: false, error: 'create/update 需要 expert_id, expert_name, division, description, personality, vibe 参数' }
+    }
+
+    const entry: AgentEntry = {
+      id, name, division: div, description: desc,
+      emoji: args.emoji || '✨', vibe, personality,
+      tools: args.expert_tools || [], color: args.color || '#6366f1'
+    }
+    await saveCustomExpert(entry)
+
+    return {
+      toolCallId, toolName: 'agent_expert',
+      content: `✅ 自定义专家 ${entry.emoji} **${entry.name}**（\`${entry.id}\`）已保存。使用 \`agent_expert(action="activate", expert_id="${entry.id}")\` 激活。`,
+      success: true
+    }
+  }
+
+  // ── 删除自定义专家 ──
+  private async handleDelete(expert_id: string, toolCallId: string): Promise<ToolResult> {
+    if (!expert_id) {
+      return { toolCallId, toolName: 'agent_expert', content: '错误：delete 需要 expert_id 参数', success: false, error: '缺少 expert_id' }
+    }
+    const ok = await deleteCustomExpert(expert_id)
+    if (!ok) {
+      return { toolCallId, toolName: 'agent_expert', content: `删除失败：自定义专家「${expert_id}」不存在。内置专家不可删除。`, success: false, error: '专家不存在或为内置专家' }
+    }
+    return { toolCallId, toolName: 'agent_expert', content: `✅ 自定义专家「${expert_id}」已删除。`, success: true }
   }
 }
 

@@ -5,7 +5,7 @@
  * agents-raw.json (~156KB) 延迟加载：首次使用时才动态 import，
  * 避免启动时将全部专家数据打入主 bundle。
  */
-import type { AgentDivision, AgentExpert } from '../../../shared/types'
+import type { AgentDivision, AgentExpert } from '@shared/types'
 
 /** 部门定义（来自 divisions.json）— 静态导出，体积很小 */
 export const AGENT_DIVISIONS: AgentDivision[] = [
@@ -46,7 +46,7 @@ export function ensureAgentsLoaded(): Promise<void> {
   if (_loaded) return Promise.resolve()
   if (!_loadPromise) {
     _loadPromise = (async () => {
-      const raw = await import('../../../shared/agents-raw.json')
+      const raw = await import('@shared/agents-raw.json')
       const data = raw.default as { agents: AgentExpert[]; total: number }
       ALL_AGENTS.push(...data.agents)
       for (const agent of ALL_AGENTS) {

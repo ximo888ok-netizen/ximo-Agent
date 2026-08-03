@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import type React from 'react'
-import { useStore } from '../../store/useStore'
+import { useStore } from '@renderer/store/useStore'
 import { CircleDot, Play, ListTree, Globe, Camera, Monitor, Radio, Circle, Square } from 'lucide-react'
-import type { Skill } from '../../../../shared/types'
+import type { Skill } from '@shared/types'
 
 /**
  * OfficeToolPanel — 办公模式右侧工具面板
