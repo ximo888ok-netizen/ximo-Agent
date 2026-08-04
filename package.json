@@ -1,6 +1,6 @@
 {
   "name": "ximo-agent",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "DeepSeek-V4 驱动的全能 Agent 工作台 - 办公/编程/设计三模式",
   "author": "ximo",
   "main": "out/main/index.js",

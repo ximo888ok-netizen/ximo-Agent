@@ -3,6 +3,7 @@ out/
 release/
 dist/
 *.log
+*.exe
 *.tsbuildinfo
 tsc_web.txt*
 .DS_Store

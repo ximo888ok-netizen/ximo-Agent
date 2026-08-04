@@ -60,6 +60,27 @@ webview {
     --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+    /* 3D 变换 */
+    --perspective: 1000px;
+    --perspective-origin: center;
+    --transform-style: preserve-3d;
+    --backface-visibility: hidden;
+    --rotate-x: 0deg;
+    --rotate-y: 0deg;
+    --rotate-z: 0deg;
+    --translate-z: 0px;
+    --card-tilt-x: 2deg;
+    --card-tilt-y: -2deg;
+    --depth-shadow: 0 4px 8px rgba(31, 45, 74, 0.12), 0 8px 16px rgba(31, 45, 74, 0.08);
+
+    /* 3D 光照 */
+    --light-color: rgba(255, 255, 255, 0.15);
+    --light-angle: 135deg;
+    --light-intensity: 0.15;
+    --ambient-light: rgba(255, 255, 255, 0.05);
+    --edge-highlight: rgba(255, 255, 255, 0.3);
+    --edge-highlight-size: 1px;
   }
 
   /* ── 深色主题 — 深空墨蓝 + 极光 ── */
@@ -94,6 +115,15 @@ webview {
     --orb-1: color-mix(in srgb, var(--theme-color) 30%, transparent);
     --orb-2: rgba(34, 211, 238, 0.13);
     --orb-3: rgba(147, 96, 255, 0.16);
+
+    /* 3D 变换（深色模式） */
+    --depth-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
+
+    /* 3D 光照（深色模式） */
+    --light-color: rgba(255, 255, 255, 0.08);
+    --light-intensity: 0.08;
+    --ambient-light: rgba(255, 255, 255, 0.02);
+    --edge-highlight: rgba(255, 255, 255, 0.1);
   }
 
   * {

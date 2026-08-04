@@ -81,32 +81,45 @@ export function ThemePreview({
           </div>
         </div>
 
-        {/* 卡片 + 按钮 */}
+        {/* 卡片 + 按钮 — 3D 变换预览 */}
         <div
-          className="rounded-lg p-2.5"
           style={{
-            backgroundColor: 'var(--bg-elevated)',
-            border: '1px solid var(--border-DEFAULT)',
+            perspective: 'var(--perspective)',
+            perspectiveOrigin: 'var(--perspective-origin)',
           }}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>
-                设置卡片
-              </p>
-              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                描述文字
-              </p>
+          <div
+            className="rounded-lg p-2.5 transition-transform"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-DEFAULT)',
+              boxShadow: 'var(--depth-shadow)',
+              transformStyle: 'var(--transform-style)' as React.CSSProperties['transformStyle'],
+              backfaceVisibility: 'var(--backface-visibility)' as React.CSSProperties['backfaceVisibility'],
+              transform: `rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) rotateZ(var(--rotate-z)) rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y)) translateZ(var(--translate-z))`,
+              backgroundImage: `linear-gradient(var(--light-angle), var(--light-color), transparent 60%)`,
+              willChange: 'transform',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>
+                  设置卡片
+                </p>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  3D 变换预览
+                </p>
+              </div>
+              <button
+                className="rounded-md px-2.5 py-1 text-[10px] font-medium text-white transition-colors"
+                style={{
+                  backgroundColor: 'var(--accent-DEFAULT)',
+                  boxShadow: '0 0 12px -2px var(--glow-color)',
+                }}
+              >
+                按钮
+              </button>
             </div>
-            <button
-              className="rounded-md px-2.5 py-1 text-[10px] font-medium text-white transition-colors"
-              style={{
-                backgroundColor: 'var(--accent-DEFAULT)',
-                boxShadow: '0 0 12px -2px var(--glow-color)',
-              }}
-            >
-              按钮
-            </button>
           </div>
         </div>
 
