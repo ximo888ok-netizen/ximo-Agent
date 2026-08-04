@@ -183,7 +183,7 @@ export function useAppEffects(loaded: boolean): void {
     const opacity = bg.opacity ?? 0.15
     const blur = bg.blur ?? 0
     const fit = bg.fit ?? 'cover'
-    const url = `ximobg://${bg.path}`
+    const url = `ximobg://bg/${encodeURIComponent(bg.path)}`
 
     const fitCss = fit === 'cover' ? 'background-size: cover; background-position: center'
       : fit === 'contain' ? 'background-size: contain; background-position: center'

@@ -1,0 +1,117 @@
+/* ═══ 关键帧 ═══ */
+@keyframes orbDrift1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(7vw, 5vh, 0) scale(1.1); }
+  100% { transform: translate3d(-3vw, 8vh, 0) scale(0.95); }
+}
+@keyframes orbDrift2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6vw, 7vh, 0) scale(1.08); }
+  100% { transform: translate3d(-10vw, -4vh, 0) scale(1.02); }
+}
+@keyframes orbDrift3 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(5vw, -6vh, 0) scale(1.06); }
+  100% { transform: translate3d(-5vw, -3vh, 0) scale(0.96); }
+}
+@keyframes haloPulseOpacity {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+@keyframes textShine {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+@keyframes beamSpin {
+  to { --beam-angle: 360deg; }
+}
+@property --beam-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes fadeScaleIn {
+0% { opacity: 0; transform: scale(0.94) translateY(10px); }
+100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes shimmerSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+@keyframes gradientPan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* 思考强度脉冲动效 */
+@keyframes reasoningPulseHigh {
+  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--theme-color) 35%, transparent); transform: scale(1); }
+  50% { box-shadow: 0 0 12px color-mix(in srgb, var(--theme-color) 55%, transparent); transform: scale(1.15); }
+}
+@keyframes reasoningPulseMax {
+0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--theme-color) 50%, transparent); transform: scale(1); }
+50% { box-shadow: 0 0 20px color-mix(in srgb, var(--theme-color) 80%, transparent); transform: scale(1.2); }
+}
+@keyframes reasoningPulseUltra {
+0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, var(--theme-color) 60%, transparent), 0 0 24px color-mix(in srgb, hsl(42, 95%, 62%) 30%, transparent); transform: scale(1); }
+50% { box-shadow: 0 0 24px color-mix(in srgb, var(--theme-color) 90%, transparent), 0 0 36px color-mix(in srgb, hsl(42, 95%, 62%) 40%, transparent); transform: scale(1.25); }
+}
+
+/* 思考强度粒子拖尾 — 从圆点向左飘散，支持每档不同速度和距离 */
+@keyframes effortParticle {
+  0% {
+    opacity: 0.95;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  40% {
+    opacity: 0.6;
+    transform: translateY(calc(-50% + var(--ep-y, 0px))) translateX(calc(var(--ep-dist, 20px) * -0.4)) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(calc(-50% + var(--ep-y, 0px) * 0.5)) translateX(calc(var(--ep-dist, 20px) * -1)) scale(0.2);
+  }
+}
+
+/* 通用动效类 */
+.animate-float { animation: floatY 5.5s ease-in-out infinite; }
+.animate-fade-scale { animation: fadeScaleIn 0.5s var(--ease-out-expo) both; }
+.animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+.animate-reasoning-pulse-high { animation: reasoningPulseHigh 2.2s ease-in-out infinite; }
+.animate-reasoning-pulse-max { animation: reasoningPulseMax 1.6s ease-in-out infinite; }
+.animate-reasoning-pulse-ultra { animation: reasoningPulseUltra 1.2s ease-in-out infinite; }
+.animate-gradient-pan {
+  background-size: 200% 200%;
+  animation: gradientPan 6s ease-in-out infinite;
+}
+
+/* GPU 合成层提示 — 减少重绘 */
+.glass, .glass-strong, .glass-panel, .ios-card, .code-glass {
+  transform: translateZ(0);
+}
+
+/* 扩展 GPU 合成层 — 所有动画元素的 transform/opacity 走合成层 */
+.animate-fade-in, .animate-fade-scale, .animate-float, .animate-pulse-dot,
+.animate-gradient-pan, .animate-reasoning-pulse-high, .animate-reasoning-pulse-max, .animate-reasoning-pulse-ultra,
+.ambient-orb, .halo-pulse::after, .beam-border::before, .text-shine {
+  transform: translateZ(0);
+}
+
+/* 滚动容器内容隔离 — 减少布局抖动 */
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  contain: layout style;
+}
+
+/* 固定定位层 — 严格隔离，零布局影响 */
+.ambient-stage, .transcript__jump-bottom {
+  contain: strict;
+}

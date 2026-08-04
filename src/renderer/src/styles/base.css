@@ -1,0 +1,188 @@
+/* ── webview 元素样式 ──
+   Electron <webview> 默认 display:inline-flex + width/height:0
+   需显式设置背景色和 display，避免透明窗口下黑屏 */
+webview {
+  display: inline-flex;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  outline: none;
+  border: none;
+}
+
+@layer base {
+  /* ── 浅色主题（雾白沉浸）— immersive-dark-player 浅色版 ──
+     保留薄荷青主色与玻璃描边特征，背景改为雾白底，
+     与深色档拉开明显视觉差异，主题切换可见。
+     注意：--bg-base 为「透镜 tint」（近透明），非不透明底色；
+     需要不透明底请用 --bg-surface / --bg-elevated / --bg-input。 */
+  :root {
+    color-scheme: light;
+    --theme-color: #00f5d4;
+    --theme-accent: var(--theme-color);
+    --theme-accent-hover: color-mix(in srgb, var(--theme-color) 85%, black);
+    --theme-accent-muted: color-mix(in srgb, var(--theme-color) 70%, white);
+
+    /* 透镜 tint — 高光微白，桌面穿透可见 */
+    --bg-base: rgba(255, 255, 255, 0.08);
+    --bg-surface: rgba(255, 255, 255, 0.72);
+    --bg-elevated: rgba(255, 255, 255, 0.88);
+    --bg-hover: rgba(0, 245, 212, 0.10);
+    --bg-input: #ffffff;
+
+    /* 玻璃材质 — 浅色档：纯透明底（桌面穿透可见），靠描边+3D 斜边+浮雕定形 */
+    --glass-bg: transparent;
+    --glass-bg-strong: transparent;
+    --glass-border: rgba(0, 245, 212, 0.35);
+    --glass-highlight: rgba(255, 255, 255, 0.7);
+    --glass-shadow: 0 20px 52px rgba(20, 40, 50, 0.10), 0 2px 6px rgba(20, 40, 50, 0.06);
+    --glow-color: color-mix(in srgb, var(--theme-color) 38%, transparent);
+
+    --border-DEFAULT: rgba(0, 245, 212, 0.22);
+    --border-subtle: rgba(20, 40, 50, 0.06);
+    --border-hover: rgba(0, 245, 212, 0.40);
+
+    --accent-DEFAULT: var(--theme-color);
+    --accent-hover: var(--theme-accent-hover);
+    --accent-muted: var(--theme-accent-muted);
+    --accent-light: color-mix(in srgb, var(--theme-color) 70%, white);
+
+    --text-primary: #0f1a1f;
+    --text-secondary: #4a5a66;
+    --text-muted: #8a9aa6;
+
+    /* 极光环境光 — 薄荷青 / 天际蓝 / 珊瑚（浅色档极淡，透镜穿透看桌面） */
+    --orb-1: color-mix(in srgb, var(--theme-color) 10%, transparent);
+    --orb-2: rgba(127, 216, 255, 0.10);
+    --orb-3: rgba(217, 91, 103, 0.08);
+
+    /* 3D 玻璃斜边 — 光源左上 135deg：顶/左强高光，底/右暗影（透明底靠斜边定形） */
+    --glass-highlight-3d: rgba(255, 255, 255, 0.92);
+    --glass-shadow-3d: rgba(20, 40, 50, 0.20);
+    --glass-3d: inset 0 1px 0 var(--glass-highlight-3d), inset 1px 0 0 var(--glass-highlight-3d),
+      inset 0 -1.5px 1px -0.5px var(--glass-shadow-3d), inset -1px 0 1px -0.5px var(--glass-shadow-3d);
+    /* 凹陷高光专用 — 比斜边高光更亮更柔，模拟镜面凹陷反光 */
+    --lens-highlight: rgba(255, 255, 255, 0.95);
+    --lens-shadow: rgba(20, 40, 50, 0.16);
+
+    /* 代码块 / 终端深底玻璃（两档共用） */
+    --code-glass-bg: rgba(13, 17, 23, 0.82);
+
+    /* 缓动 */
+    --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  /* ── 深色主题 — immersive-dark-player 近黑沉浸 ── */
+  .dark {
+    color-scheme: dark;
+    /* 透镜 tint — 浅灰微暗，桌面穿透可见 */
+    --bg-base: rgba(15, 17, 21, 0.14);
+    --bg-surface: rgba(20, 24, 28, 0.66);
+    --bg-elevated: rgba(28, 32, 38, 0.85);
+    --bg-hover: rgba(0, 245, 212, 0.08);
+    --bg-input: #0c0e11;
+
+    --glass-bg: transparent;
+    --glass-bg-strong: transparent;
+    --glass-border: rgba(0, 245, 212, 0.32);
+    --glass-highlight: rgba(255, 255, 255, 0.16);
+    --glass-shadow: 0 24px 80px rgba(0, 0, 0, 0.46), 0 2px 8px rgba(0, 0, 0, 0.30);
+    --glow-color: color-mix(in srgb, var(--theme-color) 55%, transparent);
+
+    --border-DEFAULT: rgba(0, 245, 212, 0.18);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(0, 245, 212, 0.35);
+
+    --accent-DEFAULT: var(--theme-color);
+    --accent-hover: color-mix(in srgb, var(--theme-color) 88%, white);
+    --accent-muted: color-mix(in srgb, var(--theme-color) 70%, black);
+    --accent-light: #7fd8ff;
+
+    --text-primary: #f4f6f8;
+    --text-secondary: #9db8cf;
+    --text-muted: #5a6472;
+
+    --orb-1: color-mix(in srgb, var(--theme-color) 12%, transparent);
+    --orb-2: rgba(127, 216, 255, 0.10);
+    --orb-3: rgba(217, 91, 103, 0.10);
+
+    /* 3D 玻璃斜边 — 深色档强高光、深暗影（透明底靠斜边定形） */
+    --glass-highlight-3d: rgba(255, 255, 255, 0.28);
+    --glass-shadow-3d: rgba(0, 0, 0, 0.52);
+    --glass-3d: inset 0 1px 0 var(--glass-highlight-3d), inset 1px 0 0 var(--glass-highlight-3d),
+      inset 0 -1.5px 1px -0.5px var(--glass-shadow-3d), inset -1px 0 1px -0.5px var(--glass-shadow-3d);
+    /* 凹陷高光专用 — 深色档 */
+    --lens-highlight: rgba(255, 255, 255, 0.35);
+    --lens-shadow: rgba(0, 0, 0, 0.40);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply text-text-primary font-sans antialiased;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.011em;
+    /* 透明窗口 — body 背景必须透明，让桌面透过圆角可见 */
+    background: transparent;
+  }
+
+  /* 透明窗口下 backdrop-filter 模糊桌面会触发 GPU 合成层风暴，
+     切换模式时导致 GPU 进程崩溃闪退。全局禁用所有 backdrop-filter，
+     透镜穿透效果改由 --bg-base 半透明 tint 实现（桌面直接穿透可见），
+     3D 玻璃块由半透明底 + --glass-3d 斜边高光/暗影实现。 */
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 真圆角窗口 — #root 裁剪内容为圆角，最大化时移除 */
+  #root {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .window-maximized #root {
+    border-radius: 0;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--theme-color) 28%, transparent);
+  }
+
+  /* 焦点环 — iOS 风格柔和光晕 */
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-color) 55%, transparent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* 滚动条 — 细巧悬浮 */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  }
+}

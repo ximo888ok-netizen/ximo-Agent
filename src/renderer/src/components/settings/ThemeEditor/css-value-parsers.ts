@@ -232,31 +232,3 @@ export function parseEasing(cssStr: string): EasingParts {
 export function toEasingStr(parts: EasingParts): string {
   return `cubic-bezier(${parts.x1}, ${parts.y1}, ${parts.x2}, ${parts.y2})`
 }
-
-// ─── dimension 解析 ──────────────────────────
-
-export interface DimensionParts {
-  /** 数值 */
-  value: number
-  /** 单位（px / deg / ''） */
-  unit: string
-}
-
-/** 解析 CSS 维度值（如 1000px / 45deg / 0.15）→ DimensionParts */
-export function parseDimension(cssStr: string): DimensionParts {
-  const v = cssStr.trim()
-  const match = v.match(/^(-?[\d.]+)\s*(px|deg|%|em|rem|vw|vh)?$/)
-  if (match) {
-    const num = parseFloat(match[1])
-    return {
-      value: Number.isNaN(num) ? 0 : num,
-      unit: match[2] ?? '',
-    }
-  }
-  return { value: 0, unit: '' }
-}
-
-/** DimensionParts → CSS 字符串 */
-export function toDimensionStr(parts: DimensionParts): string {
-  return `${parts.value}${parts.unit}`
-}

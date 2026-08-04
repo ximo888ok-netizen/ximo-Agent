@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, memo } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import type { ThemeVarMeta } from './theme-schema'
 import { toHex } from './css-value-parsers'
@@ -6,16 +6,13 @@ import { ColorAlphaRow } from './ColorAlphaRow'
 import { ColorMixRow } from './ColorMixRow'
 import { ShadowRow } from './ShadowRow'
 import { EasingRow } from './EasingRow'
-import { DimensionRow } from './DimensionRow'
-import { SelectRow } from './SelectRow'
 
 /**
  * VarRow — 统一行组件，根据 meta.type 自动分发到对应的可视化编辑器
  *
  * 所有子组件都是纯 UI 操作（取色器、滑块、按钮），用户无需写任何 CSS 代码。
- * memo 优化：当父组件 re-render 时，只有 value 真正变化的行才会 re-render。
  */
-export const VarRow = memo(function VarRow({
+export function VarRow({
   meta,
   value,
   defaultValue,
@@ -47,7 +44,7 @@ export const VarRow = memo(function VarRow({
       )}
     </div>
   )
-})
+}
 
 /** 根据类型分发到具体的编辑器组件 */
 function VarEditor({
@@ -70,10 +67,6 @@ function VarEditor({
       return <ShadowRow label={meta.label} desc={meta.desc} value={value} onChange={onChange} />
     case 'easing':
       return <EasingRow label={meta.label} desc={meta.desc} value={value} onChange={onChange} />
-    case 'dimension':
-      return <DimensionRow label={meta.label} desc={meta.desc} value={value} onChange={onChange} unit={meta.unit ?? ''} min={meta.min} max={meta.max} step={meta.step} />
-    case 'select':
-      return <SelectRow label={meta.label} desc={meta.desc} value={value} onChange={onChange} options={meta.options ?? []} />
     default:
       return <ColorOnlyRow label={meta.label} desc={meta.desc} value={value} onChange={onChange} />
   }

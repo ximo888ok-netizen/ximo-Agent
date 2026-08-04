@@ -1,4 +1,4 @@
-import { Paperclip, AtSign, Globe, ArrowUp, Zap, Square } from 'lucide-react'
+import { Paperclip, AtSign, Globe, ArrowUp, Zap, Square, Sparkles, Loader2, Undo2 } from 'lucide-react'
 import { ModelSelector } from './ModelSelector'
 import { ReasoningSlider } from './ReasoningSlider'
 
@@ -15,6 +15,10 @@ interface ChatInputActionsProps {
   onSend: () => void
   onCancel: () => void
   currentMode: string
+  onEnhancePrompt: () => void
+  isEnhancing: boolean
+  onUndoEnhance: () => void
+  canUndo: boolean
   children?: React.ReactNode
 }
 
@@ -24,13 +28,41 @@ export function ChatInputActions({
   autoModeLevel, onCycleAutoMode,
   isStreaming, streamingTokens,
   text, onSend, onCancel,
-  currentMode, children
+  currentMode, onEnhancePrompt, isEnhancing, onUndoEnhance, canUndo, children
 }: ChatInputActionsProps): React.ReactElement {
   return (
     <div className="flex items-center justify-between px-3 pb-2.5">
       <div className="flex items-center gap-1">
         <button onClick={() => void onAttachFile()} className="icon-btn p-1.5" title="附加文件"><Paperclip size={14} /></button>
         <button onClick={onAtSign} className="icon-btn p-1.5" title="@引用文件"><AtSign size={14} /></button>
+        {isEnhancing ? (
+          <button
+            disabled
+            className="icon-btn p-1.5 text-accent"
+            title="正在增强..."
+          >
+            <Loader2 size={14} className="animate-spin" />
+          </button>
+        ) : canUndo ? (
+          <button
+            onClick={onUndoEnhance}
+            className="icon-btn p-1.5 text-accent hover:text-accent transition-all duration-200 active:scale-90"
+            title="撤销增强 — 恢复原始输入"
+          >
+            <Undo2 size={14} />
+          </button>
+        ) : (
+          <button
+            onClick={onEnhancePrompt}
+            disabled={!text.trim()}
+            className={`icon-btn p-1.5 transition-all duration-200 ${
+              text.trim() ? 'hover:text-accent' : 'opacity-40'
+            }`}
+            title="增强提示词 — AI 根据当前会话和模式优化你的输入"
+          >
+            <Sparkles size={14} />
+          </button>
+        )}
         {children}
 
         <button

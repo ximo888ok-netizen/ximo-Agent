@@ -71,7 +71,7 @@ export function BackgroundSection({
     }
   }
 
-  const toFileUrl = (path: string): string => `ximobg://${path}`
+  const toFileUrl = (path: string): string => `ximobg://bg/${encodeURIComponent(path)}`
 
   return (
     <CollapsibleSection

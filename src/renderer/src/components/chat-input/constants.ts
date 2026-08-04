@@ -4,9 +4,9 @@ import uiComponentsCatalog from '@renderer/components/design/ui-components-catal
 
 /** 每种模式的占位符文案 */
 export const MODE_PLACEHOLDERS: Record<Mode, string> = {
-  office: '帮你整理论文综述、编写 PPT、分析 Excel...',
-  coding: '帮你编写代码、修复 Bug、重构项目...',
-  design: '从想法到设计，生成 UI 组件...'
+  office: '帮你整理论文综述、编写 PPT、分析 Excel...  ✨ 点击增强按钮优化提示词',
+  coding: '帮你编写代码、修复 Bug、重构项目...  ✨ 点击增强按钮优化提示词',
+  design: '从想法到设计，生成 UI 组件...  ✨ 点击增强按钮优化提示词'
 }
 
 // 设计风格目录 — 模块级常量，避免每次 render 重新创建

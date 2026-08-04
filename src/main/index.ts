@@ -40,8 +40,10 @@ process.on('unhandledRejection', (reason) => {
 
 app.whenReady().then(() => {
   // 注册 ximobg:// 协议处理器 — 用于渲染进程加载本地背景图
+  // URL 格式: ximobg://bg/<encodeURIComponent(文件路径)>
   protocol.handle('ximobg', (request) => {
-    const filePath = decodeURIComponent(request.url.replace('ximobg://', ''))
+    const urlObj = new URL(request.url)
+    const filePath = decodeURIComponent(urlObj.pathname.slice(1))
     return net.fetch(pathToFileURL(filePath).href)
   })
 

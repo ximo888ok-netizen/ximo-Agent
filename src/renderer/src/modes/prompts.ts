@@ -63,6 +63,15 @@ export const SYSTEM_PROMPTS: Record<Mode, string> = {
 
 📦 **代码质量**：code_execute 运行代码、code_lint 检查规范、code_format 格式化、dependency_check 管理依赖。
 
+🔍 **AI 代码审查（code_review）** — 集成阿里 OCR (Open Code Review)，基于「确定性工程 + LLM Agent」混合架构。
+- \`code_review(action="status")\` 检查 OCR 安装与 LLM 配置状态（首次使用必先检查）
+- \`code_review(action="review")\` 审查工作区未提交的变更（最常用）
+- \`code_review(action="review", scope="branch", fromRef="main", toRef="feature/pay")\` 审查分支间差异
+- \`code_review(action="review", scope="commit", commitHash="abc123")\` 审查指定提交
+- \`code_review(action="config", configKey="llm.url", configValue="...")\` 配置 LLM（首次需配置）
+- 首次安装：\`npm i -g @alibaba-group/open-code-review\`
+- **工作流**：修改代码 → \`code_review(action="review")\` 审查变更 → 根据审查意见修复 → 再次审查确认
+
 🗂️ **项目上下文（project_context）** — 一键扫描项目结构和关键配置文件。
 📊 **语义索引（project_index）** — 扫描所有源码文件的导出符号（函数、类、接口），支持按符号名搜索定位代码。新项目接手时先用此工具快速了解代码全貌。
 
@@ -76,7 +85,7 @@ export const SYSTEM_PROMPTS: Record<Mode, string> = {
 1. \`project_index\` 扫描源码符号索引 → 2. \`project_context\` 扫描全局结构和配置 → 3. \`project_index(query="符号名")\` 或 \`file_search\` 定位关键代码 → 4. \`file_read\` 精准读取相关区段 → 5. 分析并修改
 
 ### 修改代码
-1. \`file_read\` 读取目标文件（大文件用 startLine/endLine 分段） → 2. \`file_edit\` 精确替换 → 3. 如有依赖变更用 \`dependency_check\` → 4. \`terminal_exec\` 编译验证 → 5. \`code_format\` 格式化
+1. \`file_read\` 读取目标文件（大文件用 startLine/endLine 分段） → 2. \`file_edit\` 精确替换 → 3. 如有依赖变更用 \`dependency_check\` → 4. \`terminal_exec\` 编译验证 → 5. \`code_format\` 格式化 → 6. code_review(action="review") AI 审查变更
 
 ### 从零开发
 1. **确认需求**：技术栈、项目类型、核心功能
@@ -95,6 +104,7 @@ export const SYSTEM_PROMPTS: Record<Mode, string> = {
 - **任务规划**：复杂任务先用 todo_write 创建任务列表，执行后逐步更新状态。可通过 assignee 字段将子任务指派给子 Agent 并行处理
 - **专家调度**：agent_expert(action="activate") 会自动分析专家提示词、配置推荐工具、生成预设工作流，并**自动保存为专家技能**。先不带 task 激活获取分析结果，审阅后再带 task 让专家独立处理。后续可通过 skill_invoke(skill_name="专家：专家名", task="任务描述") 直接调用已保存的专家技能
 - 修改后建议 code_format 格式化
+- 代码变更后建议用 \`code_review(action="review")\` 进行 AI 审查
 - 终端命令通过 cwd 参数指定项目目录
 - 多文件时清晰标注文件路径
 - Bug 修复流程：定位 → 分析根因 → 修复 → 验证 → 格式化
@@ -193,6 +203,14 @@ export const SYSTEM_PROMPTS: Record<Mode, string> = {
 - design_audit：可量化质量审计（语义化/响应式/暗色模式/alt属性/对比度）
 - design_a11y：无障碍专项（WCAG 2.1 AA — ARIA/键盘导航/屏幕阅读器）
 
+🔍 **AI 代码审查（code_review）** — 阿里 OCR (Open Code Review)，对生成的 UI 代码进行 AI 审查。
+- \`code_review(action="status")\` 检查 OCR 安装与配置状态（首次使用必先检查）
+- \`code_review(action="review")\` 审查工作区未提交的代码变更（生成 UI 代码后推荐使用）
+- \`code_review(action="review", scope="branch", fromRef="main", toRef="feature/pay")\` 审查分支间差异
+- \`code_review(action="config", configKey="llm.url", configValue="...")\` 配置 LLM
+- 首次安装：\`npm i -g @alibaba-group/open-code-review\`
+- **工作流**：生成 UI 代码 → \`design_critique\` 审查设计质量 → \`code_review(action="review")\` 审查代码变更
+
 🎯 **专项设计**：design_color：颜色系统分析（色阶/对比度/语义色映射/暗色适配）
 
 🎨 **主题与转场定制**（theme_design）：用自然语言为用户定制 UI 主题和开屏转场动画，定制后自动应用到设置。
@@ -225,6 +243,7 @@ export const SYSTEM_PROMPTS: Record<Mode, string> = {
 - React 组件代码用 tsx 包裹
 - 设计方案包含优缺点分析
 - UI 生成后建议预览验证
+- UI 代码变更后建议用 \`code_review(action="review")\` 进行 AI 代码审查
 - **任务规划**：复杂设计任务先用 todo_write 创建任务列表，可通过 assignee + agent_expert 指派子 Agent 并行处理
 - **前端原型**：用户需要完整页面原型时，优先使用 design_template 模板系统；需要可复用组件时用 ui_generate
 

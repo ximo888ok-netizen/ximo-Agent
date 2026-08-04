@@ -48,6 +48,12 @@ export default function App(): React.ReactElement {
   // 开屏动画总开关 — 关闭时直接进入主界面
   const showStartupAnimation = settings?.startupAnimationEnabled ?? true
 
+  // 开屏动画期间在 <html> 上标记 startup-active，用于隐藏边框光线等
+  useEffect(() => {
+    const isActive = !animationDone && loaded && !!settings && showStartupAnimation
+    document.documentElement.classList.toggle('startup-active', isActive)
+  }, [animationDone, loaded, settings, showStartupAnimation])
+
   // ---- 侧栏拖拽宽度 ----
   const [leftWidth, setLeftWidth] = useState(240)
   const [rightWidth, setRightWidth] = useState(280)

@@ -44,6 +44,12 @@ const moduleFactories: Record<string, ToolFactory> = {
     ]
   },
 
+  // CodeReview — 阿里 OCR AI 代码审查（独立模块组，coding/design 模式共用）
+  code_review: async () => {
+    const { CodeReviewTool } = await import('./CodeQuality')
+    return [new CodeReviewTool()]
+  },
+
   // FileSystem — 文件系统
   file_system: async () => {
     const { FileReadTool, FileWriteTool, FileListTool, FileSearchTool, FileEditTool, FileDeleteTool, MultiEditTool, MoveFileTool, TodoWriteTool } = await import('./FileSystem')
@@ -126,13 +132,13 @@ const moduleFactories: Record<string, ToolFactory> = {
 const modeModules: Record<string, string[]> = {
   office: [
     'web_intelligence', 'computer_use',
-    'file_system', 'terminal', 'git', 'code_quality', 'skill', 'vision', 'memory'
+    'file_system', 'terminal', 'git', 'code_quality', 'code_review', 'skill', 'vision', 'memory'
   ],
   coding: [
-    'code_quality', 'file_system', 'terminal', 'git', 'web_intelligence', 'skill', 'vision', 'memory', 'plan_spec'
+    'code_quality', 'code_review', 'file_system', 'terminal', 'git', 'web_intelligence', 'skill', 'vision', 'memory', 'plan_spec'
   ],
   design: [
-    'ui_generate', 'design', 'file_system', 'web_intelligence', 'skill', 'vision', 'memory'
+    'ui_generate', 'design', 'file_system', 'code_review', 'web_intelligence', 'skill', 'vision', 'memory'
   ]
 }
 
@@ -154,7 +160,7 @@ export const modeToolNames: Record<string, string[]> = {
     // Git 操作
     'git_operations',
     // 代码质量
-    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
+    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index', 'code_review',
     // 技能系统 + AI 专家库 + 动态工具
     'skill_record', 'skill_invoke', 'agent_expert', 'create_tool',
     // 视觉模型（Agent 的「眼睛」）
@@ -163,7 +169,7 @@ export const modeToolNames: Record<string, string[]> = {
     'memory_update', 'knowledge'
   ],
   coding: [
-    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index',
+    'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index', 'code_review',
     'file_read', 'file_write', 'file_list', 'file_search', 'file_edit', 'file_delete',
     'multi_edit', 'move_file', 'todo_write',
     'terminal_exec', 'git_operations',
@@ -184,6 +190,8 @@ export const modeToolNames: Record<string, string[]> = {
     'web_search', 'web_fetch',
     'agent_expert', 'create_tool',
     'vision_analyze',
+    // AI 代码审查
+    'code_review',
     // 模式记忆 + 知识库
     'memory_update', 'knowledge'
   ]

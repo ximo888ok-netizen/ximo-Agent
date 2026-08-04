@@ -32,7 +32,9 @@ const api = {
     },
     cancel: (): Promise<void> => ipcRenderer.invoke('chat:cancel'),
     test: (apiKey: string, baseUrl: string, model: string): Promise<TestResult> =>
-      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model)
+      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model),
+    enhancePrompt: (data: { text: string; mode: string; recentContext?: string; projectPath?: string }): Promise<{ success: boolean; enhancedText?: string; error?: string }> =>
+      ipcRenderer.invoke('chat:enhance-prompt', data)
   },
   settings: {
     load: (): Promise<AppSettings> => ipcRenderer.invoke('settings:load'),

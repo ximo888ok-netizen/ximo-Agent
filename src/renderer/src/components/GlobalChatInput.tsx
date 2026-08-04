@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { FolderOpen, X } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { SessionTokenStats } from './shared/SessionTokenStats'
@@ -46,6 +46,9 @@ export function GlobalChatInput(): React.ReactElement {
   const computerUseRunning = useStore((s) => s.computerUseRunning)
   const toggleComputerUse = useStore((s) => s.toggleComputerUse)
   const refreshComputerUseStatus = useStore((s) => s.refreshComputerUseStatus)
+  const [isEnhancing, setIsEnhancing] = useState(false)
+  const [enhanceError, setEnhanceError] = useState<string | null>(null)
+  const [originalText, setOriginalText] = useState<string | null>(null)
 
   // 办公模式：初始化操控电脑状态
   useEffect(() => {
@@ -61,6 +64,57 @@ export function GlobalChatInput(): React.ReactElement {
   } = useChatActions(currentMode, isStreaming, sendMessage, pastedImagePaths, addAttachedFile, addPastedImage, clearPastedImages, projectPath)
 
   const placeholder = MODE_PLACEHOLDERS[currentMode]
+
+  const handleEnhancePrompt = useCallback(async (): Promise<void> => {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setIsEnhancing(true)
+    setEnhanceError(null)
+    try {
+      // 提取最近 3 轮对话作为上下文
+      let recentContext: string | undefined
+      if (conversation?.messages && conversation.messages.length > 0) {
+        const recent = conversation.messages.slice(-6)
+          .filter(m => m.role === 'user' || m.role === 'assistant')
+          .map(m => `[${m.role === 'user' ? '用户' : '助手'}] ${m.content.slice(0, 300)}`)
+          .join('\n')
+        if (recent) recentContext = recent
+      }
+
+      const result = await window.api.chat.enhancePrompt({
+        text: trimmed,
+        mode: currentMode,
+        recentContext,
+        projectPath: projectPath || undefined,
+      })
+
+      if (result.success && result.enhancedText) {
+        setOriginalText(trimmed)
+        setText(result.enhancedText)
+        requestAnimationFrame(() => textareaRef.current?.focus())
+      } else {
+        const errMsg = result.error || '增强失败'
+        setEnhanceError(errMsg)
+        console.error('[enhance-prompt] 失败:', errMsg)
+        setTimeout(() => setEnhanceError(null), 4000)
+      }
+    } catch (e) {
+      const errMsg = (e as Error).message || '增强异常'
+      setEnhanceError(errMsg)
+      console.error('[enhance-prompt] 异常:', e)
+      setTimeout(() => setEnhanceError(null), 4000)
+    } finally {
+      setIsEnhancing(false)
+    }
+  }, [text, setText, conversation, currentMode, projectPath, textareaRef])
+
+  const handleUndoEnhance = useCallback((): void => {
+    if (originalText !== null) {
+      setText(originalText)
+      setOriginalText(null)
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    }
+  }, [originalText, setText, textareaRef])
 
   return (
     <div className="relative z-10 px-4 pb-3 pt-2">
@@ -93,13 +147,23 @@ export function GlobalChatInput(): React.ReactElement {
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value)
+              if (originalText !== null) setOriginalText(null)
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
             className="no-drag w-full resize-none bg-transparent px-4 pt-3 pb-1 text-[15px] text-text-primary placeholder:text-text-muted focus:outline-none"
             style={{ maxHeight: '180px' }}
           />
+
+          {enhanceError && (
+            <div className="flex items-center gap-1.5 px-4 py-1 text-[11px] text-red-400">
+              <span>⚠</span>
+              <span>增强失败：{enhanceError}</span>
+            </div>
+          )}
 
           {showFileMention && (
             <FileMentionMenu files={matchedFiles} selectedIndex={selectedMentionIndex} onSelect={insertFileMention} onHover={setSelectedMentionIndex} />
@@ -125,6 +189,10 @@ export function GlobalChatInput(): React.ReactElement {
             onSend={handleSend}
             onCancel={cancelStream}
             currentMode={currentMode}
+            onEnhancePrompt={() => void handleEnhancePrompt()}
+            isEnhancing={isEnhancing}
+            onUndoEnhance={handleUndoEnhance}
+            canUndo={originalText !== null}
           >
             {currentMode === 'design' ? (<><StylePicker /><ComponentPicker /></>) : (<ExpertPicker />)}
           </ChatInputActions>

@@ -114,9 +114,9 @@ export const MODE_CONFIGS: Record<'office' | 'coding' | 'design', ModeConfig> = 
       },
       {
         id: 'code-review',
-        label: '代码审查',
+        label: 'AI 代码审查 (OCR)',
         icon: 'ShieldCheck',
-        prompt: '请审查以下代码，从正确性、安全性、性能、可读性、最佳实践五个维度给出改进建议：\n\n```\n[请粘贴代码]\n```\n\n请先指出发现的问题（标注严重程度），再给出优化后的代码。'
+        prompt: '请使用 AI 代码审查工具对当前项目变更进行审查：\n\n1. 先用 code_review(action="status") 检查 OCR 安装与配置状态\n2. 用 code_review(action="review") 审查未提交的工作区变更\n3. 汇总审查意见，按严重程度分类（错误/警告/建议），并给出修复建议\n\n如果 OCR 未安装，提示安装命令：npm i -g @alibaba-group/open-code-review'
       },
       {
         id: 'code-explain',
@@ -181,7 +181,7 @@ export const MODE_CONFIGS: Record<'office' | 'coding' | 'design', ModeConfig> = 
         icon: 'Code2',
         actions: [
           { id: 'code-gen', label: '生成代码', icon: 'Wand2', prompt: '请用以下技术栈帮我实现：[语言/框架] 功能：[描述] 输入/输出：[I/O]\n\n给出完整可运行代码和关键解释。', description: '含完整代码+技术解释' },
-          { id: 'code-review', label: '代码审查', icon: 'ShieldCheck', prompt: '请审查以下代码，从正确性/安全性/性能/可读性/最佳实践五个维度分析：\n\n```[粘贴代码]```\n\n指出问题+严重程度+优化代码。', description: '五维度审查+改进建议' },
+          { id: 'code-review', label: 'AI 代码审查 (OCR)', icon: 'ShieldCheck', prompt: '请使用 AI 代码审查工具对当前项目变更进行审查：\n\n1. code_review(action="status") 检查 OCR 状态\n2. code_review(action="review") 审查未提交变更\n3. 汇总审查意见+修复建议', description: '阿里OCR+混合架构审查' },
           { id: 'code-explain', label: '解释代码', icon: 'BookOpen', prompt: '请逐行解释以下代码的工作原理，包括核心逻辑、数据流和设计意图：\n\n```[粘贴代码]```', description: '逐行解释+数据流分析' },
           { id: 'code-bug', label: '修复 Bug', icon: 'Bug', prompt: '以下代码存在问题：[异常现象]\n\n```[粘贴代码]```\n\n请定位问题、解释根因、给出修复代码。', description: '定位→根因→修复→说明' },
           { id: 'code-refactor', label: '重构代码', icon: 'RefreshCw', prompt: '请重构以下代码，提升可读性、可维护性和性能，保持行为不变。说明每处重构理由：\n\n```[粘贴代码]```', description: '优化结构+说明理由' },
@@ -257,6 +257,12 @@ export const MODE_CONFIGS: Record<'office' | 'coding' | 'design', ModeConfig> = 
         prompt: '请对以下页面做完整的 UI 质量审计，包括语义化、响应式、可访问性检查：\n\n```\n[粘贴代码或描述]\n```'
       },
       {
+        id: 'design-code-review',
+        label: 'AI 代码审查 (OCR)',
+        icon: 'ShieldCheck',
+        prompt: '请使用 AI 代码审查工具审查生成的 UI 代码变更：\n\n1. 先用 code_review(action="status") 检查 OCR 安装与配置状态\n2. 用 code_review(action="review") 审查未提交的 UI 代码变更\n3. 汇总审查意见，按严重程度分类并给出修复建议\n\n如果 OCR 未安装，提示安装命令：npm i -g @alibaba-group/open-code-review'
+      },
+      {
         id: 'design-color',
         label: '颜色系统设计',
         icon: 'Palette',
@@ -286,6 +292,7 @@ export const MODE_CONFIGS: Record<'office' | 'coding' | 'design', ModeConfig> = 
           { id: 'design-critique', label: 'UX 设计审查', icon: 'SearchCheck', prompt: '请审查以下 React 组件的设计质量（层级/布局/颜色/排版/交互）：\n\n```[粘贴代码]```', description: '五维度UX审查+评分' },
           { id: 'design-audit', label: 'UI 质量审计', icon: 'ClipboardCheck', prompt: '请对以下页面做完整 UI 质量审计（语义化/响应式/暗色模式/对比度）：\n\n```[粘贴代码]```', description: '量化分析+字母等级评分' },
           { id: 'design-a11y', label: '无障碍检查', icon: 'Eye', prompt: '请对以下 UI 做无障碍专项检查（WCAG 2.1 AA）：ARIA/键盘导航/屏幕阅读器/对比度\n\n```[粘贴代码]```', description: 'WCAG 2.1 AA标准检查' },
+          { id: 'design-code-review', label: 'AI 代码审查 (OCR)', icon: 'ShieldCheck', prompt: '请使用 AI 代码审查工具审查生成的 UI 代码变更：\n\n1. code_review(action="status") 检查 OCR 状态\n2. code_review(action="review") 审查未提交的 UI 代码变更\n3. 汇总审查意见+修复建议', description: '阿里OCR审查UI代码' },
         ]
       },
       {
