@@ -9,6 +9,7 @@ tsc_web.txt*
 .DS_Store
 .vscode/
 .idea/
+.trae/
 .env
 .env.*
 

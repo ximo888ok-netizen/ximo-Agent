@@ -8,17 +8,49 @@ interface CodeBlockProps {
 }
 
 // react-syntax-highlighter 延迟加载 — 首次渲染代码块时才动态导入
+// 使用 PrismLight 按需注册语言，避免打包全部 987 个语言定义（~2.4 MB）
 type SyntaxHighlighterStyle = Record<string, CSSProperties>
 let highlighterPromise: Promise<{ Component: React.FC<Record<string, unknown>>; style: SyntaxHighlighterStyle }> | null = null
 
 function loadHighlighter(): Promise<{ Component: React.FC<Record<string, unknown>>; style: SyntaxHighlighterStyle }> {
   if (!highlighterPromise) {
     highlighterPromise = Promise.all([
-      import('react-syntax-highlighter'),
-      import('react-syntax-highlighter/dist/esm/styles/prism')
-    ]).then(([mod, styles]) => ({
-      Component: mod.Prism as unknown as React.FC<Record<string, unknown>>,
-      style: styles.vscDarkPlus as SyntaxHighlighterStyle
+      import('react-syntax-highlighter').then((mod) => {
+        const PrismLight = mod.PrismLight
+        // 注册常用语言（20 种覆盖绝大多数编程场景）
+        const langs: Record<string, () => Promise<unknown>> = {
+          javascript: () => import('react-syntax-highlighter/dist/esm/languages/prism/javascript'),
+          typescript: () => import('react-syntax-highlighter/dist/esm/languages/prism/typescript'),
+          jsx: () => import('react-syntax-highlighter/dist/esm/languages/prism/jsx'),
+          tsx: () => import('react-syntax-highlighter/dist/esm/languages/prism/tsx'),
+          python: () => import('react-syntax-highlighter/dist/esm/languages/prism/python'),
+          java: () => import('react-syntax-highlighter/dist/esm/languages/prism/java'),
+          go: () => import('react-syntax-highlighter/dist/esm/languages/prism/go'),
+          rust: () => import('react-syntax-highlighter/dist/esm/languages/prism/rust'),
+          c: () => import('react-syntax-highlighter/dist/esm/languages/prism/c'),
+          cpp: () => import('react-syntax-highlighter/dist/esm/languages/prism/cpp'),
+          csharp: () => import('react-syntax-highlighter/dist/esm/languages/prism/csharp'),
+          html: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup'),
+          css: () => import('react-syntax-highlighter/dist/esm/languages/prism/css'),
+          json: () => import('react-syntax-highlighter/dist/esm/languages/prism/json'),
+          yaml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml'),
+          xml: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup'),
+          markdown: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown'),
+          sql: () => import('react-syntax-highlighter/dist/esm/languages/prism/sql'),
+          bash: () => import('react-syntax-highlighter/dist/esm/languages/prism/bash'),
+          shell: () => import('react-syntax-highlighter/dist/esm/languages/prism/bash')
+        }
+        return Promise.all(
+          Object.entries(langs).map(async ([name, loader]) => {
+            const langMod = await loader()
+            PrismLight.registerLanguage(name, (langMod as { default: unknown }).default)
+          })
+        ).then(() => PrismLight)
+      }),
+      import('react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus')
+    ]).then(([PrismLight, styleMod]) => ({
+      Component: PrismLight as unknown as React.FC<Record<string, unknown>>,
+      style: (styleMod as { default: SyntaxHighlighterStyle }).default
     }))
   }
   return highlighterPromise

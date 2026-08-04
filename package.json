@@ -59,6 +59,12 @@
     "directories": {
       "output": "release"
     },
+    "files": [
+      "out/**/*",
+      "prebuilt/**/*",
+      "build/icon.ico",
+      "package.json"
+    ],
     "win": {
       "target": [
         "nsis"
