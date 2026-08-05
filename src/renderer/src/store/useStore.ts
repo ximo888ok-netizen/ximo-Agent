@@ -13,6 +13,7 @@ import type {
 import { runStream, cancelStream } from './runStream'
 import { buildUserMessage } from './buildUserMessage'
 import { genId, makeTitle } from './store-utils'
+import { getActiveCustomProvider } from '@renderer/lib/providers'
 import { createDesignSlice } from './slices/designSlice'
 import { createBrowserSlice } from './slices/browserSlice'
 import { createSkillsSlice } from './slices/skillsSlice'
@@ -219,9 +220,14 @@ export const useStore = create<StoreState>()((...args) => {
     const settings = state.settings
     if (!settings) return
 
-    // 前端预检 API Key，避免空 Key 导致请求卡死
-    if (!settings.apiKey.trim()) {
-      set({ error: '请先在设置中配置 API Key 后再发送消息。', isStreaming: false })
+    // 前端预检 API Key，避免空 Key 导致请求卡死 — 按活跃服务商检查（自定义服务商用自身 Key）
+    const activeProvider = getActiveCustomProvider(settings)
+    const activeApiKey = activeProvider ? activeProvider.apiKey : settings.apiKey
+    if (!activeApiKey.trim()) {
+      const tip = activeProvider
+        ? `请先在设置中为服务商「${activeProvider.name}」配置 API Key 后再发送消息。`
+        : '请先在设置中配置 API Key 后再发送消息。'
+      set({ error: tip, isStreaming: false })
       return
     }
 

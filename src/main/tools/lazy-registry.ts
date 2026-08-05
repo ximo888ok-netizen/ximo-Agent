@@ -122,6 +122,12 @@ const moduleFactories: Record<string, ToolFactory> = {
   plan_spec: async () => {
     const { PlanAskTool, SpecReviewTool } = await import('./PlanSpecTool')
     return [new PlanAskTool(), new SpecReviewTool()]
+  },
+
+  // Office — 办公文档（OfficeCLI 驱动）：Word/Excel/PowerPoint 读改
+  office: async () => {
+    const { OfficeDocsTool } = await import('./Office')
+    return [new OfficeDocsTool()]
   }
 }
 
@@ -132,7 +138,7 @@ const moduleFactories: Record<string, ToolFactory> = {
 const modeModules: Record<string, string[]> = {
   office: [
     'web_intelligence', 'computer_use',
-    'file_system', 'terminal', 'git', 'code_quality', 'code_review', 'skill', 'vision', 'memory'
+    'file_system', 'terminal', 'git', 'code_quality', 'code_review', 'skill', 'vision', 'memory', 'office'
   ],
   coding: [
     'code_quality', 'code_review', 'file_system', 'terminal', 'git', 'web_intelligence', 'skill', 'vision', 'memory', 'plan_spec'
@@ -163,6 +169,8 @@ export const modeToolNames: Record<string, string[]> = {
     'code_lint', 'code_format', 'dependency_check', 'project_context', 'project_index', 'code_review',
     // 技能系统 + AI 专家库 + 动态工具
     'skill_record', 'skill_invoke', 'agent_expert', 'create_tool',
+    // 办公文档（OfficeCLI 驱动）— Word/Excel/PowerPoint 读改
+    'office_docs',
     // 视觉模型（Agent 的「眼睛」）
     'vision_analyze',
     // 模式记忆 + 知识库

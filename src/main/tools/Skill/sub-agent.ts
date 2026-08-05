@@ -15,7 +15,7 @@ interface SubMessage {
  *
  * 与主 Agent Loop 类似但更精简：
  * - 非流式调用（子 Agent 不需要流式输出到前端）
- * - 通过 onChunk 推送工具执行状态
+ * - 通过 onChunk 推送工具执行状态 + 专家工作过程事件（subAgentEvent），供前端实时可视化
  * - 支持多轮工具调用直到子 Agent 给出最终回答
  *
  * 导出供 SkillInvokeTool 调用 expert 类型技能时复用
@@ -26,7 +26,9 @@ export async function callSubAgentWithTools(
   task: string,
   toolNames: string[],
   onChunk?: (chunk: StreamChunk) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  eventSink?: (event: NonNullable<StreamChunk['subAgentEvent']>) => void,
+  expertInfo?: { expertId: string; expertName: string }
 ): Promise<string> {
   const url = `${context.baseUrl.replace(/\/$/, '')}/chat/completions`
   const controller = new AbortController()
@@ -48,7 +50,31 @@ export async function callSubAgentWithTools(
     { role: 'user', content: task }
   ]
 
+  // 专家身份信息 — 优先使用调用方显式传入；降级从系统提示词解析
+  // buildExpertSystemPrompt 格式：'你现在扮演 **{name}**（{emoji}）。'
+  const expertIdMatch = expertInfo?.expertId ?? systemPrompt.match(/你现在扮演 \*\*[^*]+\*\*（([^）]+)）/)?.[1] ?? 'unknown-expert'
+  const expertName = expertInfo?.expertName ?? systemPrompt.match(/你现在扮演 \*\*([^*]+)\*\*/)?.[1] ?? expertIdMatch
+  const expertEmoji = systemPrompt.match(/你现在扮演 \*\*[^*]+\*\*（([^）]+)）/)?.[1] ?? '🧠'
+
+  /** 推送专家工作过程事件 */
+  const pushEvent = (stage: 'started' | 'tool' | 'toolResult' | 'message' | 'finished', detail?: string, toolArgs?: string, result?: string): void => {
+    const event = {
+      expertId: expertIdMatch,
+      expertName,
+      stage,
+      taskSummary: task.slice(0, 120),
+      detail,
+      toolArgs,
+      result,
+    }
+    onChunk?.({ subAgentEvent: event })
+    eventSink?.(event)
+  }
+
   try {
+    // 专家开始工作
+    pushEvent('started', `专家开始处理任务：${task.slice(0, 100)}`)
+
     for (let round = 0; round < MAX_SUB_AGENT_ROUNDS; round++) {
       if (controller.signal.aborted) break
 
@@ -80,7 +106,9 @@ export async function callSubAgentWithTools(
 
       // 无工具调用 → 返回最终回答
       if (!msg?.tool_calls || msg.tool_calls.length === 0) {
-        return msg?.content || '(子 Agent 未返回内容)'
+        const finalContent = msg?.content || '(子 Agent 未返回内容)'
+        pushEvent('finished', '专家已完成任务，返回最终结果', undefined, finalContent)
+        return finalContent
       }
 
       // 有工具调用 → 执行工具并继续循环
@@ -89,6 +117,11 @@ export async function callSubAgentWithTools(
         content: msg.content || '',
         tool_calls: msg.tool_calls
       })
+
+      // 专家中间思考产出（若存在）
+      if (msg.content && msg.content.trim()) {
+        pushEvent('message', msg.content.trim().slice(0, 300))
+      }
 
       // 逐个执行工具调用
       for (const tc of msg.tool_calls) {
@@ -99,6 +132,10 @@ export async function callSubAgentWithTools(
         const subAgentDisplayName = `${toolName}（子Agent）`
         const subAgentToolCall: ToolCall = { id: tc.id, name: subAgentDisplayName, arguments: args }
         onChunk?.({ toolStatus: 'calling', toolName: subAgentDisplayName, toolCall: subAgentToolCall })
+
+        // 推送专家工具调用事件
+        const argsSummary = Object.entries(args).slice(0, 3).map(([k, v]) => `${k}: ${typeof v === 'string' ? v.slice(0, 80) : JSON.stringify(v)?.slice(0, 80)}`).join(', ')
+        pushEvent('tool', `调用工具 ${toolName}`, argsSummary || '(无参数)')
 
         const tool = toolInstances.find(t => t.definition.name === toolName)
         let result: ToolResult
@@ -120,6 +157,12 @@ export async function callSubAgentWithTools(
           }
         }
 
+        // 推送专家工具结果事件
+        const resultSummary = result.success
+          ? (result.content?.slice(0, 150) || '执行成功')
+          : `执行失败：${result.error || '未知错误'}`
+        pushEvent('toolResult', resultSummary)
+
         // 覆盖 toolName 为子 Agent 显示名，确保与 calling chunk 的名称一致
         const subAgentResult: ToolResult = { ...result, toolName: subAgentDisplayName }
         onChunk?.({ toolResult: subAgentResult, toolStatus: 'done', toolName: subAgentDisplayName })
@@ -134,6 +177,7 @@ export async function callSubAgentWithTools(
     }
 
     // 达到最大轮次，请求最终总结
+    pushEvent('message', '已达最大工具调用轮次，正在生成最终总结…')
     messages.push({
       role: 'user',
       content: '你已经完成了所有工具调用。请基于已有信息直接给出最终回答，不要再调用任何工具。'
@@ -157,11 +201,14 @@ export async function callSubAgentWithTools(
     })
 
     if (!finalResponse.ok) {
+      pushEvent('finished', '专家最终总结请求失败')
       return '(子 Agent 达到最大工具调用轮次，且最终总结请求失败)'
     }
 
     const finalData = await finalResponse.json()
-    return finalData.choices?.[0]?.message?.content || '(子 Agent 未返回最终内容)'
+    const finalContent = finalData.choices?.[0]?.message?.content || '(子 Agent 未返回最终内容)'
+    pushEvent('finished', '专家已完成任务，返回最终结果', undefined, finalContent)
+    return finalContent
   } finally {
     clearTimeout(timeout)
   }

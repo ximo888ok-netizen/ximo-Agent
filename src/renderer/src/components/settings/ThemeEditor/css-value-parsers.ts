@@ -8,6 +8,18 @@
 
 // ─── rgba 解析 ──────────────────────────────
 
+export interface DimensionParts {
+  value: number
+  unit: string
+}
+
+/** 解析尺寸值（如 "12px" / "45deg" / "0.5"）为数值 + 单位，解析失败回退 0 */
+export function parseDimension(cssStr: string): DimensionParts {
+  const m = cssStr.trim().match(/^(-?\d+(?:\.\d+)?)([a-z%]*)$/i)
+  if (!m) return { value: 0, unit: '' }
+  return { value: parseFloat(m[1]), unit: m[2] }
+}
+
 export interface RgbaParts {
   r: number
   g: number

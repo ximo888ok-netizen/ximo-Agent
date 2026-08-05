@@ -122,8 +122,22 @@ webview {
     position: relative;
     border-radius: 20px;
     overflow: hidden;
+    /* 注意：不能在此加 box-shadow —— #root 填满窗口视口，阴影向外扩散会超出窗口像素被裁剪，透明窗口下不显示 */
   }
   .window-maximized #root {
+    border-radius: 0;
+  }
+  /* 最大化/还原时圆角平滑过渡（box-shadow 不参与——窗口内满血布局无法绘制外部阴影） */
+  #root {
+    transition: border-radius 0.15s ease;
+  }
+
+  /* 背景图层 — 与 #root 圆角对齐，避免背景图在四角溢出（body 透明，溢出会透过窗口显示） */
+  #background-layer {
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .window-maximized #background-layer {
     border-radius: 0;
   }
 
@@ -141,6 +155,13 @@ webview {
   }
   .startup-active #root::after {
     display: none;
+  }
+  /* 内阴影增强 — 在窗口内部边缘压一层阴影，让圆角边界更"立体"（inset 不超出窗口，安全） */
+  #root {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), inset 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
+  .window-maximized #root {
+    box-shadow: none;
   }
 
   ::selection {
@@ -425,6 +446,9 @@ webview {
   }
   .no-drag {
     -webkit-app-region: no-drag;
+  }
+  .drag-region:active {
+    cursor: grabbing;
   }
 
   /* ═══ Markdown 正文样式 ═══ */

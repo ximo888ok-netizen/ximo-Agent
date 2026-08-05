@@ -9,6 +9,16 @@ export interface StreamingSegment {
   reasoning: string
   content: string
   toolCalls: { name: string; status: 'thinking' | 'calling' | 'done'; args?: string; result?: string; toolCallId?: string }[]
+  /** 子 Agent 工作过程事件（专家团编排时实时追加，按时间顺序） */
+  expertEvents?: {
+    expertId: string
+    expertName: string
+    stage: 'started' | 'tool' | 'toolResult' | 'message' | 'finished'
+    taskSummary?: string
+    detail?: string
+    toolArgs?: string
+    result?: string
+  }[]
 }
 
 export interface ChatMessage {
@@ -57,6 +67,9 @@ export interface ApiMessage {
   content: string
   tool_calls?: { id: string; type: 'function'; function: { name: string; arguments: string } }[]
   tool_call_id?: string
+  /** A2 reasoning_content 空 key — DeepSeek thinking 模式下 tool_calls turn 必须带此 key。
+   *  与主进程 agent-loop（tool-execution.ts）保持一致，避免重建消息时前缀字节漂移导致缓存全部 miss */
+  reasoning_content?: string
 }
 
 // 发起聊天请求的参数
@@ -74,6 +87,8 @@ export interface ChatRequest {
   sessionId?: string
   /** Auto Mode 等级：off=手动确认, safe=读操作自动, yolo=全部自动 */
   autoModeLevel?: 'off' | 'safe' | 'yolo'
+  /** 服务商 ID：'deepseek'=内置，其余对应 settings.providers 中的自定义服务商（缺省 deepseek） */
+  providerId?: string
 }
 
 // 流式传输的数据块
@@ -99,6 +114,23 @@ export interface StreamChunk {
   /** 工具调用状态变更 */
   toolStatus?: 'thinking' | 'calling' | 'done'
   toolName?: string
+  /** 子 Agent 工作过程事件 — 专家团编排时实时推送专家的工作进度（阶段/工具调用/中间产出） */
+  subAgentEvent?: {
+    /** 专家唯一标识 */
+    expertId: string
+    /** 专家名称（含 emoji，用于展示） */
+    expertName: string
+    /** 事件阶段：started=开始工作, tool=工具调用, toolResult=工具结果, message=专家中间产出, finished=完成 */
+    stage: 'started' | 'tool' | 'toolResult' | 'message' | 'finished'
+    /** 当前处理的任务摘要 */
+    taskSummary?: string
+    /** 阶段详情（工具名/消息内容/结果摘要等） */
+    detail?: string
+    /** 工具调用参数摘要（可选） */
+    toolArgs?: string
+    /** 专家工作结果（finished 时携带） */
+    result?: string
+  }
   /** 监督审查 Agent 反馈（ultra 思考强度专用） */
   supervision?: {
     verdict: 'on_track' | 'lazy' | 'off_track' | 'violation'
@@ -106,5 +138,7 @@ export interface StreamChunk {
     correction?: string
     severity: 'low' | 'medium' | 'high'
     round: number
+    /** 纠正指令全文 — 主进程已注入 messages 末尾，渲染层需持久化以便重建时保持一致（缓存友好） */
+    message?: string
   }
 }

@@ -21,6 +21,7 @@ export class StreamingBatcher {
         reasoning: s.reasoning,
         content: s.content,
         toolCalls: s.toolCalls.map(tc => ({ ...tc })),
+        ...(s.expertEvents ? { expertEvents: s.expertEvents.map(e => ({ ...e })) } : {}),
       }))
       this.flush(segCopy)
     })
@@ -36,7 +37,7 @@ export class StreamingBatcher {
 export function trimTrailingEmpty(segments: StreamingSegment[]): void {
   if (segments.length > 1) {
     const last = segments[segments.length - 1]
-    if (last && !last.reasoning && !last.content && last.toolCalls.length === 0) {
+    if (last && !last.reasoning && !last.content && last.toolCalls.length === 0 && !(last.expertEvents && last.expertEvents.length > 0)) {
       segments.pop()
     }
   }
@@ -44,12 +45,13 @@ export function trimTrailingEmpty(segments: StreamingSegment[]): void {
 
 /** 计算持久化用的 segments（仅多轮时保留） */
 export function computePersistSegments(segments: StreamingSegment[]): StreamingSegment[] | undefined {
-  const nonEmpty = segments.filter(s => s.reasoning || s.content || s.toolCalls.length > 0)
+  const nonEmpty = segments.filter(s => s.reasoning || s.content || s.toolCalls.length > 0 || (s.expertEvents && s.expertEvents.length > 0))
   if (nonEmpty.length <= 1) return undefined
   return nonEmpty.map(s => ({
     reasoning: s.reasoning,
     content: s.content,
     toolCalls: s.toolCalls.map(tc => ({ ...tc, status: 'done' as const })),
+    ...(s.expertEvents ? { expertEvents: s.expertEvents.map(e => ({ ...e })) } : {}),
   }))
 }
 

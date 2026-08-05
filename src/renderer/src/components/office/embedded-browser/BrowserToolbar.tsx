@@ -55,7 +55,7 @@ export function TabBar({ tabs, activeTabId, onSelect, onClose, onNewTab }: TabBa
 
 interface UrlBarProps {
   tab: TabState | undefined
-  urlInputRef: React.RefObject<HTMLInputElement | null>
+  urlInputRef: React.RefObject<HTMLInputElement>
   onNavigate: (url: string) => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onBack: () => void

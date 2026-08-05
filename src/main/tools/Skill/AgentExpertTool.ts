@@ -23,7 +23,8 @@ const DEFINITION: ToolDefinition = {
     '3. 生成预设自动化工作流\n' +
     '4. 将工具配置和工作流注入专家系统提示词\n' +
     '5. 如附带 task，子 Agent 将以专家视角 + 配置好的工具独立处理任务\n\n' +
-    '主 Agent 负责理解用户目的、分解任务、调度专家、综合结果——绝不推诿，遇到困难主动寻找替代方案。',
+    '主 Agent 负责理解用户目的、分解任务、调度专家、综合结果——绝不推诿，遇到困难主动寻找替代方案。\n\n' +
+    '**自主召唤授权**：主 Agent 可凭自主意识判断是否召唤专家。当任务涉及专业领域知识、复杂度高需多角色协作、或需要专业意见时，应主动使用本工具（先 search 定位专家，再 activate+task 派活）；简单任务则自行完成，不必召唤。',
   parameters: {
     type: 'object',
     properties: {
@@ -133,8 +134,12 @@ export class AgentExpertTool implements Tool {
         if (task && task.trim() && context?.apiKey) {
           onChunk?.({ toolStatus: 'calling', toolName: 'agent_expert' })
           try {
+            // 收集子 Agent 工作过程事件（供前端可视化 + 持久化展示）
+            const expertEvents: NonNullable<StreamChunk['subAgentEvent']>[] = []
             const subResult = await callSubAgentWithTools(
-              context, systemPrompt, task, analysis.tools, onChunk, signal
+              context, systemPrompt, task, analysis.tools, onChunk, signal,
+              (event) => { expertEvents.push(event) },
+              { expertId: agent.id, expertName: agent.name }
             )
             return {
               toolCallId: toolCall.id,
@@ -143,7 +148,9 @@ export class AgentExpertTool implements Tool {
               success: true,
               metadata: {
                 expertId: agent.id, expertName: agent.name, subAgentMode: true,
-                configuredTools: analysis.tools, workflow: analysis.workflow
+                configuredTools: analysis.tools, workflow: analysis.workflow,
+                expertEvents: expertEvents.slice(0, 200),
+                expertResult: subResult.slice(0, 4000),
               }
             }
           } catch (e) {

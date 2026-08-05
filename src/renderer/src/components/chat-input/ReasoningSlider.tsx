@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Zap } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
+import { isReasoningCapable } from '@renderer/lib/providers'
 import type { ReasoningEffort } from '@shared/types'
 
 /** 思考强度调节器 — 点击向上展开横向滑块，支持拖拽 */
@@ -40,8 +41,11 @@ function particleColor(index: number, _total: number): string {
 }
 
 export function ReasoningSlider(): React.ReactElement {
-  const effort = useStore((s) => s.settings?.reasoningEffort ?? 'high')
+  const settings = useStore((s) => s.settings)
+  const effort = settings?.reasoningEffort ?? 'high'
   const updateSettings = useStore((s) => s.updateSettings)
+  // 当前服务商不支持 reasoning 参数时禁用调节（主进程会剥离这些参数）
+  const reasoningCapable = isReasoningCapable(settings)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -98,9 +102,11 @@ export function ReasoningSlider(): React.ReactElement {
     <div className="relative" ref={ref}>
       {/* 触发按钮 */}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => { if (reasoningCapable) setOpen(!open) }}
         className={`chip flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] transition-all duration-200 active:scale-95 ${
-          open
+          !reasoningCapable
+            ? 'opacity-40 cursor-not-allowed text-text-muted'
+            : open
             ? 'border-accent/40 text-accent bg-accent/8'
             : effort === 'off'
               ? 'text-text-muted hover:text-text-secondary'
@@ -110,7 +116,7 @@ export function ReasoningSlider(): React.ReactElement {
                   ? 'border-accent/30 text-accent bg-accent/10'
                   : 'text-text-secondary hover:text-text-primary hover:border-border-hover'
         }`}
-        title="思考强度"
+        title={reasoningCapable ? '思考强度' : '当前服务商不支持思考参数'}
       >
         <Zap size={11} className={effort !== 'off' ? 'text-accent' : ''} />
         <span>{currentLabel}</span>

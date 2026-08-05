@@ -83,13 +83,15 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
       snippedKeep: settings.contextSnippedKeep ?? 200,
       prunedKeep: settings.contextPrunedKeep ?? 80,
     },
-    settings.reasoningEffort, settings.memoryEnabled,
+    settings.reasoningEffort, settings.memoryEnabled, settings.thinkingMode,
   )
   const request = {
     mode: conversation.mode, messages: apiMessages, model: settings.model,
     thinkingMode: settings.thinkingMode, reasoningEffort: settings.reasoningEffort,
     temperature: settings.temperature, maxTokens: 393216, sessionId: conversationId,
     autoModeLevel: get().autoModeLevel,
+    // 活跃服务商 — 'deepseek'=内置，其余对应 settings.providers 中的自定义服务商
+    providerId: settings.activeProviderId ?? 'deepseek',
   }
 
   const segments: StreamingSegment[] = [{ reasoning: '', content: '', toolCalls: [] }]
@@ -101,6 +103,11 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
 
   const collectedToolCalls: ToolCall[] = []
   const collectedToolResults: ToolResult[] = []
+
+  // 持久化守卫 — done/catch 分支已持久化时，finally 不再二次覆盖（消除竞态）
+  // 背景：done 分支（chunk.done）与 catch 分支都会持久化，finally 无条件再执行一次，
+  // 导致流式结束时被二次写入覆盖（且不对称持久化 toolCalls/toolResults）。
+  let persistedRef = false
 
   const batcher = new StreamingBatcher(
     (segCopy) => set({
@@ -185,6 +192,17 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
         collectedToolCalls.push({ id: supId, name: '监督审查', arguments: { round: sup.round, verdict: sup.verdict, severity: sup.severity } })
         collectedToolResults.push({ toolCallId: supId, toolName: '监督审查', content: formattedResult, success: sup.verdict === 'on_track' })
         currentSeg().toolCalls.push({ name: '监督审查', status: 'done' as const, args: JSON.stringify({ round: sup.round, verdict: sup.verdict, severity: sup.severity }), result: formattedResult, toolCallId: supId })
+        // 缓存友好：主进程已将纠正消息注入 messages 末尾，此处同步持久化为会话 system 消息，
+        // 确保重建消息列表时位置与字节一致（否则下一轮用户消息前缀从纠正处断裂）
+        if (sup.message) {
+          set((s) => ({
+            conversations: s.conversations.map((c) =>
+              c.id === conversationId
+                ? { ...c, messages: [...c.messages, { id: `supervision-msg-${sup.round}`, role: 'system' as const, content: sup.message!, timestamp: Date.now() }] }
+                : c
+            ),
+          }))
+        }
         batcher.schedule()
       }
 
@@ -195,6 +213,22 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
         }
         segments.push({ reasoning: '', content: '', toolCalls: [] })
         batcher.schedule()
+      }
+
+      // 子 Agent 工作过程事件 — 专家团编排时逐轮可视化专家的进度
+      if (chunk.subAgentEvent) {
+        const seg = currentSeg()
+        if (!seg.expertEvents) seg.expertEvents = []
+        // 去重：同一专家的同一阶段事件只追加一次（避免主进程多次推送同一 started/finished）
+        const lastEvent = seg.expertEvents[seg.expertEvents.length - 1]
+        const isDuplicate = lastEvent &&
+          lastEvent.expertId === chunk.subAgentEvent.expertId &&
+          lastEvent.stage === chunk.subAgentEvent.stage &&
+          lastEvent.detail === chunk.subAgentEvent.detail
+        if (!isDuplicate) {
+          seg.expertEvents.push({ ...chunk.subAgentEvent })
+          batcher.schedule()
+        }
       }
 
       if (chunk.done) {
@@ -211,8 +245,10 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
               content: allContent, reasoningContent: allReasoning || undefined, segments: persistSegments,
               tokens: hasTokenData ? totalTokensAccum : undefined, cacheHitTokens: cacheHitTokensAccum > 0 ? cacheHitTokensAccum : undefined,
             }, hasTokenData ? { total: totalTokensAccum, prompt: promptTokensAccum, cacheHit: cacheHitTokensAccum, cacheMiss: cacheMissTokensAccum } : null, chunk.error, currentContextTokens || undefined)
+            persistedRef = true
           } else {
             set({ error: chunk.error, ...STREAMING_RESET })
+            persistedRef = true
           }
           return
         }
@@ -225,6 +261,7 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
           cacheHitTokens: cacheHitTokensAccum || undefined,
           toolCalls: hasToolData ? collectedToolCalls : undefined, toolResults: hasToolData ? collectedToolResults : undefined,
         }, { total: totalTokensAccum, prompt: promptTokensAccum, cacheHit: cacheHitTokensAccum, cacheMiss: cacheMissTokensAccum }, undefined, currentContextTokens || undefined)
+        persistedRef = true
       }
     })
   } catch (e) {

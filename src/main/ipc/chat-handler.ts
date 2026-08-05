@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { streamChat, agentLoop, testConnection, configureAgentLoop, callDeepSeekStream } from '@main/deepseek'
+import { resolveActiveProvider } from '@main/deepseek/provider'
 import type { ChatRequest, StreamChunk, ToolContext, ApiMessage } from '@shared/types'
 import { loadSettings } from '@main/store'
 import { toolRegistry } from '@main/tools'
@@ -9,6 +10,23 @@ import * as os from 'os'
 
 // 当前流式请求的 AbortController（用于取消）
 let currentController: AbortController | null = null
+
+// ── 弹窗等待超时 ──
+// requestConfirmation / requestUserInput 若渲染层无人响应（弹窗被遮挡、组件未挂载、渲染进程异常等），
+// 无超时会导致 Agent Loop 永久挂起。以下超时兜底保证循环必然恢复。
+const CONFIRM_TIMEOUT_MS = 60_000
+const USER_INPUT_TIMEOUT_MS = 120_000
+
+/** Promise.race 超时包装 — 超时返回 defaultValue，避免 Promise 永不 resolve */
+function withTimeout<T>(promise: Promise<T>, ms: number, defaultValue: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(defaultValue), ms)
+  })
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
 
 // ── MCP 全局单例 ──
 // 避免每次 chat:start 都重新连接所有 MCP 服务器（减少连接延迟和开销）
@@ -50,12 +68,19 @@ export function registerChatHandlers(): void {
   // 流式聊天：渲染进程通过 invoke 触发，主进程逐块通过 send 回传
   ipcMain.handle('chat:start', async (event, request: ChatRequest) => {
     const settings = await loadSettings()
-    currentController = new AbortController()
+    // 解析活跃服务商 — 内置 deepseek 用顶层 apiKey/baseUrl（行为不变），
+    // 自定义服务商从 settings.providers 读取，DeepSeek 专属参数由能力开关门控
+    const provider = resolveActiveProvider(settings, request.providerId)
+    // 每个请求独立 AbortController — 修复全局单例竞态：
+    // 旧请求的 signal 引用被保留在闭包中，不会被新请求覆盖或误 abort
+    const controller = new AbortController()
+    currentController = controller
+    const streamSignal = controller.signal
 
     const win = event.sender
 
     const handlers = {
-      signal: currentController.signal,
+      signal: streamSignal,
       yoloMode: settings.yoloMode,
       autoModeLevel: request.autoModeLevel ?? (settings.yoloMode ? 'yolo' : 'off'),
       onChunk: (chunk: StreamChunk) => {
@@ -66,42 +91,58 @@ export function registerChatHandlers(): void {
       requestConfirmation: (settings.yoloMode || (request.autoModeLevel === 'yolo')) ? undefined : async (toolName: string, message: string): Promise<boolean> => {
         if (win.isDestroyed()) return false
         win.send('confirm:request', { toolName, message })
-        return new Promise<boolean>((resolve) => {
-          let settled = false
-          const finish = (result: boolean): void => {
-            if (settled) return
-            settled = true
-            ipcMain.removeListener('confirm:response', listener)
-            win.removeListener('closed' as never, onClosed as never)
-            resolve(result)
-          }
-          const listener = (_event: Electron.IpcMainEvent, result: boolean): void => {
-            finish(result)
-          }
-          const onClosed = (): void => finish(false)
-          ipcMain.once('confirm:response', listener)
-          win.once('closed' as never, onClosed as never)
-        })
+        // 60s 无响应自动按「拒绝」处理 + 监听取消信号 — 彻底避免弹窗无人响应导致 Agent Loop 永久挂起
+        return withTimeout(
+          new Promise<boolean>((resolve) => {
+            let settled = false
+            const finish = (result: boolean): void => {
+              if (settled) return
+              settled = true
+              ipcMain.removeListener('confirm:response', listener)
+              win.removeListener('closed' as never, onClosed as never)
+              streamSignal.removeEventListener('abort', onAbort)
+              resolve(result)
+            }
+            const listener = (_event: Electron.IpcMainEvent, result: boolean): void => {
+              finish(result)
+            }
+            const onClosed = (): void => finish(false)
+            const onAbort = (): void => finish(false)
+            ipcMain.once('confirm:response', listener)
+            win.once('closed' as never, onClosed as never)
+            streamSignal.addEventListener('abort', onAbort, { once: true })
+          }),
+          CONFIRM_TIMEOUT_MS,
+          false
+        )
       },
       requestUserInput: async (type: 'ask' | 'review', title: string, content: string): Promise<{ confirmed: boolean; response?: string }> => {
         if (win.isDestroyed()) return { confirmed: false }
         win.send('user-input:request', { type, title, content } as const)
-        return new Promise<{ confirmed: boolean; response?: string }>((resolve) => {
-          let settled = false
-          const finish = (result: { confirmed: boolean; response?: string }): void => {
-            if (settled) return
-            settled = true
-            ipcMain.removeListener('user-input:response', listener)
-            win.removeListener('closed' as never, onClosed as never)
-            resolve(result)
-          }
-          const listener = (_event: Electron.IpcMainEvent, result: { confirmed: boolean; response?: string }): void => {
-            finish(result)
-          }
-          const onClosed = (): void => finish({ confirmed: false })
-          ipcMain.once('user-input:response', listener)
-          win.once('closed' as never, onClosed as never)
-        })
+        // 120s 无响应自动按「拒绝」处理 — 防止 plan_ask / spec_review 弹窗无人响应导致挂起
+        return withTimeout(
+          new Promise<{ confirmed: boolean; response?: string }>((resolve) => {
+            let settled = false
+            const finish = (result: { confirmed: boolean; response?: string }): void => {
+              if (settled) return
+              settled = true
+              ipcMain.removeListener('user-input:response', listener)
+              win.removeListener('closed' as never, onClosed as never)
+              streamSignal.removeEventListener('abort', onAbort)
+              resolve(result)
+            }
+            const listener = (_event: Electron.IpcMainEvent, result: { confirmed: boolean; response?: string }): void => {
+              finish(result)
+            }
+            const onClosed = (): void => finish({ confirmed: false })
+            const onAbort = (): void => finish({ confirmed: false, response: '请求已取消' })
+            ipcMain.once('user-input:response', listener)
+            win.once('closed' as never, onClosed as never)
+            streamSignal.addEventListener('abort', onAbort, { once: true })
+          }),
+          USER_INPUT_TIMEOUT_MS,
+          { confirmed: false, response: '等待用户输入超时' }
+        )
       }
     }
 
@@ -109,7 +150,7 @@ export function registerChatHandlers(): void {
     await ensureModeToolsLoaded(request.mode)
     let toolNames = modeToolNames[request.mode] || []
 
-    // 注入 Agent 循环配置（从 settings 读取）
+    // 注入 Agent 循环配置（从 settings 读取）+ 当前服务商的上下文窗口与能力开关
     configureAgentLoop({
       maxToolRounds: settings.maxToolRounds ?? 30,
       maxToolResultChars: settings.maxToolResultChars ?? 8000,
@@ -117,7 +158,9 @@ export function registerChatHandlers(): void {
       recentKeep: settings.contextRecentKeep ?? 5,
       snippedKeep: settings.contextSnippedKeep ?? 200,
       prunedKeep: settings.contextPrunedKeep ?? 80,
-      checkpointEnabled: settings.checkpointEnabled ?? true
+      checkpointEnabled: settings.checkpointEnabled ?? true,
+      contextWindow: provider.contextWindow,
+      capabilities: provider.capabilities
     })
 
     // 注入 PiBridge 命令超时
@@ -167,10 +210,19 @@ export function registerChatHandlers(): void {
     ]
 
     try {
+      // 生效请求 — 非 reasoning 服务商强制关闭 thinking；自定义服务商钳制输出长度
+      const effRequest: ChatRequest = {
+        ...request,
+        messages: messagesWithEnv,
+        tools: sortedTools,
+        thinkingMode: request.thinkingMode && provider.capabilities.sendReasoningParams,
+        maxTokens: provider.isDeepSeek ? request.maxTokens : Math.min(request.maxTokens, provider.maxOutputTokens)
+      }
+
       if (allTools.length > 0) {
         const toolContext: ToolContext = {
-          apiKey: settings.apiKey,
-          baseUrl: settings.baseUrl,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
           model: request.model,
           reasoningEffort: request.reasoningEffort,
           subAgentModel: settings.subAgentModel ?? settings.model,
@@ -198,20 +250,58 @@ export function registerChatHandlers(): void {
           mode: request.mode,
           requestUserInput: handlers.requestUserInput
         }
-        await agentLoop(settings.apiKey, settings.baseUrl, { ...request, messages: messagesWithEnv, tools: sortedTools }, handlers, toolContext, request.sessionId)
+        await agentLoop(provider.apiKey, provider.baseUrl, effRequest, handlers, toolContext, request.sessionId)
       } else {
-        await streamChat(settings.apiKey, settings.baseUrl, { ...request, messages: messagesWithEnv }, handlers)
+        await streamChat(provider.apiKey, provider.baseUrl, effRequest, handlers, provider.capabilities)
       }
     } finally {
       // MCP 连接保持复用，不在此断开
     }
 
-    currentController = null
+    // 仅当仍持有当前 controller 时才清理 — 防止误清掉新请求的引用
+    if (currentController === controller) {
+      currentController = null
+    }
   })
 
-  // 连接测试
-  ipcMain.handle('chat:test', async (_event, apiKey: string, baseUrl: string, model: string) => {
+  // 连接测试 — 支持指定服务商 ID（providerId 优先，其次用显式参数，兼容旧调用）
+  ipcMain.handle('chat:test', async (_event, apiKey: string, baseUrl: string, model: string, providerId?: string) => {
+    if (providerId) {
+      const settings = await loadSettings()
+      const provider = resolveActiveProvider(settings, providerId)
+      const cfgModels = (settings.providers ?? []).find((p) => p.id === providerId)?.models ?? []
+      const testModel = model || cfgModels[0] || 'gpt-4o-mini'
+      return testConnection(provider.apiKey, provider.baseUrl, testModel)
+    }
     return testConnection(apiKey, baseUrl, model)
+  })
+
+  // 自动获取模型列表 — OpenAI 兼容 GET /models，免手填
+  ipcMain.handle('providers:list-models', async (_event, baseUrl: string, apiKey: string) => {
+    if (!baseUrl || !baseUrl.trim()) {
+      return { success: false, models: [] as string[], error: '请先填写 Base URL' }
+    }
+    const url = `${baseUrl.trim().replace(/\/$/, '')}/models`
+    try {
+      const response = await fetch(url, {
+        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+        signal: AbortSignal.timeout(15_000)
+      })
+      if (!response.ok) {
+        return { success: false, models: [], error: `获取失败 (${response.status})：请检查 Base URL 与 API Key` }
+      }
+      const data = await response.json()
+      const list: string[] = Array.isArray(data?.data)
+        ? data.data
+            .map((m: { id?: unknown }) => (typeof m?.id === 'string' ? m.id : ''))
+            .filter(Boolean)
+        : []
+      list.sort()
+      return { success: true, models: list, error: list.length === 0 ? '该端点未返回模型列表，请手动填写' : undefined }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return { success: false, models: [], error: `网络错误：${msg}` }
+    }
   })
 
   // 取消当前流式请求
@@ -230,9 +320,14 @@ export function registerChatHandlers(): void {
     projectPath?: string
   }): Promise<{ success: boolean; enhancedText?: string; error?: string }> => {
     const settings = await loadSettings()
-    if (!settings.apiKey) {
+    // 提示词增强跟随当前活跃服务商；模型：内置用 settings.model，自定义用其首个预设模型
+    const provider = resolveActiveProvider(settings)
+    if (!provider.apiKey) {
       return { success: false, error: '未配置 API Key' }
     }
+    const enhanceModel = provider.isDeepSeek
+      ? settings.model
+      : ((settings.providers ?? []).find((p) => p.id === provider.id)?.models[0] ?? settings.model)
 
     const modeLabels: Record<string, string> = {
       office: '办公模式（文档撰写、邮件、会议纪要、搜索研究）',
@@ -267,16 +362,17 @@ export function registerChatHandlers(): void {
 
     try {
       const result = await callDeepSeekStream(
-        settings.apiKey,
-        settings.baseUrl,
-        settings.model,
+        provider.apiKey,
+        provider.baseUrl,
+        enhanceModel,
         messages,
         undefined, // 无工具
         false,    // 无思考模式
         'high',
         0.7,
         8192,
-        { onChunk: () => {}, signal: undefined }
+        { onChunk: () => {}, signal: undefined },
+        provider.capabilities
       )
 
       if (result.finishReason === 'error') {

@@ -9,6 +9,7 @@
 import type { ChatRequest, ToolDefinition } from '@shared/types'
 import type { MutableMessage } from '@shared/cache'
 import { callDeepSeekStream } from './api'
+import { agentConfig } from './context'
 import type { StreamHandlers } from './types'
 
 /** 构建工具文本目录（~300 tokens 替代 ~15000 tokens 的完整 schema） */
@@ -79,7 +80,7 @@ export async function runPlanningPhase(
   const result = await callDeepSeekStream(
     apiKey, baseUrl, request.model, planMessages, undefined,
     request.thinkingMode, request.reasoningEffort, request.temperature,
-    request.maxTokens, handlers
+    request.maxTokens, handlers, agentConfig.capabilities
   )
 
   if (result.finishReason === 'error' || !result.content) return null

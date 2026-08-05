@@ -1,5 +1,5 @@
 import { Radio, Trash2, X } from 'lucide-react'
-import type { CapturedRequest } from '@renderer/components/office/shared/types'
+import type { CapturedRequest } from '@shared/types'
 
 interface CapturePanelProps {
   requests: CapturedRequest[]

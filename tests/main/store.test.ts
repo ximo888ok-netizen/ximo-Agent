@@ -153,6 +153,31 @@ describe('持久化存储 store.ts', () => {
       const loaded = await loadConversations()
       expect(loaded).toEqual([])
     })
+
+    it('maxWait 兜底：高频连续调用最终落盘（无需等防抖窗口）', async () => {
+      // 模拟流式场景：500ms 内持续高频调用 saveConversations
+      // （每次调用都重启防抖定时器，若无 maxWait 则永不落盘）
+      // 用 vi.useFakeTimers 加速 maxWait（5s）触发，避免真实等待
+      vi.useFakeTimers()
+      try {
+        for (let i = 0; i < 30; i++) {
+          void saveConversations([
+            { id: `c-${i}`, title: `V${i}`, mode: 'coding', messages: [], createdAt: i, updatedAt: i }
+          ])
+          vi.advanceTimersByTime(50) // 每次间隔 50ms < 500ms 防抖窗口
+        }
+        // maxWait 5s 兜底 — 推进到 5s 后应已落盘
+        vi.advanceTimersByTime(5000)
+        // 让微任务/IO 完成
+        await vi.advanceTimersByTimeAsync(0)
+      } finally {
+        vi.useRealTimers()
+      }
+      await new Promise(r => setTimeout(r, 50))
+      const loaded = await loadConversations()
+      expect(loaded.length).toBeGreaterThan(0)
+      expect(loaded[0].id).toBe('c-29') // 最后一次的值
+    })
   })
 
   // ==================== Memory ====================

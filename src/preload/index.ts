@@ -31,8 +31,8 @@ const api = {
         })
     },
     cancel: (): Promise<void> => ipcRenderer.invoke('chat:cancel'),
-    test: (apiKey: string, baseUrl: string, model: string): Promise<TestResult> =>
-      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model),
+    test: (apiKey: string, baseUrl: string, model: string, providerId?: string): Promise<TestResult> =>
+      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model, providerId),
     enhancePrompt: (data: { text: string; mode: string; recentContext?: string; projectPath?: string }): Promise<{ success: boolean; enhancedText?: string; error?: string }> =>
       ipcRenderer.invoke('chat:enhance-prompt', data)
   },
@@ -64,6 +64,11 @@ const api = {
     save: (servers: McpServerConfig[]): Promise<boolean> => ipcRenderer.invoke('mcp:save', servers),
     parseConfig: (raw: string): Promise<{ servers: McpServerConfig[]; error?: string }> =>
       ipcRenderer.invoke('mcp:parseConfig', raw)
+  },
+  // 自定义服务商 — 自动获取模型列表（OpenAI 兼容 GET /models）
+  providers: {
+    listModels: (baseUrl: string, apiKey: string): Promise<{ success: boolean; models: string[]; error?: string }> =>
+      ipcRenderer.invoke('providers:list-models', baseUrl, apiKey)
   },
   importedSkills: {
     load: (): Promise<ImportedSkill[]> => ipcRenderer.invoke('imported-skills:load'),

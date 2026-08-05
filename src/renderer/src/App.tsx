@@ -6,6 +6,7 @@ import { RightSidebar } from './components/RightSidebar'
 import { ResizableDivider } from './components/ResizableDivider'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { StartupAnimation } from './components/StartupAnimation'
+import { CursorEffects } from './components/CursorEffects'
 import { TaskListPanel } from './components/TaskListPanel'
 import { useAppEffects, useConfirmDialog } from './hooks/useAppEffects'
 
@@ -123,6 +124,19 @@ export default function App(): React.ReactElement {
         onCancel={handleCancel}
       />
       <Suspense fallback={null}><TokenStatsModal /></Suspense>
+
+      {/* 鼠标特效全局层 — 跟随 + 点击动画 */}
+      <CursorEffects
+        enabled={settings.cursorEffectsEnabled ?? false}
+        trailStyle={settings.cursorTrailStyle ?? 'trail'}
+        clickStyle={settings.cursorClickStyle ?? 'ripple'}
+        color={settings.cursorEffectColor ?? ''}
+        scale={settings.cursorEffectScale ?? 1}
+        intensity={settings.cursorEffectIntensity ?? 1}
+        trailCount={settings.cursorTrailCount ?? 20}
+        clickCount={settings.cursorClickCount ?? 16}
+        duration={settings.cursorEffectDuration ?? 900}
+      />
     </div>
   ) : (
     <div className="h-full bg-bg-base" />

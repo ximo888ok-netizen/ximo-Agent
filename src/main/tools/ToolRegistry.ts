@@ -11,6 +11,9 @@ export class ToolRegistry {
   register(tool: Tool): void {
     const name = tool.definition.name
     if (this.tools.has(name)) {
+      // 明确冲突策略：后注册者覆盖先注册者，但保留同名历史以便诊断。
+      // 实际冲突来源：MCP 工具与懒加载工具同名（MCP 后注册，覆盖懒加载）；
+      // 以及工具模块组重复加载。记录告警便于排查。
       console.warn(`[ToolRegistry] 工具 "${name}" 已存在，将被覆盖。`)
     }
     this.tools.set(name, tool)

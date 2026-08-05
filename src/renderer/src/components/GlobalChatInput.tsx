@@ -10,7 +10,7 @@ import { ChatChips } from './chat-input/ChatChips'
 import { FileMentionMenu } from './chat-input/FileMentionMenu'
 import { OfficeToolbar } from './chat-input/OfficeToolbar'
 import { ChatInputActions } from './chat-input/ChatInputActions'
-import { useChatActions } from './chat-input/useChatActions'
+import { useChatActions, type SlashCommandEntry } from './chat-input/useChatActions'
 
 export function GlobalChatInput(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
@@ -56,7 +56,8 @@ export function GlobalChatInput(): React.ReactElement {
   }, [currentMode, refreshComputerUseStatus])
 
   const {
-    text, setText, textareaRef, showSlashMenu, activeSlashCmd,
+    text, setText, textareaRef, showSlashMenu, activeSlashCmd, setActiveSlashCmd,
+    slashCommands, hasSkillCommands,
     showFileMention, matchedFiles, selectedMentionIndex, setSelectedMentionIndex,
     insertFileMention, handleMentionKeyDown,
     isDragOver, handleDragOver, handleDragLeave, handleDrop,
@@ -202,7 +203,8 @@ export function GlobalChatInput(): React.ReactElement {
 
         {showSlashMenu && (
           <div className="glass-strong mt-2 rounded-2xl border border-border p-1.5 shadow-glass animate-scale-in">
-            {getSlashCommands(currentMode).map(({ cmd, label, systemHint }) => (
+            {/* 内置命令 */}
+            {slashCommands.filter((c) => !c.skillId).map(({ cmd, label, systemHint }) => (
               <button
                 key={cmd}
                 onClick={() => handleSlashCommand(cmd, systemHint)}
@@ -212,6 +214,25 @@ export function GlobalChatInput(): React.ReactElement {
                 <span className="text-text-muted">{label}</span>
               </button>
             ))}
+            {/* 导入技能命令分区 */}
+            {hasSkillCommands && (
+              <>
+                <div className="mt-1.5 mb-0.5 border-t border-border-subtle pt-1.5 text-[10px] font-medium text-text-muted/70 px-3">
+                  导入技能
+                </div>
+                {slashCommands.filter((c): c is SlashCommandEntry & { skillId: string } => Boolean(c.skillId)).map(({ cmd, label, description, systemHint }) => (
+                  <button
+                    key={cmd}
+                    onClick={() => handleSlashCommand(cmd, systemHint)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                    title={description}
+                  >
+                    <span className="font-mono text-accent">{cmd}</span>
+                    <span className="truncate text-text-muted">{description || label}</span>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
 

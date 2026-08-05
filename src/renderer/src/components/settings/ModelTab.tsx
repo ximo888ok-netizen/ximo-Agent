@@ -7,6 +7,7 @@ import {
   MessageSquareText
 } from 'lucide-react'
 import type { AppSettings, ModelId, ReasoningEffort } from '@shared/types'
+import { isReasoningCapable } from '@renderer/lib/providers'
 import {
   SectionTitle,
   Divider,
@@ -21,6 +22,9 @@ export function ModelTab({
   local: AppSettings
   update: (patch: Partial<AppSettings>) => void
 }): React.ReactElement {
+  // 当前活跃服务商是否支持思考参数（内置 DeepSeek 恒为 true）
+  const reasoningCapable = isReasoningCapable(local)
+
   return (
     <div className="space-y-5">
       <SectionTitle title="模型选择" desc="DeepSeek-V4 提供两个版本，按场景选择" />
@@ -68,8 +72,14 @@ export function ModelTab({
         inactiveText="已关闭 · 快速回答"
       />
 
-      {/* 思考强度 — 仅在思考模式开启时显示 */}
-      {local.thinkingMode && (
+      {!reasoningCapable && (
+        <p className="text-xs text-amber-400/70">
+          当前活跃服务商不支持 reasoning 参数，思考模式与思考强度将在发送时自动关闭
+        </p>
+      )}
+
+      {/* 思考强度 — 仅在思考模式开启且服务商支持时显示 */}
+      {local.thinkingMode && reasoningCapable && (
         <div className="ios-card p-3.5 space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles size={15} className="text-accent" />

@@ -1,0 +1,714 @@
+/* ═══════════════════════════════════════════════════════════════
+   cursor-effects.css — 鼠标跟随 + 点击特效（43 种动画）
+   所有特效基于 CSS 变量：
+   --ce-color      特效主色（未设置时回退 var(--theme-color)）
+   --ce-duration   特效生存时长（由 JS 注入 animation-duration）
+   --ce-dx / --ce-dy   随机位移方向（由 JS 注入）
+   --ce-rot        随机旋转角度（由 JS 注入）
+   --ce-rainbow-color  彩虹随机色（由 JS 注入）
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 特效覆盖层：全屏固定，不阻断交互 ── */
+.cursor-effects-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646; /* 最高层之下，任何 UI 之上 */
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+}
+
+.cursor-effects-layer * {
+  pointer-events: none;
+}
+
+/* 特效元素公共基类 — 全部由 JS 动态创建 */
+.ce-el {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* ── 颜色计算辅助 ── */
+.ce-el {
+  --ce-c: var(--ce-color, var(--theme-color));
+  --ce-c-soft: color-mix(in srgb, var(--ce-c) 55%, transparent);
+  --ce-c-weak: color-mix(in srgb, var(--ce-c) 25%, transparent);
+  --ce-c-strong: color-mix(in srgb, var(--ce-c) 85%, transparent);
+  --ce-white: color-mix(in srgb, var(--ce-c) 45%, white);
+}
+
+/* emoji 字形特效 — 用文字渲染，天然彩色 */
+.ce-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  filter: drop-shadow(0 0 3px var(--ce-c-weak));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PART 1 — 鼠标跟随特效（移动时持续生成）
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ① 经典渐隐尾迹 — 彩色小圆点，向同一方向飘散 */
+.ce-trail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--ce-white) 0%, var(--ce-c) 60%, transparent 100%);
+  opacity: 0;
+  animation: ceTrailFloat var(--ce-duration, 0.9s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceTrailFloat {
+  0%   { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 0.95; }
+  100% { transform: translate(-50%, -50%) translateY(-26px) scale(0.15); opacity: 0; }
+}
+
+/* ② 星光点点 — 十字星芒，随机闪烁旋转 */
+.ce-sparkle {
+  width: 10px;
+  height: 10px;
+  background: var(--ce-c-soft);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  animation: ceSparklePop var(--ce-duration, 0.9s) ease-out forwards;
+}
+@keyframes ceSparklePop {
+  0%   { transform: translate(-50%, -50%) rotate(0deg) scale(0.2); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(180deg) scale(1.4) translateY(-14px); opacity: 0; }
+}
+
+/* ③ 萤火虫 — 柔和光点，缓慢上浮明灭 */
+.ce-firefly {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--ce-white) 0%, var(--ce-c-soft) 45%, transparent 75%);
+  box-shadow: 0 0 10px 2px var(--ce-c-weak);
+  animation: ceFireflyFloat var(--ce-duration, 1.2s) ease-out forwards;
+}
+@keyframes ceFireflyFloat {
+  0%   { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 0.9; }
+  50%  { opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) translateY(-46px) scale(0.4); opacity: 0; }
+}
+
+/* ④ 光晕拖尾 — 大号柔光球，跟随滑行 */
+.ce-glow {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--ce-c-soft) 0%, transparent 70%);
+  filter: blur(1px);
+  animation: ceGlowFade var(--ce-duration, 0.7s) ease-out forwards;
+}
+@keyframes ceGlowFade {
+  0%   { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+/* ⑤ 极光流光 — 细长彩色丝带，斜向飘落 */
+.ce-aurora {
+  width: 42px;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, var(--ce-c) 45%, var(--ce-white) 100%);
+  filter: blur(0.4px) drop-shadow(0 0 3px var(--ce-c-weak));
+  animation: ceAuroraSweep var(--ce-duration, 1s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceAuroraSweep {
+  0%   { transform: translate(-50%, -50%) translateX(0) translateY(0) rotate(35deg) scaleX(0.4); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) translateX(28px) translateY(-30px) rotate(75deg) scaleX(1.6); opacity: 0; }
+}
+
+/* ⑥ 彗星拖尾 — 大头彗星，沿鼠标方向斜飞 */
+.ce-comet {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0%, var(--ce-white) 30%, var(--ce-c) 70%, transparent 100%);
+  box-shadow: 0 0 8px 2px var(--ce-c-soft);
+  animation: ceCometFly var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceCometFly {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 60px), var(--ce-dy, -60px)) scale(0.2); opacity: 0; }
+}
+
+/* ⑦ 彩虹粒子 — 随机色调小方块，向四周散落 */
+.ce-rainbow {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--ce-rainbow-color, var(--ce-c));
+  animation: ceRainbowScatter var(--ce-duration, 1s) ease-out forwards;
+}
+@keyframes ceRainbowScatter {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 30px), var(--ce-dy, -40px)) rotate(180deg) scale(0.3); opacity: 0; }
+}
+
+/* ⑧ 雪花飘落 — 六角雪花，左右摇曳下落 */
+.ce-glyph.ce-snowflake { font-size: 14px; }
+@keyframes ceSnowfall {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.8); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 20px), var(--ce-dy, 34px)) rotate(var(--ce-rot, 90deg)) scale(1.1); opacity: 0; }
+}
+
+/* ⑨ 落叶飘舞 — 秋叶旋转飘落 */
+.ce-glyph.ce-leaf { font-size: 15px; }
+@keyframes ceLeafFall {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.9); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 30px), var(--ce-dy, 40px)) rotate(var(--ce-rot, -120deg)) scale(1); opacity: 0; }
+}
+
+/* ⑩ 蝴蝶纷飞 — 蝴蝶振翅飞舞 */
+.ce-glyph.ce-butterfly { font-size: 16px; }
+@keyframes ceButterfly {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(-20deg) scale(0.6); opacity: 0; }
+  20%  { opacity: 1; }
+  50%  { transform: translate(-50%, -50%) translate(var(--ce-dx, 24px), var(--ce-dy, -18px)) rotate(15deg) scale(1.1); }
+  100% { transform: translate(-50%, -50%) translate(calc(var(--ce-dx, 24px) * 1.8), calc(var(--ce-dy, -18px) * 1.8)) rotate(-10deg) scale(0.5); opacity: 0; }
+}
+
+/* ⑪ 樱花雨 — 花瓣随风飘散 */
+.ce-glyph.ce-sakura { font-size: 13px; }
+@keyframes ceSakuraFall {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 26px), var(--ce-dy, 36px)) rotate(var(--ce-rot, 160deg)) scale(0.8); opacity: 0; }
+}
+
+/* ⑫ 泡泡上升 — 晶莹气泡上浮 */
+.ce-bubble {
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  border: 1px solid var(--ce-c-soft);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.8), var(--ce-c-weak) 40%, transparent 70%);
+  animation: ceBubbleRise var(--ce-duration, 1s) ease-out forwards;
+}
+@keyframes ceBubbleRise {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
+  15%  { opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 14px), var(--ce-dy, -38px)) scale(1.1); opacity: 0; }
+}
+
+/* ⑬ 水滴下落 — 水滴坠落 */
+.ce-glyph.ce-droplet { font-size: 13px; }
+@keyframes ceDropletFall {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 16px), var(--ce-dy, 40px)) scale(1); opacity: 0; }
+}
+
+/* ⑭ 火星上浮 — 橙红火星升腾 */
+.ce-ember {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #ffd9a0 0%, #ff7a3c 45%, transparent 75%);
+  box-shadow: 0 0 8px 2px rgba(255, 122, 60, 0.5);
+  animation: ceEmberRise var(--ce-duration, 1.2s) ease-out forwards;
+}
+@keyframes ceEmberRise {
+  0%   { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 0.95; }
+  50%  { opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) translateY(-44px) scale(0.3); opacity: 0; }
+}
+
+/* ⑮ 四叶草 — 幸运草旋转 */
+.ce-glyph.ce-clover { font-size: 14px; }
+@keyframes ceCloverTwirl {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.5); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 22px), var(--ce-dy, -26px)) rotate(var(--ce-rot, 180deg)) scale(1); opacity: 0; }
+}
+
+/* ⑯ 菱形闪烁 — 旋转菱形发光 */
+.ce-diamond {
+  width: 9px;
+  height: 9px;
+  background: linear-gradient(135deg, var(--ce-white) 0%, var(--ce-c) 100%);
+  box-shadow: 0 0 8px var(--ce-c-soft);
+  transform: translate(-50%, -50%) rotate(45deg);
+  animation: ceDiamondTwinkle var(--ce-duration, 0.9s) ease-out forwards;
+}
+@keyframes ceDiamondTwinkle {
+  0%   { transform: translate(-50%, -50%) rotate(45deg) scale(0.2); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(135deg) scale(1.2) translateY(-18px); opacity: 0; }
+}
+
+/* ⑰ 四角星 — 四角星闪烁 */
+.ce-star4 {
+  width: 11px;
+  height: 11px;
+  background: var(--ce-white);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 0 4px var(--ce-c-soft));
+  animation: ceStar4Pop var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceStar4Pop {
+  0%   { transform: translate(-50%, -50%) rotate(0deg) scale(0.2); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(120deg) scale(1.3) translateY(-12px); opacity: 0; }
+}
+
+/* ⑱ 十字星 — 十字光芒 */
+.ce-cross {
+  width: 13px;
+  height: 13px;
+  background: var(--ce-white);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M10 0h4v10h10v4H14v10h-4V14H0v-4h10z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M10 0h4v10h10v4H14v10h-4V14H0v-4h10z'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 0 5px var(--ce-c-soft));
+  animation: ceCrossFlash var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceCrossFlash {
+  0%   { transform: translate(-50%, -50%) scale(0.1) rotate(0deg); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5) rotate(90deg); opacity: 0; }
+}
+
+/* ⑲ 光环波纹 — 圆环扩散 */
+.ce-halo {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ce-c-strong);
+  animation: ceHaloPing var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceHaloPing {
+  0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* ⑳ 能量球 — 发光能量脉冲 */
+.ce-energy {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0%, var(--ce-c) 45%, transparent 75%);
+  box-shadow: 0 0 12px 3px var(--ce-c-soft);
+  animation: ceEnergyPulse var(--ce-duration, 0.9s) ease-out forwards;
+}
+@keyframes ceEnergyPulse {
+  0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+  40%  { transform: translate(-50%, -50%) scale(1.4); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+}
+
+/* ㉑ 环绕圆点 — 中心点带光环 */
+.ce-ringdots {
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  border: 1px solid var(--ce-c-strong);
+  animation: ceRingDots var(--ce-duration, 0.9s) ease-out forwards;
+}
+.ce-ringdots::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--ce-white);
+  box-shadow: 0 0 6px var(--ce-c);
+}
+@keyframes ceRingDots {
+  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  20%  { opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+}
+
+/* ㉒ 音符跳跃 — 跳动的音符 */
+.ce-glyph.ce-note { font-size: 14px; }
+@keyframes ceNoteJump {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.6) rotate(-15deg); opacity: 0; }
+  25%  { opacity: 1; }
+  60%  { transform: translate(-50%, -50%) translate(var(--ce-dx, 18px), -30px) scale(1.1) rotate(10deg); }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 30px), -52px) scale(1.2) rotate(15deg); opacity: 0; }
+}
+
+/* ㉓ 月牙 — 月牙轻摇 */
+.ce-glyph.ce-moon { font-size: 14px; }
+@keyframes ceMoonSwing {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(-25deg) scale(0.6); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 20px), var(--ce-dy, -30px)) rotate(20deg) scale(1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PART 2 — 鼠标点击特效（点击/按下时爆发）
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ① 同心涟漪 — 多层扩张圆环 */
+.ce-ripple-ring {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid var(--ce-c-strong);
+  box-shadow: 0 0 8px var(--ce-c-weak), inset 0 0 6px var(--ce-c-weak);
+  animation: ceRippleExpand var(--ce-duration, 0.8s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceRippleExpand {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(4.5); opacity: 0; }
+}
+
+/* ② 扩散圆环 — 单环 + 内芯闪烁 */
+.ce-ring {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ce-c-strong);
+  box-shadow: 0 0 12px var(--ce-c-soft);
+  animation: ceRingOut var(--ce-duration, 0.7s) ease-out forwards;
+}
+.ce-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 9999px;
+  background: var(--ce-white);
+  box-shadow: 0 0 8px var(--ce-c);
+  animation: ceRingCore 0.35s ease-out forwards;
+}
+@keyframes ceRingOut {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+}
+@keyframes ceRingCore {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.2); opacity: 0; }
+}
+
+/* ③ 冲击波 — 快速扩散冲击波 */
+.ce-shockwave {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  border: 2px solid var(--ce-white);
+  box-shadow: 0 0 20px 4px var(--ce-c-soft), inset 0 0 14px var(--ce-c-weak);
+  animation: ceShockwave var(--ce-duration, 0.5s) var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+@keyframes ceShockwave {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+}
+
+/* ④ 环绕轨道 — 粒子沿圆轨道环绕 */
+.ce-orbit {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ce-c-soft);
+  animation: ceOrbit var(--ce-duration, 0.9s) ease-out forwards;
+}
+.ce-orbit::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 9999px;
+  background: var(--ce-white);
+  box-shadow: 0 0 6px var(--ce-c);
+  transform-origin: 50% 13px;
+  animation: ceOrbitSpin 0.6s linear infinite;
+}
+@keyframes ceOrbit {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(0deg); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.4) rotate(60deg); opacity: 0; }
+}
+@keyframes ceOrbitSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ⑤ 虫洞旋涡 — 螺旋收缩的旋涡 */
+.ce-wormhole {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, var(--ce-c), var(--ce-c-weak), var(--ce-white), var(--ce-c));
+  -webkit-mask: radial-gradient(circle, transparent 35%, #000 45%, transparent 60%);
+  mask: radial-gradient(circle, transparent 35%, #000 45%, transparent 60%);
+  animation: ceWormhole var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceWormhole {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(0deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(3) rotate(180deg); opacity: 0; }
+}
+
+/* ⑥ 水波纹 — 水面荡开涟漪 */
+.ce-water {
+  width: 14px;
+  height: 6px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--ce-c-strong);
+  animation: ceWater var(--ce-duration, 0.9s) ease-out forwards;
+}
+@keyframes ceWater {
+  0%   { transform: translate(-50%, -50%) scaleX(0.4) scaleY(1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scaleX(4) scaleY(0.3); opacity: 0; }
+}
+
+/* ⑦ 放射爆裂 — 多粒子沿径向飞出 */
+.ce-burst {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--ce-c-strong);
+  box-shadow: 0 0 6px var(--ce-c-weak);
+  animation: ceBurstFly var(--ce-duration, 0.7s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceBurstFly {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 40px), var(--ce-dy, -40px)) scale(0.15); opacity: 0; }
+}
+
+/* ⑧ 像素方块 — 彩色小方块溅射 */
+.ce-pixel {
+  width: 8px;
+  height: 8px;
+  background: var(--ce-rainbow-color, var(--ce-c));
+  border-radius: 2px;
+  box-shadow: 0 0 4px var(--ce-c-weak);
+  animation: cePixelPop var(--ce-duration, 0.6s) ease-out forwards;
+}
+@keyframes cePixelPop {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 36px), var(--ce-dy, -36px)) rotate(140deg) scale(0.1); opacity: 0; }
+}
+
+/* ⑨ 花瓣绽放 — 椭圆花瓣径向散开，带旋转 */
+.ce-flower {
+  width: 16px;
+  height: 9px;
+  border-radius: 9999px 9999px 9999px 9999px;
+  background: linear-gradient(180deg, var(--ce-white) 0%, var(--ce-c) 100%);
+  filter: drop-shadow(0 0 3px var(--ce-c-weak));
+  animation: ceFlowerBloom var(--ce-duration, 1s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceFlowerBloom {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.4); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 44px), var(--ce-dy, -44px)) rotate(var(--ce-rot, 120deg)) scale(1); opacity: 0; }
+}
+
+/* ⑩ 烟花绽放 — 夜空烟花 */
+.ce-glyph.ce-firework { font-size: 15px; }
+@keyframes ceFirework {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 40px), var(--ce-dy, -40px)) scale(1.3); opacity: 0; }
+}
+
+/* ⑪ 彩带喷射 — 彩色纸屑飞舞 */
+.ce-confetti {
+  width: 6px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ce-rainbow-color, var(--ce-c));
+  box-shadow: 0 0 3px var(--ce-c-weak);
+  animation: ceConfetti var(--ce-duration, 0.9s) ease-out forwards;
+}
+@keyframes ceConfetti {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 46px), var(--ce-dy, 40px)) rotate(var(--ce-rot, 180deg)) scale(0.6); opacity: 0; }
+}
+
+/* ⑫ 雪花爆开 — 雪花四散 */
+.ce-glyph.ce-snow { font-size: 14px; }
+@keyframes ceSnowBurst {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 38px), var(--ce-dy, -38px)) scale(1.1); opacity: 0; }
+}
+
+/* ⑬ 宝石迸发 — 璀璨宝石 */
+.ce-glyph.ce-gem { font-size: 14px; }
+@keyframes ceGemBurst {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.4); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 40px), var(--ce-dy, -40px)) scale(1.1); opacity: 0; }
+}
+
+/* ⑭ 电光四溅 — 电光火花 */
+.ce-spark {
+  width: 4px;
+  height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fff, var(--ce-c) 80%);
+  box-shadow: 0 0 6px var(--ce-c-soft);
+  animation: ceSparkFly var(--ce-duration, 0.5s) ease-out forwards;
+}
+@keyframes ceSparkFly {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 44px), var(--ce-dy, -44px)) scale(0.1) rotate(90deg); opacity: 0; }
+}
+
+/* ⑮ 魔方爆散 — 立体方块旋转 */
+.ce-cube {
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, var(--ce-white) 0%, var(--ce-c) 55%, var(--ce-c-strong) 100%);
+  box-shadow: 0 0 5px var(--ce-c-weak);
+  animation: ceCubePop var(--ce-duration, 0.7s) ease-out forwards;
+}
+@keyframes ceCubePop {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 38px), var(--ce-dy, -38px)) rotate(var(--ce-rot, 180deg)) scale(0.2); opacity: 0; }
+}
+
+/* ⑯ 激光放射 — 细长激光线放射 */
+.ce-laser {
+  width: 26px;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, var(--ce-white) 40%, var(--ce-c) 100%);
+  box-shadow: 0 0 8px var(--ce-c-soft);
+  animation: ceLaser var(--ce-duration, 0.45s) ease-out forwards;
+}
+@keyframes ceLaser {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scaleX(0.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 52px), var(--ce-dy, -52px)) rotate(calc(var(--ce-rot, 0deg) + 40deg)) scaleX(1.6); opacity: 0; }
+}
+
+/* ⑰ 金色雨滴 — 金色粒子洒落 */
+.ce-golden {
+  width: 5px;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #fff8d8, #ffd700 60%, #b8860b);
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+  animation: ceGoldenRain var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceGoldenRain {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 30px), var(--ce-dy, 44px)) scale(0.5) rotate(90deg); opacity: 0; }
+}
+
+/* ⑱ 爱心气泡 — 上浮的心形，膨胀后淡出 */
+.ce-heart {
+  width: 18px;
+  height: 18px;
+  background: var(--ce-c);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 0 4px var(--ce-c-soft));
+  animation: ceHeartRise var(--ce-duration, 1.1s) var(--ease-out-quart, cubic-bezier(0.25, 1, 0.5, 1)) forwards;
+}
+@keyframes ceHeartRise {
+  0%   { transform: translate(-50%, -50%) translateY(0) scale(0.6) rotate(-12deg); opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { opacity: 0.9; transform: translate(-50%, -50%) translateY(-34px) scale(1.1) rotate(6deg); }
+  100% { transform: translate(-50%, -50%) translateY(-56px) scale(1.2) rotate(12deg); opacity: 0; }
+}
+
+/* ⑲ 星芒 — 四角星爆发旋转 */
+.ce-star {
+  width: 22px;
+  height: 22px;
+  background: var(--ce-white);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 0c.8 6.9 4.3 10.4 12 12-7.7 1.6-11.2 5.1-12 12-.8-6.9-4.3-10.4-12-12C7.7 10.4 11.2 6.9 12 0z'/%3E%3C/svg%3E") no-repeat center / contain;
+  filter: drop-shadow(0 0 5px var(--ce-c-soft));
+  animation: ceStarSpin var(--ce-duration, 0.8s) ease-out forwards;
+}
+@keyframes ceStarSpin {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.4) rotate(200deg); opacity: 0; }
+}
+
+/* ⑳ 皇冠升起 — 皇冠升起 */
+.ce-glyph.ce-crown { font-size: 16px; }
+@keyframes ceCrownRise {
+  0%   { transform: translate(-50%, -50%) translateY(0) scale(0.5) rotate(-10deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translateY(-48px) scale(1.1) rotate(8deg); opacity: 0; }
+}
+
+/* ㉑ 闪电 — 闪电炸裂 */
+.ce-glyph.ce-lightning { font-size: 16px; }
+@keyframes ceLightning {
+  0%   { transform: translate(-50%, -50%) scale(0.3) rotate(-15deg); opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { transform: translate(-50%, -50%) scale(1.4) rotate(5deg); }
+  100% { transform: translate(-50%, -50%) scale(1.8) rotate(10deg); opacity: 0; }
+}
+
+/* ㉒ 水花四溅 — 水滴四溅 */
+.ce-glyph.ce-splash { font-size: 14px; }
+@keyframes ceSplash {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(0.5); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--ce-dx, 36px), var(--ce-dy, -36px)) scale(1); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PART 3 — 公共辅助
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 设置面板中的迷你预览：循环播放特效动画 ── */
+.ce-mini-preview {
+  pointer-events: none;
+}
+.ce-mini-preview .ce-el {
+  animation-iteration-count: infinite;
+}
+
+/* ── 设置面板滑块（鼠标特效参数调节） ── */
+.ce-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg,
+    var(--accent, #6366f1),
+    color-mix(in srgb, var(--accent, #6366f1) 35%, transparent));
+  outline: none;
+  cursor: pointer;
+}
+.ce-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid var(--accent, #6366f1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent, #6366f1) 50%, transparent);
+  transition: transform 0.15s ease;
+}
+.ce-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* 减弱动效时全部关闭 */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-effects-layer {
+    display: none;
+  }
+}

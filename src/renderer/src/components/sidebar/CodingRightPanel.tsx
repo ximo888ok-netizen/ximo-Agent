@@ -1,7 +1,16 @@
 import { FileText, SearchCode, FolderTree, GitBranch, CheckCircle, FolderSearch, Bug, FlaskConical, Sparkles, Package } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useStore } from '../../store/useStore'
-import type { ContextEntry } from '../RightSidebar'
 import { ProjectFileTreePanel } from './ProjectFileTreePanel'
+
+/** 工具入口定义 — 图标 + 标题 + 预设提示词 */
+interface ContextEntry {
+  id: string
+  label: string
+  icon: LucideIcon
+  subtitle: string
+  prompt: string
+}
 
 /** 编程模式工具入口列表 */
 const CODING_ENTRIES: ContextEntry[] = [

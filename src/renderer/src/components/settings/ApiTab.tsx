@@ -9,8 +9,9 @@ import {
   ExternalLink
 } from 'lucide-react'
 import type { AppSettings, TestResult } from '@shared/types'
-import { SectionTitle } from './shared-components'
+import { SectionTitle, Divider } from './shared-components'
 import type { TestState } from './shared-components'
+import { ProvidersSection } from './ProvidersSection'
 
 export function ApiTab({
   local,
@@ -155,6 +156,11 @@ export function ApiTab({
           DeepSeek API 基础地址，兼容 OpenAI 格式，一般无需修改
         </p>
       </div>
+
+      <Divider />
+
+      {/* 自定义模型服务商 */}
+      <ProvidersSection local={local} update={update} />
     </div>
   )
 }

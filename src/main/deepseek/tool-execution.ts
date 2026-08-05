@@ -32,6 +32,23 @@ export interface ExecuteToolCallsParams {
   baseUrl: string
 }
 
+/**
+ * 单工具执行兜底超时 — 个别工具（terminal、fetch、playwright 等）在极端情况下可能永不 resolve：
+ * 子进程不退出、网络连接挂起等。这里用 Promise.race 包一层，超时后返回错误 ToolResult，
+ * 避免整个 Agent Loop 卡死在这一轮工具执行上。
+ */
+const TOOL_EXEC_TIMEOUT_MS = 180_000 // 3 分钟兜底，正常工具远不会触及
+
+function withToolTimeout<T>(promise: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(onTimeout()), ms)
+  })
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
+
 /** 权限评估结果：被取消的工具调用 ID 集合 */
 async function checkPermissions(
   toolCalls: ToolCall[],
@@ -59,7 +76,8 @@ async function checkPermissions(
         success: false, error: '权限拒绝：该工具在当前模式下不可用'
       }
       handlers.onChunk({ toolResult: deniedResult, toolStatus: 'done', toolName: tc.name })
-      messages.push({ role: 'tool', content: '此工具在当前模式下被禁止执行', tool_call_id: tc.id })
+      // 与渲染层 buildApiMessages 重建格式保持一致（Error: 前缀），避免前缀字节漂移导致缓存 miss
+      messages.push({ role: 'tool', content: 'Error: 权限拒绝：该工具在当前模式下不可用', tool_call_id: tc.id })
     } else if (decision === 'ask') {
       if (handlers.requestConfirmation) {
         const toolLabel = tc.name.replace(/_/g, ' ')
@@ -75,7 +93,8 @@ async function checkPermissions(
             content: '用户取消了此操作', success: false, error: '用户取消执行'
           }
           handlers.onChunk({ toolResult: cancelledResult, toolStatus: 'done', toolName: tc.name })
-          messages.push({ role: 'tool', content: '用户取消了此操作', tool_call_id: tc.id })
+          // 与渲染层重建格式保持一致（Error: 前缀）
+          messages.push({ role: 'tool', content: 'Error: 用户取消执行', tool_call_id: tc.id })
         }
       } else {
         // fail-closed：requestConfirmation 未注入时按 deny 处理
@@ -86,7 +105,7 @@ async function checkPermissions(
           success: false, error: '权限拒绝：requestConfirmation 未注入'
         }
         handlers.onChunk({ toolResult: deniedResult, toolStatus: 'done', toolName: tc.name })
-        messages.push({ role: 'tool', content: '无法确认操作：未提供确认回调，出于安全考虑拒绝执行', tool_call_id: tc.id })
+        messages.push({ role: 'tool', content: 'Error: 权限拒绝：requestConfirmation 未注入', tool_call_id: tc.id })
       }
     }
   }
@@ -122,7 +141,15 @@ async function executeActiveCalls(
         }
       }
 
-      const toolResult = await tool.execute(tc, onChunk, signal, context)
+      const toolResult = await withToolTimeout(
+        tool.execute(tc, onChunk, signal, context),
+        TOOL_EXEC_TIMEOUT_MS,
+        () => ({
+          toolCallId: tc.id, toolName: tc.name,
+          content: '', success: false,
+          error: `工具执行超时（超过 ${TOOL_EXEC_TIMEOUT_MS / 1000}s 无响应），已自动中断以避免卡死`
+        })
+      )
       return { tc, result: toolResult }
     })
   )
@@ -201,9 +228,10 @@ export async function executeToolCalls(params: ExecuteToolCallsParams): Promise<
       }
 
       // 工具执行失败时，将 error 信息作为 content 传给 LLM
+      // 失败统一为 "Error: xxx" 格式 — 与渲染层 buildApiMessages 重建格式（`Error: ${result.error}`）一致，避免前缀字节漂移
       const toolContent = toolResult.success
         ? toolResult.content
-        : (toolResult.error || toolResult.content || '工具执行失败')
+        : `Error: ${toolResult.error || toolResult.content || '工具执行失败'}`
       messages.push({
         role: 'tool',
         content: sanitizeContent(truncateToolResult(toolContent)),
@@ -222,22 +250,30 @@ export async function executeToolCalls(params: ExecuteToolCallsParams): Promise<
 
   // 监督审查 — 收集并行运行的监督结果
   if (supervisionPromise) {
-    const supervisionResult = await supervisionPromise
+    // 兜底超时：即使 runSupervisionCheck 内部超时失效，也不阻塞 Agent Loop 继续
+    const supervisionResult = await Promise.race([
+      supervisionPromise,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 45_000))
+    ])
     if (supervisionResult) {
+      // 纠正消息全文 — 随 chunk 发送给渲染层持久化，重建消息时保持一致（缓存友好）
+      const correctionMessage = needsCorrection(supervisionResult)
+        ? buildCorrectionMessage(supervisionResult, round)
+        : undefined
       onChunk({
         supervision: {
           verdict: supervisionResult.verdict,
           issues: supervisionResult.issues,
           correction: supervisionResult.correction,
           severity: supervisionResult.severity,
-          round
+          round,
+          ...(correctionMessage ? { message: correctionMessage } : {})
         }
       })
-      if (needsCorrection(supervisionResult)) {
-        messages.push({
-          role: 'system',
-          content: buildCorrectionMessage(supervisionResult, round)
-        })
+      if (correctionMessage) {
+        // 末尾追加（在所有工具结果之后）— Loop 内前缀保持 append-only 稳定；
+        // 渲染层持久化该消息后，重建消息列表时可保持位置与字节一致
+        messages.push({ role: 'system', content: correctionMessage })
       }
     }
   }

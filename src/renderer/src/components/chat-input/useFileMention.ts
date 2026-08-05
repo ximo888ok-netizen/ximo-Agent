@@ -14,7 +14,7 @@ function flattenTree(nodes: FileTreeNode[], prefix = ''): string[] {
 
 /** @file 引用 hook — 检测 @ 触发文件列表，键盘导航 */
 export function useFileMention(
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>,
+  textareaRef: React.RefObject<HTMLTextAreaElement>,
   text: string,
   setText: (t: string) => void,
   currentMode: Mode,

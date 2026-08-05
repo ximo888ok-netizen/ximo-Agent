@@ -11,6 +11,8 @@ export interface ToolParamProperty {
   items?: ToolParamProperty
   properties?: Record<string, ToolParamProperty>
   required?: string[]
+  /** JSON Schema 标准字段：object 类型的任意键值约束 */
+  additionalProperties?: ToolParamProperty
 }
 
 /** 工具定义 — 注册时使用 */

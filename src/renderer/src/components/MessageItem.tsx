@@ -1,10 +1,13 @@
 import { memo, useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { Check, ChevronDown, Copy, RotateCcw, Brain, Cpu, Pencil } from 'lucide-react'
-import type { ChatMessage, StreamingSegment } from '@shared/types'
+import type { ChatMessage, StreamingSegment, StreamChunk } from '@shared/types'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { TOOL_LABELS } from './message-constants'
 import { ToolCallGroup, CollapsedToolResults, CollapsedToolErrors } from './ToolCallGroup'
 import { SegmentBlock } from './SegmentBlock'
+import { ExpertWorkCard } from './message/ExpertWorkCard'
+
+type SubAgentEvent = NonNullable<StreamChunk['subAgentEvent']>
 
 // 懒加载截图预览 — 仅在点击截图放大时才需要
 const ScreenshotPreview = lazy(() => import('./ScreenshotPreview').then(m => ({ default: m.ScreenshotPreview })))
@@ -17,6 +20,8 @@ interface MessageItemProps {
   streamingToolCalls?: { name: string; status: 'thinking' | 'calling' | 'done'; args?: string; result?: string }[]
   /** 流式工作步骤（按时间顺序，每轮 Agent Loop 一个 segment） */
   streamingSegments?: StreamingSegment[]
+  /** 流式子 Agent 工作过程事件（专家团编排时实时展示） */
+  streamingExpertEvents?: SubAgentEvent[]
   isLast?: boolean
   canRegenerate?: boolean
   onRegenerate?: () => void
@@ -33,6 +38,7 @@ export const MessageItem = memo(function MessageItem({
   streamingReasoning = '',
   streamingToolCalls = [],
   streamingSegments = [],
+  streamingExpertEvents = [],
   canRegenerate = false,
   onRegenerate,
   onEditMessage,
@@ -93,14 +99,46 @@ export const MessageItem = memo(function MessageItem({
   const reasoning = isStreaming ? streamingReasoning : message.reasoningContent
   const content = isStreaming ? streamingContent : message.content
 
+  // 流式专家事件 — 从 streamingSegments 的 expertEvents 中提取（调用方无需单独传 prop）
+  const streamingExpertEventsResolved = useMemo<SubAgentEvent[]>(() => {
+    if (streamingExpertEvents && streamingExpertEvents.length > 0) return streamingExpertEvents
+    const all: SubAgentEvent[] = []
+    for (const seg of streamingSegments) {
+      if (seg.expertEvents) all.push(...seg.expertEvents)
+    }
+    return all
+  }, [streamingExpertEvents, streamingSegments])
+
   const segmentsToRender: StreamingSegment[] | null = (() => {
     if (isStreaming && streamingSegments) {
-      const nonEmpty = streamingSegments.filter(s => s.reasoning || s.content || s.toolCalls.length > 0)
+      const nonEmpty = streamingSegments.filter(s => s.reasoning || s.content || s.toolCalls.length > 0 || (s.expertEvents && s.expertEvents.length > 0))
       if (nonEmpty.length > 1) return nonEmpty
     }
     if (!isStreaming && message.segments && message.segments.length > 1) return message.segments
     return null
   })()
+
+  // 持久化专家事件 — 从 message.segments 或 message.toolResults 提取（渲染完成后不依赖流式状态）
+  const persistedExpertEvents = useMemo<SubAgentEvent[]>(() => {
+    if (!message) return []
+    const fromSegments: SubAgentEvent[] = []
+    if (message.segments) {
+      for (const seg of message.segments) {
+        if (seg.expertEvents) fromSegments.push(...seg.expertEvents)
+      }
+    }
+    if (fromSegments.length > 0) return fromSegments
+    // 降级：从 toolResults metadata 提取（AgentExpertTool 写入）
+    if (message.toolResults) {
+      const all: SubAgentEvent[] = []
+      for (const r of message.toolResults) {
+        const events = r.metadata?.expertEvents as SubAgentEvent[] | undefined
+        if (Array.isArray(events)) all.push(...events)
+      }
+      return all
+    }
+    return []
+  }, [message])
 
   return (
     <div className="flex gap-3 animate-fade-in">
@@ -150,6 +188,10 @@ export const MessageItem = memo(function MessageItem({
               <div className="mb-2"><ToolCallGroup calls={streamingToolCalls} /></div>
             )}
 
+            {streamingExpertEventsResolved.length > 0 && (
+              <div className="mb-2"><ExpertWorkCard events={streamingExpertEventsResolved} /></div>
+            )}
+
             <div className="overflow-x-auto">
               {content ? (
                 <MarkdownRenderer content={content} />
@@ -189,6 +231,11 @@ export const MessageItem = memo(function MessageItem({
           if (errorResults.length === 0) return null
           return <CollapsedToolErrors results={errorResults} />
         })()}
+
+        {/* 持久化专家工作过程卡片（非流式，渲染完成后展示） */}
+        {!isStreaming && persistedExpertEvents.length > 0 && (
+          <div className="mb-2"><ExpertWorkCard events={persistedExpertEvents} /></div>
+        )}
 
         {/* 内联工具结果卡片 */}
         {showToolResults && !segmentsToRender && message.toolResults && !isStreaming && (() => {

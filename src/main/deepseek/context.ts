@@ -1,6 +1,7 @@
 import type { ToolCall } from '@shared/types'
 import type { SingleCallResult } from './types'
 import { truncateToolResult as _truncate, type AgentConfig } from '@shared/context-compress'
+import type { ProviderCapabilities } from './provider'
 
 // ---------- 常量 ----------
 
@@ -12,7 +13,13 @@ export const agentConfig = {
   recentKeep: 5,
   snippedKeep: 200,
   prunedKeep: 80,
-  checkpointEnabled: true
+  checkpointEnabled: true,
+  /** 规划轮开关 — 默认开启（保持既有行为），用户可在设置中关闭 */
+  planningEnabled: true,
+  /** 当前服务商上下文窗口（tokens）— 内置 DeepSeek 为 1M，自定义服务商按配置 */
+  contextWindow: 1_000_000,
+  /** 当前服务商能力开关 — 缺省全开（DeepSeek 行为不变） */
+  capabilities: { sendReasoningParams: true, sendStreamUsage: true } as ProviderCapabilities
 }
 
 /** 从外部设置 agent 配置（由 index.ts 在 agentLoop 调用前注入） */

@@ -1,5 +1,7 @@
 import { memo, useState, useRef, useEffect } from 'react'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { useStore } from '@renderer/store/useStore'
+import { getActiveContextWindow } from '@renderer/lib/providers'
 
 interface ConversationItemProps {
   conv: { id: string; title: string; mode: string; projectPath?: string; contextTokens?: number }
@@ -26,8 +28,9 @@ export const ConversationItem = memo(function ConversationItem({
   const [editTitle, setEditTitle] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 上下文窗口占用指示器
-  const CONTEXT_WINDOW = 1_000_000
+  // 上下文窗口占用指示器 — 窗口大小随活跃服务商变化（内置 DeepSeek = 1M）
+  // 选中原始数值（而非整个 settings 对象）— 仅在窗口值变化时重渲染
+  const CONTEXT_WINDOW = useStore((s) => getActiveContextWindow(s.settings))
   const ctxTokens = conv.contextTokens ?? 0
   const ctxPct = ctxTokens > 0 ? Math.min(100, (ctxTokens / CONTEXT_WINDOW) * 100) : 0
   const ctxColor = ctxPct >= 80 ? '#ef4444'

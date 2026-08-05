@@ -2,6 +2,32 @@
 
 import type { ModelId, ReasoningEffort, FontSize } from './core'
 
+/**
+ * 自定义模型服务商配置（OpenAI 兼容协议）。
+ * 内置 DeepSeek 服务商 id 固定为 'deepseek'，其数据载体是顶层 apiKey/baseUrl/model 字段，
+ * 不出现在 providers 列表中。
+ */
+export interface ProviderConfig {
+  /** 服务商唯一 ID（创建时生成，不可变） */
+  id: string
+  /** 显示名称 */
+  name: string
+  /** OpenAI 兼容 Base URL（如 https://api.openai.com/v1） */
+  baseUrl: string
+  /** API Key */
+  apiKey: string
+  /** 用户预设的可用模型名列表 */
+  models: string[]
+  /** 上下文窗口大小（tokens），缺省 131072 */
+  contextWindowTokens?: number
+  /** 单次最大输出 token，缺省 8192 */
+  maxOutputTokens?: number
+  /** 是否发送 thinking/reasoning 专属参数（enable_thinking/reasoning_effort），默认 true */
+  sendReasoningParams?: boolean
+  /** 是否发送 stream_options.include_usage，默认 true */
+  sendStreamUsage?: boolean
+}
+
 export interface AppSettings {
   apiKey: string
   baseUrl: string
@@ -22,6 +48,12 @@ export interface AppSettings {
   yoloMode?: boolean
   /** 最近打开的项目路径列表（coding 模式） */
   recentProjects?: string[]
+
+  // ---- 模型服务商 ----
+  /** 自定义服务商列表（OpenAI 兼容协议） */
+  providers?: ProviderConfig[]
+  /** 当前活跃服务商 ID：'deepseek'=内置，其余对应 providers 中的条目 */
+  activeProviderId?: string
 
   // ---- 主子 Agent 设置 ----
   /** 子 Agent 使用的模型（默认与主 Agent 相同） */
@@ -44,6 +76,8 @@ export interface AppSettings {
   // ---- Agent 循环与上下文管理 ----
   /** Agent Loop 最多连续调用工具次数，防止死循环 */
   maxToolRounds?: number
+  /** 规划轮开关 — 开启后复杂任务先跑一次规划阶段（多一次 API 往返，换取工具选择更精准） */
+  planningEnabled?: boolean
   /** 上下文窗口最大字符数估算 */
   maxContextChars?: number
   /** 工具结果最大字符数，超出则截断 */
@@ -156,7 +190,86 @@ export interface AppSettings {
   // ---- 背景图 ----
   /** 背景图配置 */
   backgroundImage?: BackgroundImageConfig
+
+  // ---- 鼠标特效（跟随 + 点击）----
+  /** 鼠标特效总开关 */
+  cursorEffectsEnabled?: boolean
+  /** 鼠标跟随特效样式：'none' | 'trail' | 'sparkle' | 'firefly' | 'glow' | 'aurora' | 'comet' | 'rainbow' */
+  cursorTrailStyle?: CursorTrailStyle
+  /** 鼠标点击特效样式：'none' | 'ripple' | 'ring' | 'burst' | 'heart' | 'star' | 'pixel' | 'flower' */
+  cursorClickStyle?: CursorClickStyle
+  /** 鼠标特效颜色（留空 = 跟随主题色） */
+  cursorEffectColor?: string
+  /** 特效尺寸缩放（0.5 ~ 2.0） */
+  cursorEffectScale?: number
+  /** 特效强度（生成频率，0.2 ~ 3.0） */
+  cursorEffectIntensity?: number
+  /** 跟随特效尾部数量（6 ~ 40） */
+  cursorTrailCount?: number
+  /** 点击特效粒子数量（6 ~ 40） */
+  cursorClickCount?: number
+  /** 特效生存时长（ms，400 ~ 3000） */
+  cursorEffectDuration?: number
 }
+
+/** 鼠标跟随特效样式 */
+export type CursorTrailStyle =
+  | 'none'
+  // 基础粒子
+  | 'trail'      // 经典渐隐尾迹
+  | 'sparkle'    // 星光点点
+  | 'firefly'    // 萤火虫
+  | 'glow'       // 光晕拖尾
+  | 'aurora'     // 极光流光
+  | 'comet'      // 彗星拖尾
+  | 'rainbow'    // 彩虹粒子
+  // 自然元素
+  | 'snowflake'  // 雪花飘落
+  | 'leaf'       // 落叶飘舞
+  | 'butterfly'  // 蝴蝶纷飞
+  | 'sakura'     // 樱花雨
+  | 'bubble'     // 泡泡上升
+  | 'droplet'    // 水滴下落
+  | 'ember'      // 火星上浮
+  | 'clover'     // 四叶草
+  // 符号图形
+  | 'diamond'    // 菱形闪烁
+  | 'star4'      // 四角星
+  | 'cross'      // 十字星
+  | 'halo'       // 光环波纹
+  | 'energy'     // 能量球
+  | 'ringdots'   // 环绕圆点
+  | 'note'       // 音符跳跃
+  | 'moon'       // 月牙
+
+/** 鼠标点击特效样式 */
+export type CursorClickStyle =
+  | 'none'
+  // 波纹环状
+  | 'ripple'     // 同心涟漪
+  | 'ring'       // 扩散圆环
+  | 'shockwave'  // 冲击波
+  | 'orbit'      // 环绕轨道
+  | 'wormhole'   // 虫洞旋涡
+  // 粒子爆发
+  | 'burst'      // 放射爆裂
+  | 'pixel'      // 像素方块
+  | 'flower'     // 花瓣绽放
+  | 'firework'   // 烟花绽放
+  | 'confetti'   // 彩带喷射
+  | 'snow'       // 雪花爆开
+  | 'gem'        // 宝石迸发
+  | 'spark'      // 电光四溅
+  | 'cube'       // 魔方爆散
+  | 'laser'      // 激光放射
+  | 'golden'     // 金色雨滴
+  // 单体元素
+  | 'heart'      // 爱心气泡
+  | 'star'       // 星芒
+  | 'crown'      // 皇冠升起
+  | 'lightning'  // 闪电
+  | 'splash'     // 水花四溅
+  | 'water'      // 水波纹
 
 /** 背景图配置 */
 export interface BackgroundImageConfig {

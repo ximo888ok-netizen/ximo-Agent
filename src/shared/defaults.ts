@@ -23,6 +23,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   yoloMode: false,
   recentProjects: [],
 
+  // ---- 模型服务商 ----
+  providers: [],
+  activeProviderId: 'deepseek',
+
   // ---- 主子 Agent 设置 ----
   subAgentModel: 'deepseek-v4-flash',
   subAgentMaxTokens: 393216,
@@ -91,6 +95,17 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
   // ---- 背景图 ----
   backgroundImage: { type: 'none' },
+
+  // ---- 鼠标特效（跟随 + 点击）----
+  cursorEffectsEnabled: false,
+  cursorTrailStyle: 'trail',
+  cursorClickStyle: 'ripple',
+  cursorEffectColor: '',
+  cursorEffectScale: 1,
+  cursorEffectIntensity: 1,
+  cursorTrailCount: 20,
+  cursorClickCount: 16,
+  cursorEffectDuration: 900,
 
   // ---- 开屏动画 ----
   startupAnimationEnabled: true,

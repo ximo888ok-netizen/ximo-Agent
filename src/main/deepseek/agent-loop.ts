@@ -62,10 +62,11 @@ export async function agentLoop(
 
   // ── Phase 0: 规划轮 ──
   // 用文本目录（~300 tokens）替代完整工具 schema（~15000 tokens），让 Agent 先理解任务、选出所需工具
-  // 触发条件：工具数 > 5 且用户消息较长（复杂任务才值得规划往返开销）
+  // 触发条件：规划轮开关开启 且 工具数 > 5 且用户消息较长（复杂任务才值得规划往返开销）
+  // planningEnabled 由 settings 注入（chat-handler → request 无此字段，从 agentConfig 读取）
   const lastUserMsg = messages.filter(m => m.role === 'user').pop()
   const userMsgLen = lastUserMsg?.content?.length ?? 0
-  if (tools && tools.length > 5 && userMsgLen > 30 && !signal?.aborted) {
+  if (agentConfig.planningEnabled && tools && tools.length > 5 && userMsgLen > 30 && !signal?.aborted) {
     const filtered = await runPlanningPhase(apiKey, baseUrl, request, messages, tools, handlers)
     if (filtered && filtered.length > 0) {
       tools = filtered
@@ -82,8 +83,8 @@ export async function agentLoop(
   // D2 PrefixShape 哈希诊断
   let lastPrefixShape: PrefixShape | null = null
 
-  // DeepSeek-V4 系列上下文窗口 1M tokens — 与前端 CONTEXT_WINDOW 一致
-  const contextWindow = 1_000_000
+  // 上下文窗口 — 由 chat-handler 按活跃服务商注入 agentConfig（内置 DeepSeek 1M）
+  const contextWindow = agentConfig.contextWindow
 
   let round = 0
 
@@ -100,11 +101,11 @@ export async function agentLoop(
     const prefixShape = captureShape(systemPrompt, tools || [], ctxManager.rewriteVersion)
     const prevShape = lastPrefixShape ?? prefixShape
 
-    // 单次 API 调用
+    // 单次 API 调用（caps 透传 — 自定义服务商裁剪 DeepSeek 专属参数）
     const result = await callDeepSeekStream(
       apiKey, baseUrl, request.model, messages, tools,
       request.thinkingMode, request.reasoningEffort, request.temperature,
-      request.maxTokens, handlers
+      request.maxTokens, handlers, agentConfig.capabilities
     )
 
     // D2 诊断对比 — 每轮 API 调用后
@@ -174,7 +175,8 @@ export async function agentLoop(
   })
   const finalResult = await callDeepSeekStream(
     apiKey, baseUrl, request.model, messages, undefined,
-    request.thinkingMode, request.reasoningEffort, request.temperature, request.maxTokens, handlers
+    request.thinkingMode, request.reasoningEffort, request.temperature, request.maxTokens, handlers,
+    agentConfig.capabilities
   )
   if (finalResult.finishReason === 'error') {
     onChunk({ done: true, error: finalResult.error })

@@ -77,6 +77,16 @@
     },
     "asarUnpack": [
       "prebuilt/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/officecli",
+        "to": "officecli",
+        "filter": [
+          "officecli.exe",
+          "officecli"
+        ]
+      }
     ]
   }
 }

@@ -31,7 +31,14 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 // ---------- 会话 ----------
 
 let saveConvTimer: ReturnType<typeof setTimeout> | null = null
+let saveConvMaxTimer: ReturnType<typeof setTimeout> | null = null
 let pendingConversations: Conversation[] | null = null
+
+// 防抖窗口：500ms 内多次调用合并为一次磁盘写入
+const SAVE_DEBOUNCE_MS = 500
+// maxWait 兜底：高频连续调用（流式每 chunk 触发）时，最多 5s 必须落盘一次，
+// 避免 Promise 被无限推迟 resolve（崩溃/断电时丢失最近数据）
+const SAVE_MAX_WAIT_MS = 5000
 
 export async function loadConversations(): Promise<Conversation[]> {
   try {
