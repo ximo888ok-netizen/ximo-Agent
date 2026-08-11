@@ -1,50 +1,25 @@
 import type { StateCreator } from 'zustand'
 import type { Conversation, Mode } from '@shared/types'
-import type { StoreState } from '../types'
-import { genId } from '../utils'
+import type { StoreState } from '@renderer/store/types'
+import { genId, makeTitle } from '../store-utils'
 
 export type ConversationSlice = Pick<StoreState,
-  | '_persist'
-  | 'init'
+  | 'conversations'
+  | 'currentConversationId'
+  | 'currentConversationIds'
   | 'newConversation'
   | 'selectConversation'
   | 'deleteConversation'
   | 'renameConversation'
   | 'clearAllConversations'
-  | 'reloadConversations'
   | 'getCurrentConversation'
+  | 'reloadConversations'
 >
 
 export const createConversationSlice: StateCreator<StoreState, [], [], ConversationSlice> = (set, get) => ({
-  _persist: async () => {
-    await window.api.conversations.save(get().conversations)
-  },
-
-  init: async () => {
-    const [settings, conversations] = await Promise.all([
-      window.api.settings.load(),
-      window.api.conversations.load()
-    ])
-    // 为每个模式找到最近的会话作为默认选中
-    const currentConversationIds: Record<Mode, string | null> = { office: null, coding: null, design: null }
-    for (const mode of ['office', 'coding', 'design'] as Mode[]) {
-      const latest = conversations
-        .filter((c) => c.mode === mode)
-        .sort((a, b) => b.updatedAt - a.updatedAt)[0]
-      if (latest) currentConversationIds[mode] = latest.id
-    }
-    const currentConversationId = currentConversationIds.office
-    const currentConv = conversations.find((c) => c.id === currentConversationId) ?? null
-    set({
-      settings,
-      conversations,
-      currentConversationIds,
-      currentConversationId,
-      projectPath: currentConv?.projectPath || '',
-      autoModeLevel: settings.defaultAutoModeLevel ?? 'off',
-      networkSearchOn: settings.defaultNetworkSearchOn ?? false
-    })
-  },
+  conversations: [],
+  currentConversationId: null,
+  currentConversationIds: { office: null, coding: null, design: null },
 
   newConversation: (mode) => {
     const useMode = mode ?? get().currentMode
@@ -71,6 +46,8 @@ export const createConversationSlice: StateCreator<StoreState, [], [], Conversat
   },
 
   selectConversation: (id) => {
+    // 流式传输中切换到不同会话 — 先取消当前流，避免 isStreaming=true 卡住新会话
+    if (get().isStreaming && get().currentConversationId !== id) void get().cancelStream()
     const conv = get().conversations.find((c) => c.id === id)
     if (conv) {
       set({
@@ -120,6 +97,11 @@ export const createConversationSlice: StateCreator<StoreState, [], [], Conversat
     void get()._persist()
   },
 
+  getCurrentConversation: () => {
+    const { conversations, currentConversationId } = get()
+    return conversations.find((c) => c.id === currentConversationId) ?? null
+  },
+
   reloadConversations: async () => {
     const conversations = await window.api.conversations.load()
     const oldIds = get().currentConversationIds
@@ -136,10 +118,5 @@ export const createConversationSlice: StateCreator<StoreState, [], [], Conversat
       currentConversationId: currentConv ? convId : null,
       projectPath: currentConv?.projectPath || ''
     })
-  },
-
-  getCurrentConversation: () => {
-    const { conversations, currentConversationId } = get()
-    return conversations.find((c) => c.id === currentConversationId) ?? null
   },
 })

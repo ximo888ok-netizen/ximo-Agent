@@ -122,8 +122,22 @@ webview {
     position: relative;
     border-radius: 20px;
     overflow: hidden;
+    /* 注意：不能在此加 box-shadow —— #root 填满窗口视口，阴影向外扩散会超出窗口像素被裁剪，透明窗口下不显示 */
   }
   .window-maximized #root {
+    border-radius: 0;
+  }
+  /* 最大化/还原时圆角平滑过渡（box-shadow 不参与——窗口内满血布局无法绘制外部阴影） */
+  #root {
+    transition: border-radius 0.15s ease;
+  }
+
+  /* 背景图层 — 与 #root 圆角对齐，避免背景图在四角溢出（body 透明，溢出会透过窗口显示） */
+  #background-layer {
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .window-maximized #background-layer {
     border-radius: 0;
   }
 
@@ -141,6 +155,13 @@ webview {
   }
   .startup-active #root::after {
     display: none;
+  }
+  /* 内阴影增强 — 在窗口内部边缘压一层阴影，让圆角边界更"立体"（inset 不超出窗口，安全） */
+  #root {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06), inset 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
+  .window-maximized #root {
+    box-shadow: none;
   }
 
   ::selection {
@@ -425,6 +446,9 @@ webview {
   }
   .no-drag {
     -webkit-app-region: no-drag;
+  }
+  .drag-region:active {
+    cursor: grabbing;
   }
 
   /* ═══ Markdown 正文样式 ═══ */
@@ -1380,6 +1404,240 @@ webview {
 }
 .transcript__jump-bottom:active {
   transform: translateX(-50%) scale(0.92);
+}
+
+/* ═══ 悬浮语音圆球 VoiceOrb ═══ */
+.voice-orb {
+  position: fixed;
+  z-index: 9999;
+  border-radius: 50%;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.3s var(--ease-out-quart);
+  /* 渐变球体 — 默认主题色 */
+  background: radial-gradient(circle at 35% 30%, var(--theme-color, #6366f1), color-mix(in srgb, var(--theme-color, #6366f1) 60%, #000) 100%);
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 40%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+    inset 0 1px 2px rgba(255, 255, 255, 0.25);
+}
+.voice-orb:active {
+  cursor: grabbing;
+}
+
+/* idle 状态：呼吸动画 */
+.voice-orb--idle {
+  animation: voiceOrbBreath 3.5s ease-in-out infinite;
+}
+@keyframes voiceOrbBreath {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 25%, transparent),
+      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 6px 28px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--theme-color, #6366f1) 35%, transparent),
+      inset 0 1px 3px rgba(255, 255, 255, 0.35);
+    transform: scale(1.06);
+  }
+}
+
+/* listening 状态：红色调 + 脉冲 */
+.voice-orb--listening {
+  background: radial-gradient(circle at 35% 30%, #ef4444, #b91c1c 100%);
+  animation: voiceOrbPulse 1.2s ease-in-out infinite;
+}
+@keyframes voiceOrbPulse {
+  0%, 100% { transform: scale(1.05); }
+  50% { transform: scale(1.15); }
+}
+
+/* speaking 状态：主题色 + 跳动 */
+.voice-orb--speaking {
+  animation: voiceOrbSpeak 0.8s ease-in-out infinite;
+}
+@keyframes voiceOrbSpeak {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* transcribing 状态：蓝色调 + 缓慢呼吸 */
+.voice-orb--transcribing {
+  background: radial-gradient(circle at 35% 30%, #3b82f6, #1d4ed8 100%);
+  animation: voiceOrbBreath 2s ease-in-out infinite;
+}
+
+/* 涟漪环 — 监听/播报时从球体扩散 */
+.voice-orb__ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  color: inherit;
+  pointer-events: none;
+  animation: voiceOrbRipple 1.8s ease-out infinite;
+}
+.voice-orb--listening .voice-orb__ripple {
+  color: #ef4444;
+}
+.voice-orb--speaking .voice-orb__ripple {
+  color: var(--theme-color, #6366f1);
+}
+.voice-orb__ripple--delayed {
+  animation-delay: 0.6s;
+}
+@keyframes voiceOrbRipple {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+/* 声波柱 — 球体内部 4 根跳动柱 */
+.voice-orb__bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.voice-orb__bars span {
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  animation: voiceOrbBar 0.6s ease-in-out infinite;
+}
+.voice-orb__bars span:nth-child(2) {
+  animation-delay: 0.15s;
+  animation-duration: 0.7s;
+}
+.voice-orb__bars span:nth-child(3) {
+  animation-delay: 0.3s;
+  animation-duration: 0.5s;
+}
+.voice-orb__bars span:nth-child(4) {
+  animation-delay: 0.1s;
+  animation-duration: 0.65s;
+}
+@keyframes voiceOrbBar {
+  0%, 100% { height: 4px; opacity: 0.5; }
+  50% { height: 16px; opacity: 1; }
+}
+
+/* 中心图标 */
+.voice-orb__core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  transition: opacity 0.2s;
+}
+.voice-orb--listening .voice-orb__core,
+.voice-orb--speaking .voice-orb__core {
+  opacity: 0;
+}
+
+/* TTS 开关徽章 — hover 时显现 */
+.voice-orb__tts-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--glass-bg-strong, rgba(255, 255, 255, 0.9));
+  background: var(--bg-elevated, #1e1e2e);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 3;
+}
+.voice-orb:hover .voice-orb__tts-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+.voice-orb__tts-badge:hover {
+  color: var(--theme-color);
+  transform: scale(1.15);
+}
+
+/* 实时识别文本浮窗 — 监听时球体上方显示 */
+.voice-orb__interim {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 220px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-DEFAULT, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  animation: voiceOrbBubble 0.25s ease-out;
+}
+.voice-orb__interim::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+}
+@keyframes voiceOrbBubble {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* 错误提示 */
+.voice-orb__error {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 180px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: voiceOrbBubble 0.25s ease-out;
 }
 
 /* 减弱动效 — 无障碍硬性要求 */

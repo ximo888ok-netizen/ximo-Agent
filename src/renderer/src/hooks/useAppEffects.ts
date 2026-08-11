@@ -4,58 +4,47 @@ import { useStore } from '@renderer/store/useStore'
 /** 应用全局副作用 — 键盘快捷键、主题、窗口状态 */
 export function useAppEffects(loaded: boolean): void {
   // ---- 全局键盘快捷键 ----
-  const newConversation = useStore((s) => s.newConversation)
-  const setMode = useStore((s) => s.setMode)
-  const setShowSettings = useStore((s) => s.setShowSettings)
-  const setShowAgentPanel = useStore((s) => s.setShowAgentPanel)
-  const setShowMemoryPanel = useStore((s) => s.setShowMemoryPanel)
-  const setShowKnowledgePanel = useStore((s) => s.setShowKnowledgePanel)
-  const regenerate = useStore((s) => s.regenerate)
-  const isStreaming = useStore((s) => s.isStreaming)
-  const openProject = useStore((s) => s.openProject)
-  const projectPath = useStore((s) => s.projectPath)
-
+  // 所有状态在 keydown 时通过 getState() 读取，effect 仅注册一次，避免频繁重绑定
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       const ctrl = e.ctrlKey || e.metaKey
+      const st = useStore.getState()
 
       if (ctrl && e.key === 'n' && !e.shiftKey) {
         e.preventDefault()
-        const mode = useStore.getState().currentMode
-        const path = useStore.getState().projectPath
-        if ((mode === 'coding' || mode === 'design') && !path) {
-          void openProject()
+        if ((st.currentMode === 'coding' || st.currentMode === 'design') && !st.projectPath) {
+          void st.openProject()
         } else {
-          newConversation()
+          st.newConversation()
         }
         return
       }
       if (ctrl && (e.key === '1' || e.key === '2' || e.key === '3')) {
         e.preventDefault()
-        setMode(e.key === '1' ? 'office' : e.key === '2' ? 'coding' : 'design')
+        st.setMode(e.key === '1' ? 'office' : e.key === '2' ? 'coding' : 'design')
         return
       }
       if (ctrl && e.key === ',') {
         e.preventDefault()
-        setShowSettings(true)
+        st.setShowSettings(true)
         return
       }
       if (ctrl && e.shiftKey && e.key === 'R') {
         e.preventDefault()
-        if (!isStreaming) void regenerate()
+        if (!st.isStreaming) void st.regenerate()
         return
       }
       if (e.key === 'Escape') {
-        setShowSettings(false)
-        setShowAgentPanel(false)
-        setShowMemoryPanel(false)
-        setShowKnowledgePanel(false)
+        st.setShowSettings(false)
+        st.setShowAgentPanel(false)
+        st.setShowMemoryPanel(false)
+        st.setShowKnowledgePanel(false)
         return
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [newConversation, setMode, setShowSettings, setShowAgentPanel, setShowMemoryPanel, setShowKnowledgePanel, regenerate, isStreaming, openProject, projectPath])
+  }, [])
 
   // ---- 窗口最大化状态 ----
   useEffect(() => {
@@ -220,7 +209,7 @@ export function useConfirmDialog() {
 
   useEffect(() => {
     const cleanup = window.api.confirm.onRequest((data) => {
-      if (localStorage.getItem('ximo-yolo') === 'true') {
+      if (sessionStorage.getItem('ximo-yolo') === 'true') {
         window.api.confirm.respond(true)
         return
       }

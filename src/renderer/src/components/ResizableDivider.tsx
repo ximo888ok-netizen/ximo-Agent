@@ -55,9 +55,7 @@ export function ResizableDivider({ side, width, minWidth, maxWidth, onResize }: 
       <div
         onMouseDown={handleMouseDown}
         className="group relative flex h-full w-1 shrink-0 cursor-col-resize items-center justify-center bg-border-subtle/40 transition-colors hover:bg-accent/40"
-      >
-        <div className={`absolute inset-y-0 ${side === 'left' ? '-right-1 -left-1' : '-left-1 -right-1'}`} />
-      </div>
+      />
       {/* 拖拽时全屏遮罩 — 防止 webview/iframe 吞噬 mouseup */}
       {isDragging && (
         <div

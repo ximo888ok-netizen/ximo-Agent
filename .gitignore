@@ -25,3 +25,16 @@ known_hosts_tmp
 .workbuddy/
 deliverables/
 
+# 工具缓存
+.qoder/
+
+# 运行时大文件（不入库，按需下载）
+# 语音模型: npm run download-whisper
+resources/whisper-tiny/
+# OfficeCLI 二进制（跨平台无扩展名版本）
+resources/officecli/officecli
+
+# UI 预览生成产物（未被引用）
+src/renderer/public/ui-previews/*.gif
+src/renderer/src/components/design/ui-components-precompiled.json
+

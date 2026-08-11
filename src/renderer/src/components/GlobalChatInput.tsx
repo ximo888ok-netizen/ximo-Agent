@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { FolderOpen, X } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { SessionTokenStats } from './shared/SessionTokenStats'
@@ -10,7 +10,7 @@ import { ChatChips } from './chat-input/ChatChips'
 import { FileMentionMenu } from './chat-input/FileMentionMenu'
 import { OfficeToolbar } from './chat-input/OfficeToolbar'
 import { ChatInputActions } from './chat-input/ChatInputActions'
-import { useChatActions } from './chat-input/useChatActions'
+import { useChatActions, type SlashCommandEntry } from './chat-input/useChatActions'
 
 export function GlobalChatInput(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
@@ -50,18 +50,47 @@ export function GlobalChatInput(): React.ReactElement {
   const [enhanceError, setEnhanceError] = useState<string | null>(null)
   const [originalText, setOriginalText] = useState<string | null>(null)
 
+  // 增强错误提示的自动清除定时器 — 用 ref 管理，避免快速连点时叠加多个定时器
+  const enhanceErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scheduleErrorClear = useCallback((): void => {
+    if (enhanceErrorTimerRef.current !== null) clearTimeout(enhanceErrorTimerRef.current)
+    enhanceErrorTimerRef.current = setTimeout(() => setEnhanceError(null), 4000)
+  }, [])
+  useEffect(() => () => {
+    if (enhanceErrorTimerRef.current !== null) clearTimeout(enhanceErrorTimerRef.current)
+  }, [])
+
   // 办公模式：初始化操控电脑状态
   useEffect(() => {
     if (currentMode === 'office') void refreshComputerUseStatus()
   }, [currentMode, refreshComputerUseStatus])
 
   const {
-    text, setText, textareaRef, showSlashMenu, activeSlashCmd,
+    text, setText, textareaRef, showSlashMenu, activeSlashCmd, setActiveSlashCmd,
+    slashCommands, hasSkillCommands,
     showFileMention, matchedFiles, selectedMentionIndex, setSelectedMentionIndex,
     insertFileMention, handleMentionKeyDown,
     isDragOver, handleDragOver, handleDragLeave, handleDrop,
     handleSend, handleKeyDown, handleSlashCommand, handleAttachFile,
   } = useChatActions(currentMode, isStreaming, sendMessage, pastedImagePaths, addAttachedFile, addPastedImage, clearPastedImages, projectPath)
+
+  // ---- 语音输入文本回填 ----
+  // VoiceOrb 组件通过 CustomEvent 'ximo:voice-text' 发送识别结果，此处监听并追加到输入框
+  const textRef = useRef(text)
+  textRef.current = text
+  useEffect(() => {
+    const handler = (e: Event): void => {
+      const detail = (e as CustomEvent<string>).detail
+      if (typeof detail !== 'string' || !detail) return
+      const current = textRef.current
+      const sep = current && !current.endsWith(' ') ? ' ' : ''
+      const next = current + sep + detail
+      textRef.current = next
+      setText(next)
+    }
+    window.addEventListener('ximo:voice-text', handler)
+    return () => window.removeEventListener('ximo:voice-text', handler)
+  }, [setText])
 
   const placeholder = MODE_PLACEHOLDERS[currentMode]
 
@@ -96,17 +125,17 @@ export function GlobalChatInput(): React.ReactElement {
         const errMsg = result.error || '增强失败'
         setEnhanceError(errMsg)
         console.error('[enhance-prompt] 失败:', errMsg)
-        setTimeout(() => setEnhanceError(null), 4000)
+        scheduleErrorClear()
       }
     } catch (e) {
       const errMsg = (e as Error).message || '增强异常'
       setEnhanceError(errMsg)
       console.error('[enhance-prompt] 异常:', e)
-      setTimeout(() => setEnhanceError(null), 4000)
+      scheduleErrorClear()
     } finally {
       setIsEnhancing(false)
     }
-  }, [text, setText, conversation, currentMode, projectPath, textareaRef])
+  }, [text, setText, conversation, currentMode, projectPath, textareaRef, scheduleErrorClear])
 
   const handleUndoEnhance = useCallback((): void => {
     if (originalText !== null) {
@@ -202,7 +231,8 @@ export function GlobalChatInput(): React.ReactElement {
 
         {showSlashMenu && (
           <div className="glass-strong mt-2 rounded-2xl border border-border p-1.5 shadow-glass animate-scale-in">
-            {getSlashCommands(currentMode).map(({ cmd, label, systemHint }) => (
+            {/* 内置命令 */}
+            {slashCommands.filter((c) => !c.skillId).map(({ cmd, label, systemHint }) => (
               <button
                 key={cmd}
                 onClick={() => handleSlashCommand(cmd, systemHint)}
@@ -212,6 +242,25 @@ export function GlobalChatInput(): React.ReactElement {
                 <span className="text-text-muted">{label}</span>
               </button>
             ))}
+            {/* 导入技能命令分区 */}
+            {hasSkillCommands && (
+              <>
+                <div className="mt-1.5 mb-0.5 border-t border-border-subtle pt-1.5 text-[10px] font-medium text-text-muted/70 px-3">
+                  导入技能
+                </div>
+                {slashCommands.filter((c): c is SlashCommandEntry & { skillId: string } => Boolean(c.skillId)).map(({ cmd, label, description, systemHint }) => (
+                  <button
+                    key={cmd}
+                    onClick={() => handleSlashCommand(cmd, systemHint)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                    title={description}
+                  >
+                    <span className="font-mono text-accent">{cmd}</span>
+                    <span className="truncate text-text-muted">{description || label}</span>
+                  </button>
+                ))}
+              </>
+            )}
           </div>
         )}
 

@@ -3,6 +3,12 @@ import { promisify } from 'util'
 import { resolve } from 'path'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
+import {
+  isOcrInstalled,
+  scopeLabel,
+  formatJsonResult,
+  createErrorResult,
+} from './ocr-helpers'
 
 const execAsync = promisify(exec)
 
@@ -13,6 +19,9 @@ type ReviewScope = 'uncommitted' | 'branch' | 'commit'
  * CodeReviewTool — 阿里 OCR (Open Code Review) 集成
  * 基于 AI + 工程规则的混合架构代码审查，读取 Git diff 并生成结构化审查意见。
  * 需要先安装：npm install -g @alibaba-group/open-code-review
+ *
+ * 纯辅助函数（isOcrInstalled / scopeLabel / formatJsonResult / extractReviewItems）
+ * 已提取到 ./ocr-helpers.ts，保持本文件聚焦于工具定义与流程编排。
  */
 export class CodeReviewTool implements Tool {
   readonly definition: ToolDefinition = {
@@ -88,16 +97,15 @@ export class CodeReviewTool implements Tool {
           const key = toolCall.arguments.configKey as string
           const value = toolCall.arguments.configValue as string
           if (!key || value === undefined) {
-            return this.error(toolCall.id, 'config 操作需要 configKey 和 configValue 参数。可用键：llm.url、llm.auth_token、llm.model')
+            return createErrorResult(toolCall.id, 'config 操作需要 configKey 和 configValue 参数。可用键：llm.url、llm.auth_token、llm.model')
           }
           return await this.setConfig(toolCall.id, key, value, signal)
         }
 
         case 'review': {
-          // 先检查 OCR 是否已安装
-          const installed = await this.isOcrInstalled(signal)
+          const installed = await isOcrInstalled(execAsync, signal)
           if (!installed) {
-            return this.error(toolCall.id,
+            return createErrorResult(toolCall.id,
               'OCR 未安装。请先运行：\n```\nnpm install -g @alibaba-group/open-code-review\n```\n安装后使用 `code_review` (action=config) 配置 LLM。'
             )
           }
@@ -108,10 +116,10 @@ export class CodeReviewTool implements Tool {
         }
 
         default:
-          return this.error(toolCall.id, `不支持的操作：${action}`)
+          return createErrorResult(toolCall.id, `不支持的操作：${action}`)
       }
     } catch (e) {
-      return this.error(toolCall.id, `代码审查失败：${(e as Error).message}`)
+      return createErrorResult(toolCall.id, `代码审查失败：${(e as Error).message}`)
     }
   }
 
@@ -127,7 +135,7 @@ export class CodeReviewTool implements Tool {
     const lines: string[] = ['## 🔍 OCR (Open Code Review) 状态检查\n']
 
     // 1. 检查安装
-    const installed = await this.isOcrInstalled(signal)
+    const installed = await isOcrInstalled(execAsync, signal)
     if (!installed) {
       lines.push('### ❌ 未安装')
       lines.push('')
@@ -182,11 +190,9 @@ export class CodeReviewTool implements Tool {
       } as never)
       const configText = String(stdout).trim()
       configDetail = configText
-      // 简单判断是否包含 url 和 auth_token
       llmConfigured = configText.includes('llm.url') && configText.includes('llm.auth_token') &&
         !configText.includes('""') && !configText.includes('null')
     } catch {
-      // config list 命令可能不存在，检查配置文件
       try {
         const { homedir } = await import('os')
         const { join } = await import('path')
@@ -236,10 +242,9 @@ export class CodeReviewTool implements Tool {
   ): Promise<ToolResult> {
     const validKeys = ['llm.url', 'llm.auth_token', 'llm.model']
     if (!validKeys.includes(key)) {
-      return this.error(toolCallId, `不支持的配置键：${key}。可用键：${validKeys.join(', ')}`)
+      return createErrorResult(toolCallId, `不支持的配置键：${key}。可用键：${validKeys.join(', ')}`)
     }
 
-    // 对 auth_token 做脱敏处理
     const displayValue = key === 'llm.auth_token'
       ? `${value.slice(0, 6)}****${value.slice(-4)}`
       : value
@@ -269,9 +274,9 @@ export class CodeReviewTool implements Tool {
       const err = e as { stdout?: string; stderr?: string }
       const output = String(err.stdout || err.stderr || '').trim()
       if (output) {
-        return this.error(toolCallId, `OCR 配置失败：${output.slice(0, 1000)}`)
+        return createErrorResult(toolCallId, `OCR 配置失败：${output.slice(0, 1000)}`)
       }
-      return this.error(toolCallId, `OCR 配置失败：${(e as Error).message}`)
+      return createErrorResult(toolCallId, `OCR 配置失败：${(e as Error).message}`)
     }
   }
 
@@ -287,19 +292,17 @@ export class CodeReviewTool implements Tool {
     args: Record<string, unknown>,
     signal?: AbortSignal
   ): Promise<ToolResult> {
-    // 构建命令
     const cmdParts: string[] = ['ocr', 'review']
 
     switch (scope) {
       case 'uncommitted':
-        // 默认审查工作区未提交的变更，无需额外参数
         break
 
       case 'branch': {
         const fromRef = args.fromRef as string
         const toRef = args.toRef as string
         if (!fromRef || !toRef) {
-          return this.error(toolCallId, 'scope=branch 需要 fromRef 和 toRef 参数（如 fromRef=main, toRef=feature/pay）')
+          return createErrorResult(toolCallId, 'scope=branch 需要 fromRef 和 toRef 参数（如 fromRef=main, toRef=feature/pay）')
         }
         cmdParts.push('--from', fromRef, '--to', toRef)
         break
@@ -308,14 +311,14 @@ export class CodeReviewTool implements Tool {
       case 'commit': {
         const commitHash = args.commitHash as string
         if (!commitHash) {
-          return this.error(toolCallId, 'scope=commit 需要 commitHash 参数')
+          return createErrorResult(toolCallId, 'scope=commit 需要 commitHash 参数')
         }
         cmdParts.push('--commit', commitHash)
         break
       }
 
       default:
-        return this.error(toolCallId, `不支持的审查范围：${scope}`)
+        return createErrorResult(toolCallId, `不支持的审查范围：${scope}`)
     }
 
     if (format === 'json') {
@@ -346,22 +349,20 @@ export class CodeReviewTool implements Tool {
         }
       }
 
-      // JSON 格式：尝试解析并格式化
       if (format === 'json') {
-        return this.formatJsonResult(toolCallId, output, scope, repoPath, errOutput)
+        return formatJsonResult(toolCallId, output, scope, repoPath, errOutput)
       }
 
-      // 文本格式：直接展示
       const lines = [
         '## 🤖 AI 代码审查结果 (OCR)',
-        `**审查范围**：${this.scopeLabel(scope, args)}`,
+        `**审查范围**：${scopeLabel(scope, args)}`,
         `**仓库**：\`${repoPath}\``,
         '',
         output.slice(0, 50000)
       ]
 
       if (errOutput && !output) {
-        lines.length = 4 // 清空之前的 output
+        lines.length = 4
         lines.push('```', errOutput.slice(0, 30000), '```')
       }
 
@@ -380,14 +381,13 @@ export class CodeReviewTool implements Tool {
       const stderr = String(err.stderr || '').trim()
 
       if (stdout) {
-        // 有输出内容，说明审查运行了但有发现
         if (format === 'json') {
-          return this.formatJsonResult(toolCallId, stdout, scope, repoPath, stderr)
+          return formatJsonResult(toolCallId, stdout, scope, repoPath, stderr)
         }
 
         const lines = [
           '## 🤖 AI 代码审查结果 (OCR)',
-          `**审查范围**：${this.scopeLabel(scope, args)}`,
+          `**审查范围**：${scopeLabel(scope, args)}`,
           `**仓库**：\`${repoPath}\``,
           '',
           stdout.slice(0, 50000)
@@ -400,192 +400,23 @@ export class CodeReviewTool implements Tool {
         return {
           toolCallId, toolName: 'code_review',
           content: lines.join('\n'),
-          success: true, // 审查本身是成功的，只是发现了问题
+          success: true,
           displayType: 'text',
           metadata: { scope, format, repoPath, exitCode: err.code }
         }
       }
 
-      // 真正的错误
       const isCmdNotFound = err.code === 127 || (err as Error).message?.includes('not found') ||
         (err as Error).message?.includes('不是内部或外部命令') || (err as Error).message?.includes('is not recognized')
 
       if (isCmdNotFound) {
-        return this.error(toolCallId,
+        return createErrorResult(toolCallId,
           'OCR 命令未找到。请先安装：\n```\nnpm install -g @alibaba-group/open-code-review\n```'
         )
       }
 
       const errMsg = stderr || (e as Error).message
-      return this.error(toolCallId, `OCR 审查执行失败：${errMsg.slice(0, 2000)}`)
+      return createErrorResult(toolCallId, `OCR 审查执行失败：${errMsg.slice(0, 2000)}`)
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // 解析 JSON 格式输出
-  // ---------------------------------------------------------------------------
-
-  private formatJsonResult(
-    toolCallId: string,
-    rawOutput: string,
-    scope: ReviewScope,
-    repoPath: string,
-    stderr: string
-  ): ToolResult {
-    let parsed: unknown = null
-    let parseError = ''
-
-    try {
-      parsed = JSON.parse(rawOutput)
-    } catch {
-      parseError = 'JSON 解析失败，以原始文本展示'
-    }
-
-    const lines = [
-      '## 🤖 AI 代码审查结果 (OCR)',
-      `**审查范围**：${this.scopeLabel(scope, {} as Record<string, unknown>)}`,
-      `**仓库**：\`${repoPath}\``,
-      ''
-    ]
-
-    if (parseError) {
-      lines.push(`> ⚠️ ${parseError}`, '', '```json', rawOutput.slice(0, 50000), '```')
-    } else {
-      // 尝试提取结构化的审查意见
-      const reviewData = this.extractReviewItems(parsed)
-      if (reviewData.items.length > 0) {
-        lines.push(`**发现 ${reviewData.items.length} 条审查意见**：\n`)
-
-        for (const item of reviewData.items) {
-          const icon = item.severity === 'error' ? '❌' : item.severity === 'warning' ? '⚠️' : '💡'
-          lines.push(`### ${icon} \`${item.file}${item.line ? `:${item.line}` : ''}\``)
-          if (item.rule) lines.push(`**规则**：\`${item.rule}\``)
-          lines.push('', item.message, '')
-        }
-
-        if (reviewData.summary) {
-          lines.push('', '---', '', `**摘要**：${reviewData.summary}`)
-        }
-      } else {
-        // 无法提取结构化信息，展示原始 JSON
-        lines.push('```json', JSON.stringify(parsed, null, 2).slice(0, 50000), '```')
-      }
-    }
-
-    if (stderr) {
-      lines.push('', '<details><summary>警告信息</summary>', '', '```', stderr.slice(0, 5000), '```', '', '</details>')
-    }
-
-    return {
-      toolCallId, toolName: 'code_review',
-      content: lines.join('\n'),
-      success: true,
-      displayType: 'text',
-      metadata: {
-        scope, format: 'json', repoPath,
-        itemCount: parsed ? this.extractReviewItems(parsed).items.length : 0
-      }
-    }
-  }
-
-  /** 从 JSON 输出中提取审查意见项 */
-  private extractReviewItems(parsed: unknown): {
-    items: Array<{ file: string; line: number | null; severity: string; rule: string | null; message: string }>
-    summary: string | null
-  } {
-    const items: Array<{ file: string; line: number | null; severity: string; rule: string | null; message: string }> = []
-    let summary: string | null = null
-
-    const data = parsed as Record<string, unknown>
-
-    // 尝试多种可能的 JSON 结构
-    // 结构 1: { reviews: [{ file, line, severity, rule, message }] }
-    // 结构 2: { results: [{ filePath, line, severity, ruleId, message }] }
-    // 结构 3: { comments: [{ file_path, line_number, severity, rule, message }] }
-    // 结构 4: 数组形式 [{ file, line, ... }]
-
-    let rawItems: unknown[] = []
-
-    if (Array.isArray(data)) {
-      rawItems = data
-    } else if (Array.isArray(data.reviews)) {
-      rawItems = data.reviews
-    } else if (Array.isArray(data.results)) {
-      rawItems = data.results
-    } else if (Array.isArray(data.comments)) {
-      rawItems = data.comments
-    } else if (Array.isArray(data.issues)) {
-      rawItems = data.issues
-    }
-
-    if (typeof data.summary === 'string') {
-      summary = data.summary
-    } else if (typeof data.total === 'number') {
-      summary = `共 ${data.total} 条`
-    }
-
-    for (const raw of rawItems) {
-      const item = raw as Record<string, unknown>
-      const file = String(item.file || item.filePath || item.file_path || item.path || '未知文件')
-      const line = (item.line || item.lineNumber || item.line_number) as number | undefined
-      const severity = String(item.severity || item.level || item.type || 'info')
-      const rule = (item.rule || item.ruleId || item.rule_id) as string | undefined
-      const message = String(item.message || item.content || item.description || item.comment || '')
-
-      if (file || message) {
-        items.push({
-          file,
-          line: line ? Number(line) : null,
-          severity,
-          rule: rule || null,
-          message: message || '(无描述)'
-        })
-      }
-    }
-
-    return { items, summary }
-  }
-
-  // ---------------------------------------------------------------------------
-  // 辅助方法
-  // ---------------------------------------------------------------------------
-
-  /** 检查 OCR 是否已安装 */
-  private async isOcrInstalled(signal?: AbortSignal): Promise<boolean> {
-    try {
-      await execAsync('ocr --version 2>&1 || ocr version 2>&1', {
-        timeout: 10000, windowsHide: true, signal
-      } as never)
-      return true
-    } catch {
-      // Windows 上 ocr --version 可能返回非零退出码但命令存在
-      // 再检查一次
-      try {
-        await execAsync('ocr --help 2>&1', {
-          timeout: 10000, windowsHide: true, signal
-        } as never)
-        return true
-      } catch {
-        return false
-      }
-    }
-  }
-
-  /** 生成审查范围的可读标签 */
-  private scopeLabel(scope: ReviewScope, args: Record<string, unknown>): string {
-    switch (scope) {
-      case 'uncommitted':
-        return '未提交的工作区变更'
-      case 'branch':
-        return `${args.fromRef || '?'} → ${args.toRef || '?'} 分支差异`
-      case 'commit':
-        return `提交 ${args.commitHash || '?'}`
-      default:
-        return scope
-    }
-  }
-
-  private error(id: string, msg: string): ToolResult {
-    return { toolCallId: id, toolName: 'code_review', content: '', success: false, error: msg }
   }
 }

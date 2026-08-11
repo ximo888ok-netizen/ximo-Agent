@@ -1,17 +1,22 @@
 import type { StateCreator } from 'zustand'
 import type { Conversation, Mode } from '@shared/types'
-import type { StoreState } from '../types'
-import { genId } from '../utils'
+import type { StoreState } from '@renderer/store/types'
+import { genId } from '../store-utils'
 
 export type ProjectSlice = Pick<StoreState,
-  | 'openProject'
+  | 'projectPath'
+  | 'collapsedProjects'
   | 'setProjectPath'
+  | 'openProject'
+  | 'toggleProjectCollapsed'
   | 'newConversationForProject'
   | 'removeProject'
-  | 'toggleProjectCollapsed'
 >
 
 export const createProjectSlice: StateCreator<StoreState, [], [], ProjectSlice> = (set, get) => ({
+  projectPath: '',
+  collapsedProjects: {},
+
   setProjectPath: (path) => {
     set({ projectPath: path })
     const convId = get().currentConversationId
@@ -31,7 +36,7 @@ export const createProjectSlice: StateCreator<StoreState, [], [], ProjectSlice> 
 
     const folderName = folder.split(/[/\\]/).pop() || folder
     const state = get()
-    const mode: Mode = state.currentMode === 'design' ? 'design' : 'coding'
+    const mode = state.currentMode === 'design' ? 'design' : 'coding'
 
     set({ projectPath: folder, currentMode: mode })
 

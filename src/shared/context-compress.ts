@@ -1,9 +1,12 @@
 /**
  * 机械上下文压缩 — 参考 Reasonix 的 snip/prune 设计
  *
- * 1. SNIP（软阈值 60%）：旧 tool 结果截断为摘要 + 前N字符
- * 2. PRUNE（硬阈值 80%）：进一步缩短旧 tool 结果为最小占位符
+ * 1. SNIP（软阈值 60%）：旧 tool 结果截断为摘要 + 前N字符 — 仅裁 LOW 优先级
+ * 2. PRUNE（硬阈值 80%）：进一步缩短旧 tool 结果为最小占位符 — 裁 LOW + MEDIUM，HIGH 用 snippedKeep
  * 3. ASSISTANT 截断（极阈值 100%）：截断旧 assistant 内容（保留 tool_calls 结构）
+ *
+ * 智能分级：HIGH（file_write/file_edit）在 snip/prune 阶段保留更多内容，
+ * LOW（file_read/web_search）优先裁剪。详见 cache/tool-priority.ts。
  *
  * 与 ContextManager（context-manager.ts）的分工：
  *   - 本文件由 buildApiMessages 调用，在构造消息时基于**字符数**做预防性压缩。
@@ -14,6 +17,8 @@
  * 此文件位于 shared/ 目录，供主进程（deepseek.ts）和渲染进程（buildApiMessages.ts）共同使用，
  * 确保两端的截断/压缩逻辑完全一致，避免因不一致导致 prompt 缓存失效。
  */
+
+import { getToolRetention, findToolName } from './cache/tool-priority'
 
 export interface AgentConfig {
   maxToolResultChars: number
@@ -48,21 +53,36 @@ export function trimContext(
 
   const protectFrom = Math.max(1, messages.length - config.recentKeep)
 
-  // 第一级：SNIP — 旧 tool 结果截断（跳过已被截断的内容，避免与 ContextManager 双重截断）
+  // 第一级：SNIP — 仅裁 LOW 优先级 tool 结果（file_read/web_search 等可重新获取的）
+  // HIGH（file_write/file_edit）和 MEDIUM（terminal_exec）在 snip 阶段保留完整
   if (total > snipThreshold) {
     for (let i = 1; i < protectFrom; i++) {
       const m = messages[i]
-      if (m.role === 'tool' && m.content && m.content.length > config.snippedKeep + 100 && !m.content.includes('[...已自动截断') && !m.content.includes('[...已省略')) {
-        m.content = m.content.slice(0, config.snippedKeep) + '\n[...已自动截断以节省上下文空间]'
-      }
+      if (m.role !== 'tool' || !m.content) continue
+      if (m.content.length <= config.snippedKeep + 100) continue
+      if (m.content.includes('[...已自动截断') || m.content.includes('[...已省略')) continue
+      const toolName = findToolName(messages, i)
+      if (getToolRetention(toolName) !== 'low') continue
+      m.content = m.content.slice(0, config.snippedKeep) + '\n[...已自动截断以节省上下文空间]'
     }
   }
 
-  // 第二级：PRUNE — 如果 snip 后仍超阈值，进一步缩短（跳过已被 prune 的内容）
+  // 第二级：PRUNE — 裁 LOW + MEDIUM，HIGH 用 snippedKeep（而非 prunedKeep）保留更多
   if (totalChars(messages) > pruneThreshold) {
     for (let i = 1; i < protectFrom; i++) {
       const m = messages[i]
-      if (m.role === 'tool' && m.content && m.content.length > config.prunedKeep && !m.content.includes('[...已省略')) {
+      if (m.role !== 'tool' || !m.content) continue
+      if (m.content.length <= config.prunedKeep) continue
+      if (m.content.includes('[...已省略')) continue
+      const toolName = findToolName(messages, i)
+      const retention = getToolRetention(toolName)
+      if (retention === 'high') {
+        // HIGH：用 snippedKeep 保留更多（跳过已被 snip 截断的）
+        if (m.content.length > config.snippedKeep && !m.content.includes('[...已自动截断')) {
+          m.content = m.content.slice(0, config.snippedKeep) + '\n[...已自动截断以节省上下文空间]'
+        }
+      } else {
+        // LOW + MEDIUM：用 prunedKeep 最小化
         m.content = m.content.slice(0, config.prunedKeep) + '\n[...已省略]'
       }
     }

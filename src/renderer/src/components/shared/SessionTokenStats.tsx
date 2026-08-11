@@ -1,9 +1,7 @@
 import { Activity, Database, TrendingUp, MessagesSquare, Gauge } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
+import { getActiveContextWindow } from '@renderer/lib/providers'
 import type { Conversation } from '@shared/types'
-
-/** DeepSeek-V4 系列上下文窗口大小（1M tokens） */
-const CONTEXT_WINDOW = 1_000_000
 
 interface Props {
   conversation: Conversation | null
@@ -21,6 +19,8 @@ interface Props {
  */
 export function SessionTokenStats({ conversation }: Props): React.ReactElement {
   const isStreaming = useStore((s) => s.isStreaming)
+  // 上下文窗口大小随活跃服务商变化 — 选中原始数值避免无关设置变更触发重渲染
+  const contextWindow = useStore((s) => getActiveContextWindow(s.settings))
   const streamingConvId = useStore((s) => s.streamingConversationId)
   const streamingTokens = useStore((s) => s.streamingTokens)
   const streamingCacheHit = useStore((s) => s.streamingCacheHitTokens)
@@ -50,6 +50,7 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
     : convPrompt
 
   // 上下文窗口占用 — 最近一轮 promptTokens（流式期间优先用最新值）
+  const CONTEXT_WINDOW = contextWindow
   const contextTokens = isThisStreaming
     ? (streamingContext ?? 0) || (conversation?.contextTokens ?? 0)
     : (conversation?.contextTokens ?? 0)

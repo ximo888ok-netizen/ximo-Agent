@@ -18,35 +18,34 @@ export function registerFsHandlers(): void {
 
     async function buildTree(dir: string, currentDepth: number): Promise<FileTreeNode[]> {
       if (currentDepth >= depth) return []
-      const nodes: FileTreeNode[] = []
       try {
         const entries = await readdir(dir, { withFileTypes: true })
-        for (const entry of entries) {
-          if (excludeDirs.has(entry.name)) continue
-          if (entry.name.startsWith('.') && entry.name !== '.gitignore' && entry.name !== '.env.example') continue
+        const visible = entries.filter(
+          (entry) => !excludeDirs.has(entry.name) &&
+            !(entry.name.startsWith('.') && entry.name !== '.gitignore' && entry.name !== '.env.example')
+        )
 
-          const fullPath = join(dir, entry.name)
-          const isDir = entry.isDirectory()
-          let size: number | undefined
-          if (!isDir) {
-            try { size = (await stat(fullPath)).size } catch { /* skip */ }
-          }
-
-          nodes.push({
-            name: entry.name,
-            path: fullPath,
-            type: isDir ? 'directory' : 'file',
-            size,
-            children: isDir ? await buildTree(fullPath, currentDepth + 1) : undefined
+        // 并行构建子目录（限制并发 8，避免深目录海量文件时 fd 耗尽）
+        const results = await Promise.all(
+          visible.map(async (entry): Promise<FileTreeNode | null> => {
+            const fullPath = join(dir, entry.name)
+            const isDir = entry.isDirectory()
+            let size: number | undefined
+            if (!isDir) {
+              try { size = (await stat(fullPath)).size } catch { /* skip */ }
+            }
+            const children = isDir ? await buildTree(fullPath, currentDepth + 1) : undefined
+            return { name: entry.name, path: fullPath, type: isDir ? 'directory' : 'file', size, children }
           })
-        }
-      } catch { /* 无权限或不存在 */ }
+        )
 
-      nodes.sort((a, b) => {
-        if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
-        return a.name.localeCompare(b.name)
-      })
-      return nodes
+        const nodes = results.filter((n): n is FileTreeNode => n !== null)
+        nodes.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'directory' ? -1 : 1
+          return a.name.localeCompare(b.name)
+        })
+        return nodes
+      } catch { /* 无权限或不存在 */ return [] }
     }
 
     return buildTree(dirPath, 0)

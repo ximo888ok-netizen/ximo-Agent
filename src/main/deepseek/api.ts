@@ -3,6 +3,7 @@ import { errorResult, collectToolCalls, sanitizeContent } from './context'
 import type { StreamHandlers, SingleCallResult } from './types'
 import { normaliseUsage } from '@shared/cache'
 import type { NormalizedUsage } from '@shared/cache'
+import type { ProviderCapabilities } from './provider'
 
 // ---------- 常量 ----------
 
@@ -15,6 +16,71 @@ const MAX_STREAM_RECONNECTS = 3
  */
 export function toApiEffort(effort: ReasoningEffort): 'off' | 'high' | 'max' {
   return effort === 'ultra' ? 'max' : effort
+}
+
+// ---------- 请求体构建（纯函数，能力门控） ----------
+
+/**
+ * 构建 /chat/completions 请求体。
+ *
+ * 能力门控：caps 缺省或全开时，输出与内置 DeepSeek 历史行为逐字段一致；
+ * 自定义服务商可通过开关裁剪 DeepSeek 专属参数：
+ * - sendReasoningParams=false → 不写 enable_thinking/reasoning_effort，并剥离消息中的 reasoning_content
+ * - sendStreamUsage=false     → 不写 stream_options.include_usage
+ */
+export function buildRequestBody(
+  model: string,
+  messages: { role: string; content: string; tool_calls?: unknown; tool_call_id?: string; reasoning_content?: string }[],
+  tools: ToolDefinition[] | undefined,
+  thinkingMode: boolean,
+  reasoningEffort: ReasoningEffort,
+  temperature: number,
+  maxTokens: number,
+  caps?: ProviderCapabilities
+): Record<string, unknown> {
+  const sendReasoning = caps?.sendReasoningParams !== false
+  const sendUsage = caps?.sendStreamUsage !== false
+
+  // 净化所有消息内容，移除不可见字符防止 API JSON 解析失败
+  // 非 reasoning 服务商额外剥离 reasoning_content（防第三方 API 拒绝未知字段）
+  const sanitizedMessages = messages.map((m) => {
+    const clean: Record<string, unknown> = { ...m, content: sanitizeContent(m.content) }
+    if (!sendReasoning) delete clean.reasoning_content
+    return clean
+  })
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: sanitizedMessages,
+    stream: true,
+    max_tokens: maxTokens
+  }
+
+  if (sendUsage) {
+    body.stream_options = { include_usage: true }
+  }
+
+  // A4 工具 schema 已由 chat-handler.ts 在调用前完成字典序归一化排序，此处直接使用
+  if (tools && tools.length > 0) {
+    body.tools = tools.map((t) => ({
+      type: 'function',
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: t.parameters
+      }
+    }))
+    body.tool_choice = 'auto'
+  }
+
+  if (!thinkingMode || reasoningEffort === 'off' || !sendReasoning) {
+    body.temperature = temperature
+  } else {
+    body.enable_thinking = true
+    body.reasoning_effort = toApiEffort(reasoningEffort)
+  }
+
+  return body
 }
 
 // ---------- 底层：单次流式 API 调用（不含重试） ----------
@@ -36,45 +102,17 @@ async function callDeepSeekStreamOnce(
   temperature: number,
   maxTokens: number,
   handlers: StreamHandlers,
-  emittedRef: { value: boolean }
+  emittedRef: { value: boolean },
+  caps?: ProviderCapabilities
 ): Promise<SingleCallResult> {
   const { onChunk, signal } = handlers
 
   const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`
 
-  // 净化所有消息内容，移除不可见字符防止 API JSON 解析失败
-  const sanitizedMessages = messages.map((m) => ({
-    ...m,
-    content: sanitizeContent(m.content)
-  }))
-
-  const body: Record<string, unknown> = {
-    model,
-    messages: sanitizedMessages,
-    stream: true,
-    max_tokens: maxTokens,
-    stream_options: { include_usage: true }
-  }
-
-  // A4 工具 schema 已由 chat-handler.ts 在调用前完成字典序归一化排序，此处直接使用
-  if (tools && tools.length > 0) {
-    body.tools = tools.map((t) => ({
-      type: 'function',
-      function: {
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters
-      }
-    }))
-    body.tool_choice = 'auto'
-  }
-
-  if (!thinkingMode || reasoningEffort === 'off') {
-    body.temperature = temperature
-  } else {
-    body.enable_thinking = true
-    body.reasoning_effort = toApiEffort(reasoningEffort)
-  }
+  // 请求体由 buildRequestBody 统一构建（能力门控，caps 缺省时与历史行为一致）
+  const body = buildRequestBody(
+    model, messages, tools, thinkingMode, reasoningEffort, temperature, maxTokens, caps
+  )
 
   let response: Response
   try {
@@ -119,8 +157,29 @@ async function callDeepSeekStreamOnce(
   const toolCallsAcc = new Map<number, { id: string; name: string; arguments: string }>()
   let normalizedUsage: NormalizedUsage | undefined
 
+  // ── 空闲看门狗 ──
+  // 网络假死/代理挂起时 reader.read() 可能永久不返回（fetch 的 AbortSignal 也不一定能中断读流），
+  // 导致整个 Agent Loop 卡在这一轮。用空闲计时器兜底：超过阈值（60s）无任何数据块则主动中断。
+  const IDLE_TIMEOUT_MS = 60_000
+  let idleTimer: ReturnType<typeof setTimeout> | null = null
+  const resetIdleTimer = (): void => {
+    if (idleTimer) clearTimeout(idleTimer)
+    idleTimer = setTimeout(() => {
+      reader.cancel().catch(() => {})
+    }, IDLE_TIMEOUT_MS)
+  }
+  resetIdleTimer()
+  const clearIdleTimer = (): void => {
+    if (idleTimer) {
+      clearTimeout(idleTimer)
+      idleTimer = null
+    }
+  }
+
   try {
     while (true) {
+      // 每个读循环前重置看门狗
+      resetIdleTimer()
       const { done, value } = await reader.read()
       if (done) break
 
@@ -211,12 +270,14 @@ async function callDeepSeekStreamOnce(
       }
     }
     // 流自然结束（无 finish_reason）
+    clearIdleTimer()
     const tcArray = collectToolCalls(toolCallsAcc)
     if (tcArray.length > 0) {
       return { finishReason: 'tool_calls', content, reasoningContent, toolCalls: tcArray, usage: normalizedUsage, emitted: emittedRef.value }
     }
     return { finishReason: 'stop', content, reasoningContent, toolCalls: [], usage: normalizedUsage, emitted: emittedRef.value }
   } catch (e) {
+    clearIdleTimer()
     if ((e as Error).name === 'AbortError') {
       return { finishReason: 'stop', content, reasoningContent, toolCalls: [], usage: normalizedUsage, emitted: emittedRef.value }
     }
@@ -246,7 +307,8 @@ export async function callDeepSeekStream(
   reasoningEffort: ReasoningEffort,
   temperature: number,
   maxTokens: number,
-  handlers: StreamHandlers
+  handlers: StreamHandlers,
+  caps?: ProviderCapabilities
 ): Promise<SingleCallResult> {
   if (!apiKey) {
     return errorResult('未配置 API Key。')
@@ -257,7 +319,7 @@ export async function callDeepSeekStream(
     const result = await callDeepSeekStreamOnce(
       apiKey, baseUrl, model, messages, tools,
       thinkingMode, reasoningEffort, temperature, maxTokens,
-      handlers, emittedRef
+      handlers, emittedRef, caps
     )
 
     // 成功或非连接错误 → 直接返回
@@ -302,12 +364,13 @@ export async function streamChat(
   apiKey: string,
   baseUrl: string,
   request: ChatRequest,
-  handlers: StreamHandlers
+  handlers: StreamHandlers,
+  caps?: ProviderCapabilities
 ): Promise<void> {
   const { onChunk, signal } = handlers
 
   if (!apiKey) {
-    onChunk({ done: true, error: '未配置 API Key，请前往设置填写你的 DeepSeek API 密钥。' })
+    onChunk({ done: true, error: '未配置 API Key，请在设置中填写你的 API 密钥。' })
     return
   }
 
@@ -321,7 +384,8 @@ export async function streamChat(
     request.reasoningEffort,
     request.temperature,
     request.maxTokens,
-    { onChunk, signal }
+    { onChunk, signal },
+    caps
   )
 
   if (result.finishReason === 'error') {

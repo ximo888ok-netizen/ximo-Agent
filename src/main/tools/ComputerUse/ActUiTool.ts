@@ -75,8 +75,8 @@ export class ActUiTool implements Tool {
 
         const actResult = await piBridge.command<Record<string, unknown>>('act', helperArgs, 15_000)
 
-        const outcome = (actResult as any)?.performed?.outcome || 'unknown'
-        const newLookId = (actResult as any)?.lookId || currentLookId
+        const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
+        const newLookId = (actResult?.lookId as string | undefined) || currentLookId
         if (newLookId) currentLookId = newLookId
 
         const actionDesc = describeAction(action)
@@ -99,7 +99,7 @@ export class ActUiTool implements Tool {
           includeImage: true,
           maxDimension: 800
         }, 10_000)
-        const outline = (lookResult as any)?.outline
+        const outline = lookResult?.outline as Record<string, unknown> | undefined
         if (outline) {
           newOutline = '\n\n---\n\n**操作后 UI 状态：**\n\n' + formatOutlineCompact(outline)
         }

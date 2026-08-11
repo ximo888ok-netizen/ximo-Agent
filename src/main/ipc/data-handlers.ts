@@ -9,7 +9,7 @@ import { loadSettings, saveSettings, loadConversations, saveConversations, loadM
 import { loadSkills, saveSkills, isRecording, getRecordingSession, getRrwebEventCount, startRecording, stopRecording, appendRrwebEvent } from '@main/SkillStore'
 import { loadMcpServers, saveMcpServers, parseMcpConfig } from '@main/McpStore'
 import { loadImportedSkills, saveImportedSkills, parseSkillMarkdown } from '@main/ImportedSkillStore'
-import { invalidateMcpSession } from './chat-handler'
+import { invalidateMcpSession } from './mcp-session'
 import { addKnowledge, searchKnowledge, listKnowledge, updateKnowledge, deleteKnowledge } from '@main/KnowledgeStore'
 import { listThemePacks, importThemePack, deleteThemePack } from '@main/ThemePackStore'
 import { importBackground, deleteBackground, listBackgrounds } from '@main/BackgroundStore'

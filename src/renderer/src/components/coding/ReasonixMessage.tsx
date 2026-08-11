@@ -12,6 +12,8 @@ interface ReasonixMessageProps {
   streamingReasoning?: string
   streamingToolCalls?: { name: string; status: 'thinking' | 'calling' | 'done'; result?: string }[]
   streamingSegments?: StreamingSegment[]
+  /** 流式子 Agent 工作过程事件（专家团编排时实时展示） */
+  streamingExpertEvents?: NonNullable<import('@shared/types').StreamChunk['subAgentEvent']>[]
   canRegenerate?: boolean
   onRegenerate?: () => void
   onEditMessage?: (messageId: string) => void
@@ -140,6 +142,7 @@ export const ReasonixMessage = memo(function ReasonixMessage({
   streamingReasoning,
   streamingToolCalls,
   streamingSegments,
+  streamingExpertEvents,
   canRegenerate,
   onRegenerate,
   onEditMessage
@@ -156,6 +159,7 @@ export const ReasonixMessage = memo(function ReasonixMessage({
         streamingReasoning={streamingReasoning}
         streamingToolCalls={streamingToolCalls}
         streamingSegments={streamingSegments}
+        streamingExpertEvents={streamingExpertEvents}
         canRegenerate={canRegenerate}
         onRegenerate={onRegenerate}
         onEditMessage={onEditMessage}

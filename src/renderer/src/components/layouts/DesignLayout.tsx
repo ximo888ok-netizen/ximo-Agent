@@ -27,7 +27,9 @@ function extractLatestHtml(messages: ChatMessage[]): string {
 }
 
 export function DesignLayout(): React.ReactElement {
-  const conversation = useStore((s) => s.conversations.find((c) => c.id === s.currentConversationId) ?? null)
+  // 用 getCurrentConversation 选择器替代 conversations.find 全量扫描 —
+  // 每次 conversations 数组变化（含流式每 chunk）都不再重建 find 结果
+  const conversation = useStore((s) => s.getCurrentConversation())
   const currentMode = useStore((s) => s.currentMode)
   const isStreaming = useStore((s) => s.isStreaming)
   const streamingContent = useStore((s) => s.streamingContent)

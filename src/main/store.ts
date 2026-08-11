@@ -31,7 +31,34 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 // ---------- 会话 ----------
 
 let saveConvTimer: ReturnType<typeof setTimeout> | null = null
+let saveConvMaxTimer: ReturnType<typeof setTimeout> | null = null
 let pendingConversations: Conversation[] | null = null
+
+// 防抖窗口：500ms 内多次调用合并为一次磁盘写入
+const SAVE_DEBOUNCE_MS = 500
+// maxWait 兜底：高频连续调用（流式每 chunk 触发）时，最多 5s 必须落盘一次，
+// 避免 Promise 被无限推迟 resolve（崩溃/断电时丢失最近数据）
+const SAVE_MAX_WAIT_MS = 5000
+
+/** 实际执行磁盘写入 — 提取为独立函数避免三处调用重复 */
+async function doWriteConversations(): Promise<void> {
+  const data = pendingConversations
+  pendingConversations = null
+  if (data) {
+    try {
+      await ensureDir()
+      await writeFile(conversationsFile, JSON.stringify(data, null, 2), 'utf-8')
+    } catch (e) {
+      console.error('保存会话失败：', e)
+    }
+  }
+}
+
+/** 清除所有待处理的定时器 */
+function clearConvTimers(): void {
+  if (saveConvTimer !== null) { clearTimeout(saveConvTimer); saveConvTimer = null }
+  if (saveConvMaxTimer !== null) { clearTimeout(saveConvMaxTimer); saveConvMaxTimer = null }
+}
 
 export async function loadConversations(): Promise<Conversation[]> {
   try {
@@ -46,43 +73,31 @@ export async function loadConversations(): Promise<Conversation[]> {
 }
 
 export async function saveConversations(conversations: Conversation[]): Promise<void> {
-  // 防抖：500ms 内多次调用合并为一次磁盘写入
   pendingConversations = conversations
+  // 清除已有的防抖定时器（保留 maxWait 定时器）
   if (saveConvTimer !== null) clearTimeout(saveConvTimer)
+  // 首次调用时启动 maxWait 兜底定时器 — 高频场景下确保最多 5s 落盘一次
+  if (saveConvMaxTimer === null) {
+    saveConvMaxTimer = setTimeout(() => {
+      saveConvMaxTimer = null
+      if (saveConvTimer !== null) { clearTimeout(saveConvTimer); saveConvTimer = null }
+      void doWriteConversations()
+    }, SAVE_MAX_WAIT_MS)
+  }
   return new Promise((resolve) => {
     saveConvTimer = setTimeout(async () => {
       saveConvTimer = null
-      const data = pendingConversations
-      pendingConversations = null
-      if (data) {
-        try {
-          await ensureDir()
-          await writeFile(conversationsFile, JSON.stringify(data, null, 2), 'utf-8')
-        } catch (e) {
-          console.error('保存会话失败：', e)
-        }
-      }
+      if (saveConvMaxTimer !== null) { clearTimeout(saveConvMaxTimer); saveConvMaxTimer = null }
+      await doWriteConversations()
       resolve()
-    }, 500)
+    }, SAVE_DEBOUNCE_MS)
   })
 }
 
 /** 立即刷新待写入的会话数据（应用退出前调用） */
 export async function flushSaveConversations(): Promise<void> {
-  if (saveConvTimer !== null) {
-    clearTimeout(saveConvTimer)
-    saveConvTimer = null
-    const data = pendingConversations
-    pendingConversations = null
-    if (data) {
-      try {
-        await ensureDir()
-        await writeFile(conversationsFile, JSON.stringify(data, null, 2), 'utf-8')
-      } catch (e) {
-        console.error('保存会话失败：', e)
-      }
-    }
-  }
+  clearConvTimers()
+  await doWriteConversations()
 }
 
 // ---------- 模式记忆 ----------

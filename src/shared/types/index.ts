@@ -9,10 +9,13 @@ export type {
 } from './tools'
 
 export type {
-  ChatMessage, Conversation, ApiMessage, ChatRequest, StreamChunk, StreamingSegment
+  ChatMessage, Conversation, ApiMessage, ChatRequest, StreamChunk, StreamingSegment, SegmentEvent
 } from './messaging'
 
-export type { AppSettings, BackgroundImageConfig } from './settings'
+export type {
+  AppSettings, BackgroundImageConfig, ProviderConfig,
+  CursorTrailStyle, CursorClickStyle
+} from './settings'
 
 export type {
   SkillStep, Skill, RecordingSession, ImportedSkill

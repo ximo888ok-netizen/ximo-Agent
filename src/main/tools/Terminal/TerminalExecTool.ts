@@ -204,6 +204,12 @@ export class TerminalExecTool implements Tool {
         if (process.platform === 'win32' && child.pid) {
           spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true })
         }
+        // 兑底：若 SIGTERM 后子进程仍不退出（close 事件不触发），5s 后强制完成，避免 Promise 永不 resolve
+        setTimeout(() => {
+          if (!finished) {
+            finish(this.error(toolCall.id, '命令已被取消'))
+          }
+        }, 5_000)
       }
 
       child.on('close', (exitCode: number | null) => {
@@ -258,6 +264,21 @@ export class TerminalExecTool implements Tool {
           if (process.platform === 'win32' && child.pid) {
             spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true })
           }
+          // 兑底：若 SIGTERM 后子进程仍不退出（close 事件不触发），5s 后强制完成，避免 Promise 永不 resolve
+          setTimeout(() => {
+            if (!finished) {
+              finish({
+                toolCallId: toolCall.id,
+                toolName: 'terminal_exec',
+                content: `\`\`\`\n> ${command}\n\n**状态**: 执行超时（${timeout}s），进程未正常退出，已强制终止`,
+                success: false,
+                displayType: 'code',
+                metadata: { command, cwd, exitCode: null, duration: ((Date.now() - startTime) / 1000).toFixed(1), killed: true },
+                requiresConfirmation: true,
+                confirmationMessage: `即将执行命令：${command}`
+              })
+            }
+          }, 5_000)
         }
       }, timeout * 1000)
 

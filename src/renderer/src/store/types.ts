@@ -169,6 +169,8 @@ export interface StoreState {
   // ---- 辅助 ----
   getCurrentConversation: () => Conversation | null
   setNetworkSearchOn: (on: boolean) => void
+  /** 设置当前会话的长任务模式开关 — 按会话独立记忆并持久化 */
+  setLongTask: (flag: boolean) => void
   setAutoModeLevel: (level: 'off' | 'safe' | 'yolo') => void
   setProjectPath: (path: string) => void
   addAttachedFile: (path: string) => void

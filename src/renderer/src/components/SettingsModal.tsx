@@ -28,6 +28,9 @@ export function SettingsModal(): React.ReactElement | null {
   const convoCount = useStore((s) => s.conversations.length)
   const [activeTab, setActiveTab] = useState<TabId>('api')
   const [local, setLocal] = useState<AppSettings>(settings ?? FALLBACK_SETTINGS)
+  // localRef 始终指向最新 local — 供事件回调（handleSave）读取，避免闭包捕获旧值
+  const localRef = useRef(local)
+  localRef.current = local
   const [showKey, setShowKey] = useState(false)
 
   // 连接测试状态
@@ -69,7 +72,8 @@ export function SettingsModal(): React.ReactElement | null {
   }
 
   const handleSave = async (): Promise<void> => {
-    await updateSettings(local)
+    // 使用函数式更新读取最新 local，避免闭包捕获旧值导致外部设置被覆盖
+    await updateSettings(localRef.current)
     setShowSettings(false)
   }
 
@@ -113,7 +117,20 @@ export function SettingsModal(): React.ReactElement | null {
           setImportMsg({ ok: false, text: '文件格式错误：不是有效的会话数组' })
           return
         }
-        useStore.setState({ conversations: parsed, currentConversationId: null })
+        // 重建 currentConversationIds — 为每个模式找到最近的会话
+        // 否则导入后切换模式时 setMode 会用过期的 ID 查找，导致 UI 空白
+        const currentConversationIds: Record<string, string | null> = { office: null, coding: null, design: null }
+        for (const mode of ['office', 'coding', 'design']) {
+          const latest = parsed
+            .filter((c: { mode?: string }) => c.mode === mode)
+            .sort((a: { updatedAt?: number }, b: { updatedAt?: number }) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))[0]
+          if (latest) currentConversationIds[mode] = latest.id
+        }
+        useStore.setState({
+          conversations: parsed,
+          currentConversationId: null,
+          currentConversationIds: currentConversationIds as Record<'office' | 'coding' | 'design', string | null>,
+        })
         void useStore.getState()._persist()
         setImportMsg({ ok: true, text: `成功导入 ${parsed.length} 个会话` })
       } catch {

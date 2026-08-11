@@ -1,7 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { existsSync } from 'fs'
-import { resolve } from 'path'
+import { existsSync, statSync } from 'fs'
+import { resolve, dirname } from 'path'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
@@ -48,17 +48,22 @@ export class CodeFormatTool implements Tool {
       return this.error(toolCall.id, `路径不存在：${normalized}`)
     }
 
+    // 工作目录：文件→取父目录，目录→直接用
+    // Electron 打包后 process.cwd() 指向应用安装目录而非项目目录，
+    // 必须基于 targetPath 推导 cwd，否则 Prettier/ESLint 找不到项目配置
+    const workDir = statSync(normalized).isDirectory() ? normalized : dirname(normalized)
+
     onChunk?.({ toolStatus: 'calling', toolName: 'code_format' })
 
     const results: string[] = []
 
     try {
       if (formatter === 'prettier' || formatter === 'both') {
-        const result = await this.runPrettier(normalized, signal)
+        const result = await this.runPrettier(normalized, workDir, signal)
         results.push(result)
       }
       if (formatter === 'eslint' || formatter === 'both') {
-        const result = await this.runESLintFix(normalized, signal)
+        const result = await this.runESLintFix(normalized, workDir, signal)
         results.push(result)
       }
 
@@ -77,7 +82,7 @@ export class CodeFormatTool implements Tool {
     }
   }
 
-  private async runPrettier(targetPath: string, signal: AbortSignal | undefined): Promise<string> {
+  private async runPrettier(targetPath: string, workDir: string, signal: AbortSignal | undefined): Promise<string> {
     try {
       const cmd = `npx prettier --write "${targetPath}" 2>&1`
       const { stdout } = await execAsync(cmd, {
@@ -85,7 +90,7 @@ export class CodeFormatTool implements Tool {
         maxBuffer: 5 * 1024 * 1024,
         windowsHide: true,
         signal,
-        cwd: process.cwd()
+        cwd: workDir
       } as never)
 
       const output = String(stdout).trim()
@@ -100,7 +105,7 @@ export class CodeFormatTool implements Tool {
     }
   }
 
-  private async runESLintFix(targetPath: string, signal: AbortSignal | undefined): Promise<string> {
+  private async runESLintFix(targetPath: string, workDir: string, signal: AbortSignal | undefined): Promise<string> {
     try {
       const cmd = `npx eslint "${targetPath}" --fix --format stylish --no-error-on-unmatched-pattern 2>&1`
       const { stdout } = await execAsync(cmd, {
@@ -108,7 +113,7 @@ export class CodeFormatTool implements Tool {
         maxBuffer: 5 * 1024 * 1024,
         windowsHide: true,
         signal,
-        cwd: process.cwd()
+        cwd: workDir
       } as never)
 
       const output = String(stdout).trim()

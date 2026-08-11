@@ -31,8 +31,8 @@ const api = {
         })
     },
     cancel: (): Promise<void> => ipcRenderer.invoke('chat:cancel'),
-    test: (apiKey: string, baseUrl: string, model: string): Promise<TestResult> =>
-      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model),
+    test: (apiKey: string, baseUrl: string, model: string, providerId?: string): Promise<TestResult> =>
+      ipcRenderer.invoke('chat:test', apiKey, baseUrl, model, providerId),
     enhancePrompt: (data: { text: string; mode: string; recentContext?: string; projectPath?: string }): Promise<{ success: boolean; enhancedText?: string; error?: string }> =>
       ipcRenderer.invoke('chat:enhance-prompt', data)
   },
@@ -64,6 +64,11 @@ const api = {
     save: (servers: McpServerConfig[]): Promise<boolean> => ipcRenderer.invoke('mcp:save', servers),
     parseConfig: (raw: string): Promise<{ servers: McpServerConfig[]; error?: string }> =>
       ipcRenderer.invoke('mcp:parseConfig', raw)
+  },
+  // 自定义服务商 — 自动获取模型列表（OpenAI 兼容 GET /models）
+  providers: {
+    listModels: (baseUrl: string, apiKey: string): Promise<{ success: boolean; models: string[]; error?: string }> =>
+      ipcRenderer.invoke('providers:list-models', baseUrl, apiKey)
   },
   importedSkills: {
     load: (): Promise<ImportedSkill[]> => ipcRenderer.invoke('imported-skills:load'),
@@ -285,6 +290,12 @@ const api = {
       ipcRenderer.invoke('tokenizer:count', text),
     countMessages: (messages: { role: string; content: string }[]): Promise<{ success: boolean; count: number; error?: string }> =>
       ipcRenderer.invoke('tokenizer:countMessages', messages)
+  },
+
+  // 语音转写 — 纯本地 Whisper 模型推理，发送 PCM 数据到主进程
+  voice: {
+    transcribe: (pcm: Float32Array, sampleRate: number): Promise<{ text: string; error?: string }> =>
+      ipcRenderer.invoke('voice:transcribe', pcm, sampleRate)
   }
 }
 

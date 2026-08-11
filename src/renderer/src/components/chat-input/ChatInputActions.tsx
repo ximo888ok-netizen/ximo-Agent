@@ -1,6 +1,7 @@
 import { Paperclip, AtSign, Globe, ArrowUp, Zap, Square, Sparkles, Loader2, Undo2 } from 'lucide-react'
 import { ModelSelector } from './ModelSelector'
 import { ReasoningSlider } from './ReasoningSlider'
+import { LongTaskPicker } from './LongTaskPicker'
 
 interface ChatInputActionsProps {
   onAttachFile: () => Promise<void>
@@ -28,7 +29,8 @@ export function ChatInputActions({
   autoModeLevel, onCycleAutoMode,
   isStreaming, streamingTokens,
   text, onSend, onCancel,
-  currentMode, onEnhancePrompt, isEnhancing, onUndoEnhance, canUndo, children
+  currentMode, onEnhancePrompt, isEnhancing, onUndoEnhance, canUndo,
+  children
 }: ChatInputActionsProps): React.ReactElement {
   return (
     <div className="flex items-center justify-between px-3 pb-2.5">
@@ -64,6 +66,8 @@ export function ChatInputActions({
           </button>
         )}
         {children}
+
+        <LongTaskPicker />
 
         <button
           onClick={onToggleNetwork}

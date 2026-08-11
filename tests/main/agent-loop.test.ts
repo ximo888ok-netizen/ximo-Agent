@@ -23,6 +23,10 @@ vi.mock('../../src/main/deepseek/supervisor', () => ({
   buildCorrectionMessage: vi.fn(() => '')
 }))
 
+vi.mock('../../src/main/deepseek/knowledge-extract', () => ({
+  extractKnowledgeFromConversation: vi.fn(() => Promise.resolve())
+}))
+
 // ---- 导入被测模块（vi.mock 已 hoisted，mock 在导入前生效）----
 
 import { agentLoop } from '../../src/main/deepseek/agent-loop'

@@ -59,7 +59,7 @@ export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: Con
             取消
           </button>
           <button
-            onClick={() => { if (yoloRemember) localStorage.setItem('ximo-yolo', 'true'); onConfirm() }}
+            onClick={() => { if (yoloRemember) sessionStorage.setItem('ximo-yolo', 'true'); onConfirm() }}
             className="btn-liquid rounded-xl px-4 py-2 text-xs font-medium"
           >
             确认执行

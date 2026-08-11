@@ -21,6 +21,8 @@ export function useSkillManager() {
     setSkills(updated)
     await window.api.importedSkills.save(updated)
     invalidateImportedSkillsCache()
+    // 通知输入框的斜杠命令菜单刷新技能命令
+    window.dispatchEvent(new CustomEvent('ximo:skills-changed'))
   }, [])
 
   const handleImportFromFile = useCallback(async (): Promise<void> => {

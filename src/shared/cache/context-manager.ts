@@ -1,5 +1,6 @@
 import type { AgentConfig } from '../context-compress'
 import type { CompactionStats } from './types'
+import { getToolRetention, findToolName } from './tool-priority'
 
 /**
  * ContextManager — 参考 Reasonix 的 maybeCompact() + compactStuck 机制
@@ -123,14 +124,27 @@ export class ContextManager {
     let snipped = 0
     let savedChars = 0
 
-    for (let i = 1; i < protectFrom; i++) {
-      const m = messages[i]
-      // 跳过已被 trimContext 或前一轮 snip 截断的内容，避免双重截断
-      if (m.role === 'tool' && m.content && m.content.length > config.snippedKeep + 100 && !m.content.includes('[...已自动截断') && !m.content.includes('[...已省略')) {
+    // 智能分级 snip：先裁 LOW（file_read/web_search 等可重新获取的），再裁 MEDIUM（构建/lint 结果）
+    // HIGH（file_write/file_edit 代码变更记录）在 snip 阶段永久保留
+    const retentionOrder: Array<'low' | 'medium'> = ['low', 'medium']
+
+    for (const retention of retentionOrder) {
+      for (let i = 1; i < protectFrom; i++) {
+        const m = messages[i]
+        if (m.role !== 'tool' || !m.content) continue
+        // 跳过已被截断的内容，避免双重截断
+        if (m.content.length <= config.snippedKeep + 100) continue
+        if (m.content.includes('[...已自动截断') || m.content.includes('[...已省略')) continue
+
+        const toolName = findToolName(messages, i)
+        if (getToolRetention(toolName) !== retention) continue
+
         savedChars += m.content.length - (config.snippedKeep + 40)
         m.content = m.content.slice(0, config.snippedKeep) + '\n[...已自动截断以节省上下文空间]'
         snipped++
       }
+      // LOW 裁完即可 — 不必继续裁 MEDIUM（snip 是软阈值，保留更多上下文有利于后续轮次）
+      if (snipped > 0) break
     }
     return { tier: 'snip', snippedResults: snipped, prunedResults: 0, savedChars, stuckPaused: false }
   }

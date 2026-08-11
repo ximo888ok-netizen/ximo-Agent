@@ -11,6 +11,7 @@
  */
 
 import type { ReasoningEffort } from '@shared/types'
+import type { ProviderCapabilities } from './provider'
 import { toApiEffort } from './api'
 
 // ---------- 类型 ----------
@@ -89,7 +90,8 @@ export async function runSupervisionCheck(
   model: string,
   reasoningEffort: ReasoningEffort,
   snapshot: AgentRoundSnapshot,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  caps?: ProviderCapabilities
 ): Promise<SupervisionResult | null> {
   if (!apiKey) return null
 
@@ -141,7 +143,9 @@ ${toolResultSummary}
   }
 
   // 监督 Agent 也使用思考模式（如果主 Agent 使用了）
-  if (reasoningEffort !== 'off') {
+  // 能力门控：自定义服务商 sendReasoningParams=false 时不发送 thinking 专属参数
+  // （否则第三方 API 可能拒绝未知字段 → 监督静默失败，每轮白费一次无效请求）
+  if (reasoningEffort !== 'off' && caps?.sendReasoningParams !== false) {
     body.enable_thinking = true
     body.reasoning_effort = toApiEffort(reasoningEffort)
   }
@@ -207,8 +211,25 @@ function parseSupervisionResult(raw: string): SupervisionResult | null {
       severity: parsed.severity === 'high' || parsed.severity === 'medium' ? parsed.severity : 'low'
     }
   } catch {
-    // JSON 解析失败 — 尝试从原始文本中提取信息
-    return null
+    // JSON 解析失败 — 宽松容错：从原始文本中提取关键信息（verdict/severity/问题行）
+    const verdictMatch = raw.match(/on_track|lazy|off_track|violation/)
+    if (!verdictMatch) return null
+    const severityMatch = raw.match(/\b(high|medium|low)\b/)
+    const lines = raw.split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('{') && !l.startsWith('}') && !l.startsWith('```'))
+    const issues = lines
+      .filter((l) => l.startsWith('-') || l.startsWith('•') || /^\d+[.、]/.test(l))
+      .map((l) => l.replace(/^[-•\d.、\s]+/, '').trim())
+      .filter(Boolean)
+    return {
+      verdict: verdictMatch[0] as SupervisionResult['verdict'],
+      issues: issues.length > 0 ? issues : ['（监督输出非标准格式，已尽力提取）'],
+      correction: lines.join(' ').slice(0, 500) || undefined,
+      severity: severityMatch && (severityMatch[0] === 'high' || severityMatch[0] === 'medium')
+        ? severityMatch[0] as 'high' | 'medium'
+        : 'low'
+    }
   }
 }
 

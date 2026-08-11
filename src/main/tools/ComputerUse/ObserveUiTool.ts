@@ -42,7 +42,7 @@ export class ObserveUiTool implements Tool {
 
       // 解析 Helper 返回的 outline
       const outline = result?.outline
-      const stateId = (result as any)?.stateId || (result as any)?.lookId || ''
+      const stateId = result?.stateId || result?.lookId || ''
       const note = (result?.note as string) || ''
       const image = result?.image
 

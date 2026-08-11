@@ -1,6 +1,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { join } from 'path'
+import { resolve, dirname } from 'path'
+import { statSync } from 'fs'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
 
@@ -42,25 +43,31 @@ export class CodeLintTool implements Tool {
     const targetPath = (toolCall.arguments.targetPath as string) || '.'
     const linter = (toolCall.arguments.linter as string) || 'auto'
 
+    // 解析为绝对路径，并确定工作目录（文件→取父目录，目录→直接用）
+    // Electron 打包后 process.cwd() 指向应用安装目录而非项目目录，
+    // 必须基于 targetPath 推导 cwd，否则 ESLint/Prettier 找不到项目配置
+    const resolvedPath = resolve(targetPath)
+    const workDir = statSync(resolvedPath).isDirectory() ? resolvedPath : dirname(resolvedPath)
+
     onChunk?.({ toolStatus: 'calling', toolName: 'code_lint' })
 
     try {
       if (linter === 'prettier') {
-        return await this.runPrettier(targetPath, signal, toolCall)
+        return await this.runPrettier(targetPath, workDir, signal, toolCall)
       }
       if (linter === 'eslint') {
-        return await this.runESLint(targetPath, signal, toolCall)
+        return await this.runESLint(targetPath, workDir, signal, toolCall)
       }
 
       // auto：先检测 prettier，再 eslint
-      const prettierExists = await this.hasConfig(targetPath, '.prettierrc')
-      const eslintExists = await this.hasConfig(targetPath, '.eslintrc')
+      const prettierExists = await this.hasConfig(workDir, '.prettierrc')
+      const eslintExists = await this.hasConfig(workDir, '.eslintrc')
 
       if (prettierExists) {
-        return await this.runPrettier(targetPath, signal, toolCall)
+        return await this.runPrettier(targetPath, workDir, signal, toolCall)
       }
       if (eslintExists) {
-        return await this.runESLint(targetPath, signal, toolCall)
+        return await this.runESLint(targetPath, workDir, signal, toolCall)
       }
 
       return {
@@ -75,7 +82,7 @@ export class CodeLintTool implements Tool {
     }
   }
 
-  private async runESLint(targetPath: string, signal: AbortSignal | undefined, toolCall: { id: string }): Promise<ToolResult> {
+  private async runESLint(targetPath: string, workDir: string, signal: AbortSignal | undefined, toolCall: { id: string }): Promise<ToolResult> {
     try {
       // 使用 JSON 格式以便解析结构化错误
       const cmd = `npx eslint "${targetPath}" --format json --no-error-on-unmatched-pattern 2>&1`
@@ -84,7 +91,7 @@ export class CodeLintTool implements Tool {
         maxBuffer: 5 * 1024 * 1024,
         windowsHide: true,
         signal,
-        cwd: process.cwd()
+        cwd: workDir
       } as never)
 
       return this.parseESLintJson(String(stdout), toolCall.id, false)
@@ -202,7 +209,7 @@ export class CodeLintTool implements Tool {
     }
   }
 
-  private async runPrettier(targetPath: string, signal: AbortSignal | undefined, toolCall: { id: string }): Promise<ToolResult> {
+  private async runPrettier(targetPath: string, workDir: string, signal: AbortSignal | undefined, toolCall: { id: string }): Promise<ToolResult> {
     try {
       const cmd = `npx prettier --check "${targetPath}" 2>&1`
       const { stdout } = await execAsync(cmd, {
@@ -210,7 +217,7 @@ export class CodeLintTool implements Tool {
         maxBuffer: 5 * 1024 * 1024,
         windowsHide: true,
         signal,
-        cwd: process.cwd()
+        cwd: workDir
       } as never)
 
       return {

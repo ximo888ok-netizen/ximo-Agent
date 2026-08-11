@@ -9,6 +9,31 @@ export interface StreamingSegment {
   reasoning: string
   content: string
   toolCalls: { name: string; status: 'thinking' | 'calling' | 'done'; args?: string; result?: string; toolCallId?: string }[]
+  /** 子 Agent 工作过程事件（专家团编排时实时追加，按时间顺序） */
+  expertEvents?: {
+    expertId: string
+    expertName: string
+    stage: 'started' | 'tool' | 'toolResult' | 'message' | 'finished'
+    taskSummary?: string
+    detail?: string
+    toolArgs?: string
+    result?: string
+  }[]
+  /** 有序事件流 — 按实际发生顺序记录，渲染时按序输出而非同类型堆叠 */
+  events?: SegmentEvent[]
+}
+
+/** Segment 内的有序事件 — 按实际发生时间排列，避免同类型信息堆叠 */
+export interface SegmentEvent {
+  type: 'reasoning' | 'content' | 'tool'
+  /** reasoning/content 的文本片段 */
+  text?: string
+  /** tool 事件的信息 */
+  toolName?: string
+  toolCallId?: string
+  args?: string
+  result?: string
+  status?: 'calling' | 'done'
 }
 
 export interface ChatMessage {
@@ -38,6 +63,8 @@ export interface Conversation {
   messages: ChatMessage[]
   createdAt: number
   updatedAt: number
+  /** 长任务模式开关 — 按会话独立记忆，新会话默认 false */
+  longTask?: boolean
   /** 绑定的项目目录路径（coding 模式专用） */
   projectPath?: string
   /** 会话累计总 token 消耗 */
@@ -57,6 +84,9 @@ export interface ApiMessage {
   content: string
   tool_calls?: { id: string; type: 'function'; function: { name: string; arguments: string } }[]
   tool_call_id?: string
+  /** A2 reasoning_content 空 key — DeepSeek thinking 模式下 tool_calls turn 必须带此 key。
+   *  与主进程 agent-loop（tool-execution.ts）保持一致，避免重建消息时前缀字节漂移导致缓存全部 miss */
+  reasoning_content?: string
 }
 
 // 发起聊天请求的参数
@@ -74,6 +104,10 @@ export interface ChatRequest {
   sessionId?: string
   /** Auto Mode 等级：off=手动确认, safe=读操作自动, yolo=全部自动 */
   autoModeLevel?: 'off' | 'safe' | 'yolo'
+  /** 服务商 ID：'deepseek'=内置，其余对应 settings.providers 中的自定义服务商（缺省 deepseek） */
+  providerId?: string
+  /** 长任务模式 — 开启后注入长任务执行协议，持续工作直到满足用户需求 */
+  longTask?: boolean
 }
 
 // 流式传输的数据块
@@ -99,6 +133,23 @@ export interface StreamChunk {
   /** 工具调用状态变更 */
   toolStatus?: 'thinking' | 'calling' | 'done'
   toolName?: string
+  /** 子 Agent 工作过程事件 — 专家团编排时实时推送专家的工作进度（阶段/工具调用/中间产出） */
+  subAgentEvent?: {
+    /** 专家唯一标识 */
+    expertId: string
+    /** 专家名称（含 emoji，用于展示） */
+    expertName: string
+    /** 事件阶段：started=开始工作, tool=工具调用, toolResult=工具结果, message=专家中间产出, finished=完成 */
+    stage: 'started' | 'tool' | 'toolResult' | 'message' | 'finished'
+    /** 当前处理的任务摘要 */
+    taskSummary?: string
+    /** 阶段详情（工具名/消息内容/结果摘要等） */
+    detail?: string
+    /** 工具调用参数摘要（可选） */
+    toolArgs?: string
+    /** 专家工作结果（finished 时携带） */
+    result?: string
+  }
   /** 监督审查 Agent 反馈（ultra 思考强度专用） */
   supervision?: {
     verdict: 'on_track' | 'lazy' | 'off_track' | 'violation'
@@ -106,5 +157,26 @@ export interface StreamChunk {
     correction?: string
     severity: 'low' | 'medium' | 'high'
     round: number
+    /** 纠正指令全文 — 主进程已注入 messages 末尾，渲染层需持久化以便重建时保持一致（缓存友好） */
+    message?: string
   }
-}
+  /** 自动续跑通知 — 长任务模式下达到轮次上限时自动续跑 */
+  continuation?: {
+    /** 当前续跑批次（从 1 开始） */
+    segment: number
+    /** 最大续跑批次 */
+    maxSegments: number
+    /** 本批次已完成轮次 */
+    completedRounds: number
+  }
+  /** 任务意图分析结果 — 长任务模式启动时深度分析用户需求 */
+  taskIntent?: {
+    /** 分析出的真实需求 */
+    intent: string
+    /** 验收标准 */
+    successCriteria: string[]
+    /** 识别的约束与风险 */
+    constraints: string[]
+    /** 建议的任务阶段 */
+    phases: string[]
+  }

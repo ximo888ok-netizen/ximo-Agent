@@ -22,7 +22,7 @@ export async function doScreenshot(toolCall: ToolCall): Promise<ToolResult> {
   }, 15_000)
 
   const image = result?.image
-  const stateId = (result as any)?.stateId || (result as any)?.lookId || ''
+  const stateId = result?.stateId || result?.lookId || ''
   const outline = result?.outline
 
   const lines = ['## 📸 屏幕截图']
@@ -54,17 +54,17 @@ export async function doObserve(toolCall: ToolCall): Promise<ToolResult> {
       args.windowRef = window
     } else {
       const findResult = await piBridge.command<{ roots?: unknown[] }>('listRoots', { title: window }, 10_000)
-      const roots = Array.isArray((findResult as any)?.roots) ? (findResult as any).roots : []
+      const roots = Array.isArray(findResult?.roots) ? findResult.roots : []
       if (roots.length > 0) {
-        args.windowRef = (roots[0] as any)?.rootRef || `@r1`
+        args.windowRef = (roots[0] as Record<string, unknown>)?.rootRef as string || `@r1`
       }
     }
   }
 
   const result = await piBridge.command<Record<string, unknown>>('look', args, 20_000)
-  const outline = (result as any)?.outline
-  const stateId = (result as any)?.stateId || (result as any)?.lookId || ''
-  const image = (result as any)?.image
+  const outline = result?.outline
+  const stateId = result?.stateId || result?.lookId || ''
+  const image = result?.image
 
   if (!outline) {
     return {
@@ -78,7 +78,7 @@ export async function doObserve(toolCall: ToolCall): Promise<ToolResult> {
   const lines = [
     `## 🔍 UI 观察${window ? ` — ${window}` : ''}`,
     '', `**stateId:** \`${stateId}\``, '',
-    formatOutlineFull(outline)
+    formatOutlineFull(outline as Record<string, unknown>)
   ]
 
   const toolResult: ToolResult = {
@@ -99,7 +99,7 @@ export async function doFindWindow(toolCall: ToolCall): Promise<ToolResult> {
   if (window) args.title = window
 
   const result = await piBridge.command<{ roots?: unknown[] }>('listRoots', args, 10_000)
-  const roots = Array.isArray((result as any)?.roots) ? (result as any).roots : []
+  const roots = Array.isArray(result?.roots) ? result.roots : []
 
   if (roots.length === 0) {
     return {
@@ -141,8 +141,8 @@ export async function doClickElement(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'press', target: { ref }, policy: 'default', params: {}
   }, 15_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
-  const newLookId = (actResult as any)?.lookId || lookId
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
+  const newLookId = actResult?.lookId || lookId
 
   // 操作后快速截图确认
   let screenshot: string | undefined
@@ -150,7 +150,7 @@ export async function doClickElement(toolCall: ToolCall): Promise<ToolResult> {
     const lookResult = await piBridge.command<Record<string, unknown>>('look', {
       readText: 'never', includeImage: true, maxDimension: 800
     }, 8_000)
-    const img = (lookResult as any)?.image
+    const img = lookResult?.image
     if (img && typeof img === 'string') {
       screenshot = img.startsWith('data:') ? img : `data:image/png;base64,${img}`
     }
@@ -179,7 +179,7 @@ export async function doSetText(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'setText', target: { ref }, policy: 'default', params: { text }
   }, 15_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
   const success = outcome === 'worked'
 
   return {
@@ -220,7 +220,7 @@ export async function doMouseClick(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'click', target: { x, y }, policy: 'default', params: { button, clickCount }
   }, 10_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
   const success = outcome === 'worked' || outcome === 'unknown'
 
   return {
@@ -257,7 +257,7 @@ export async function doMouseDrag(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'drag', target: {}, policy: 'default', params: { path }
   }, 15_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
   const success = outcome === 'worked' || outcome === 'unknown'
 
   return {
@@ -279,7 +279,7 @@ export async function doMouseScroll(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'scroll', target: { x, y }, policy: 'default', params: { scrollX, scrollY }
   }, 10_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
 
   return {
     toolCallId: toolCall.id, toolName: 'computer_use',
@@ -301,7 +301,7 @@ export async function doKeyPress(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'keypress', target: {}, policy: 'default', params: { keys }
   }, 10_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
 
   return {
     toolCallId: toolCall.id, toolName: 'computer_use',
@@ -320,7 +320,7 @@ export async function doKeyType(toolCall: ToolCall): Promise<ToolResult> {
     lookId, action: 'typeText', target: {}, policy: 'default', params: { text }
   }, 10_000)
 
-  const outcome = (actResult as any)?.performed?.outcome || 'unknown'
+  const outcome = (actResult?.performed as Record<string, unknown> | undefined)?.outcome || 'unknown'
 
   return {
     toolCallId: toolCall.id, toolName: 'computer_use',
@@ -340,7 +340,7 @@ export async function doWait(toolCall: ToolCall): Promise<ToolResult> {
   if (!text) return error(toolCall.id, 'wait 需要 text 参数')
 
   const result = await piBridge.command<Record<string, unknown>>('uiaWaitFor', { text, until, timeoutMs }, timeoutMs + 5_000)
-  const satisfied = (result as any)?.satisfied !== false
+  const satisfied = result?.satisfied !== false
   const condition = until === 'present' ? '出现' : '消失'
 
   return {

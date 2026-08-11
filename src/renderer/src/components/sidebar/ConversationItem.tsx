@@ -1,5 +1,7 @@
 import { memo, useState, useRef, useEffect } from 'react'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { useStore } from '@renderer/store/useStore'
+import { getActiveContextWindow } from '@renderer/lib/providers'
 
 interface ConversationItemProps {
   conv: { id: string; title: string; mode: string; projectPath?: string; contextTokens?: number }
@@ -25,9 +27,12 @@ export const ConversationItem = memo(function ConversationItem({
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  // 提交守卫 — 防止 Enter 提交与 onBlur 并发导致重复提交/双重退出编辑
+  const commitGuardRef = useRef(false)
 
-  // 上下文窗口占用指示器
-  const CONTEXT_WINDOW = 1_000_000
+  // 上下文窗口占用指示器 — 窗口大小随活跃服务商变化（内置 DeepSeek = 1M）
+  // 选中原始数值（而非整个 settings 对象）— 仅在窗口值变化时重渲染
+  const CONTEXT_WINDOW = useStore((s) => getActiveContextWindow(s.settings))
   const ctxTokens = conv.contextTokens ?? 0
   const ctxPct = ctxTokens > 0 ? Math.min(100, (ctxTokens / CONTEXT_WINDOW) * 100) : 0
   const ctxColor = ctxPct >= 80 ? '#ef4444'
@@ -37,6 +42,7 @@ export const ConversationItem = memo(function ConversationItem({
 
   const startEditing = (): void => {
     setEditTitle(conv.title)
+    commitGuardRef.current = false // 重置提交守卫，允许再次进入编辑
     setEditing(true)
     onContextMenu(null)
   }
@@ -46,6 +52,9 @@ export const ConversationItem = memo(function ConversationItem({
     if (trimmed && trimmed !== conv.title) {
       onRename(conv.id, trimmed)
     }
+    // 防抖：Enter 提交与 blur 可能并发触发，用 ref 保证只提交一次
+    if (commitGuardRef.current) return
+    commitGuardRef.current = true
     setEditing(false)
   }
 

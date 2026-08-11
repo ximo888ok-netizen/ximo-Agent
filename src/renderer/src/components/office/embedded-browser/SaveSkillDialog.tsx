@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { SkillStep } from '@renderer/components/office/shared/types'
+import type { SkillStep } from '@shared/types'
 
 interface SaveSkillDialogProps {
   initialName: string

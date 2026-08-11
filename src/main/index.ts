@@ -8,6 +8,7 @@ import { registerFsHandlers } from './ipc/fs-handlers'
 import { registerNetworkHandlers } from './ipc/network-handlers'
 import { registerDataHandlers } from './ipc/data-handlers'
 import { registerSystemHandlers } from './ipc/system-handlers'
+import { registerVoiceHandlers } from './voice/voice-ipc'
 // 内嵌浏览器 IPC 桥 — 模块加载时注册 handler，必须在启动时导入，
 // 否则用户打开内置浏览器时 'embedded-browser:set-active' 尚未注册导致报错
 import './tools/Browser/WebviewBridge'
@@ -29,6 +30,7 @@ registerNetworkHandlers()
 registerUpdateHandlers()
 registerDataHandlers()
 registerSystemHandlers()
+registerVoiceHandlers()
 
 // 全局异常兜底，防止未捕获异常导致应用崩溃
 process.on('uncaughtException', (error) => {

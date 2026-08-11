@@ -6,6 +6,7 @@ import { THEME_PRESETS, type ThemePreset } from './theme-presets'
 import { VarRow } from './VarRow'
 import { ThemePreview } from './ThemePreview'
 import { BackgroundSection } from './BackgroundSection'
+import { MouseEffectsSection } from './MouseEffectsSection'
 import type { AppSettings, BackgroundImageConfig } from '@shared/types'
 
 type Mode = 'light' | 'dark'
@@ -234,6 +235,11 @@ export function ThemeEditor({
       {/* 背景图区域 */}
       <div className="mt-2">
         <BackgroundSection config={bgConfig} onChange={handleBgChange} />
+      </div>
+
+      {/* 鼠标特效 — 跟随 + 点击动画 */}
+      <div className="mt-2">
+        <MouseEffectsSection settings={settings} update={update} />
       </div>
 
       {/* 底部操作 */}

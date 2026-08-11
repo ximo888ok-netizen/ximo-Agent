@@ -1,6 +1,6 @@
 {
   "name": "ximo-agent",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "DeepSeek-V4 驱动的全能 Agent 工作台 - 办公/编程/设计三模式",
   "author": "ximo",
   "main": "out/main/index.js",
@@ -13,6 +13,7 @@
     "build:win": "electron-vite build && electron-builder --win",
     "make-icon": "node scripts/make-icon.mjs",
     "gen-previews": "node scripts/gen-previews.mjs",
+    "download-whisper": "node scripts/download-whisper.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -21,7 +22,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@orama/orama": "^3.1.18",
+    "cheerio": "^1.2.0",
+    "chroma-js": "^3.2.0",
+    "jschardet": "^3.1.4",
     "lucide-react": "^0.469.0",
     "mermaid": "^11.4.1",
     "playwright": "^1.61.1",
@@ -76,7 +81,22 @@
       "allowToChangeInstallationDirectory": true
     },
     "asarUnpack": [
-      "prebuilt/**"
+      "prebuilt/**",
+      "node_modules/onnxruntime-node/**"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/officecli",
+        "to": "officecli",
+        "filter": [
+          "officecli.exe",
+          "officecli"
+        ]
+      },
+      {
+        "from": "resources/whisper-tiny",
+        "to": "models"
+      }
     ]
   }
 }

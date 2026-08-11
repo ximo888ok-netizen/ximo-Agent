@@ -27,7 +27,9 @@ export class DesignColorTool implements Tool {
     try {
       // chroma-js 动态导入，类型不完善
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const chroma: any = await import('chroma-js')
+      // chroma-js 无内置类型声明（@types/chroma-js 亦未安装），故使用 any 并保留动态 import 语义
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chroma: any = await import('chroma-js')
       const c = chroma(primary)
       const scale = chroma.scale([c.brighten(2), c, c.darken(2)]).mode('lch')
       const colors = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => {

@@ -2,10 +2,8 @@
  * Store 辅助函数 — 从 useStore.ts 提取
  */
 
-/** 生成唯一 ID */
-export function genId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-}
+/** 生成唯一 ID — 统一从共享模块导出，避免多份实现 */
+export { genId } from '@shared/utils'
 
 /** 从消息文本生成会话标题 */
 export function makeTitle(text: string): string {

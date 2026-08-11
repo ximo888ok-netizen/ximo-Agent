@@ -30,6 +30,7 @@ export function CodingLayout(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
   const projectPath = useStore((s) => s.projectPath)
   const editMessage = useStore((s) => s.editMessage)
+  const clearDraft = useStore((s) => s.clearDraft)
 
   const fontSize = useStore((s) => s.settings?.fontSize) ?? 'md'
   const modelLabel = useStore((s) => s.settings?.model?.includes('pro')) ? 'DeepSeek V4-Pro' : 'DeepSeek V4-Flash'
@@ -73,12 +74,15 @@ export function CodingLayout(): React.ReactElement {
     const userMessages = conversation.messages.filter((m: ChatMessage) => m.role === 'user')
     const target = userMessages[_turn]
     if (target) {
-      // editMessage 同步更新 store，之后直接发送新文本即可
+      // editMessage 同步更新 store（截断消息 + 设置 pendingDraft），之后直接发送新文本即可
       // 保留原消息的 slashCommand 胶囊（如果存在）
       editMessage(target.id)
+      // 立即清除 pendingDraft — editMessage 会设置 pendingDraft 为旧消息内容，
+      // 但此处已通过 sendMessage 发送新文本，旧内容不应填入输入框
+      clearDraft()
       void sendMessage(text, target.slashCommand ? { slashCommand: target.slashCommand } : undefined)
     }
-  }, [conversation, editMessage, sendMessage])
+  }, [conversation, editMessage, clearDraft, sendMessage])
 
   // 空状态 — 主入口，输入框由 GlobalChatInput 管理
   if (isEmpty) {

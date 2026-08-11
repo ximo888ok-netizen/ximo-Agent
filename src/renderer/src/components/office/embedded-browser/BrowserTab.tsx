@@ -1,5 +1,5 @@
 import { useRef, useEffect, memo } from 'react'
-import type { RecordedEvent } from '@renderer/components/office/shared/types'
+import type { RecordedEvent } from '@shared/types'
 import type { TabState, WebviewAPI } from './types'
 import { safeCall } from './utils'
 import { injectRecordingScript } from './recording-script'
