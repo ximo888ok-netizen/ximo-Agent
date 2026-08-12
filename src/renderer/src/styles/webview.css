@@ -1,0 +1,12 @@
+/* ── webview 元素样式 ──
+   Electron <webview> 默认 display:inline-flex + width/height:0
+   需显式设置背景色和 display，避免透明窗口下黑屏 */
+webview {
+  display: inline-flex;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+  outline: none;
+  border: none;
+}

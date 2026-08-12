@@ -5,6 +5,7 @@ import { ThemePackSection } from './ThemePackSection'
 import { ThemeEditor } from './ThemeEditor/ThemeEditor'
 import { StartupAnimationSection } from './StartupAnimationSection'
 import { DataManagementSection } from './DataManagementSection'
+import { VoiceDiscussionSection } from './VoiceDiscussionSection'    
 
 export function AppearanceTab({
   local,
@@ -128,6 +129,9 @@ export function AppearanceTab({
 
       {/* 可视化主题编辑器 */}
       <ThemeEditor settings={local} update={update} />
+
+      {/* 语音讨论面板自定义 */}
+      <VoiceDiscussionSection local={local} update={update} />
 
       {/* 开屏动画 */}
       <StartupAnimationSection local={local} update={update} transitionFileRef={transitionFileRef} transitionMsg={transitionMsg} onImportTransition={onImportTransition} />

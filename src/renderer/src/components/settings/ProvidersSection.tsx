@@ -3,69 +3,10 @@ import {
   Plus, Pencil, Trash2, Zap, Loader2, CheckCircle2, XCircle, Server
 } from 'lucide-react'
 import type { AppSettings, ProviderConfig, TestResult } from '@shared/types'
-import { genId } from '@shared/utils'
 import { SectionTitle } from './shared-components'
 import { DEEPSEEK_PROVIDER_ID } from '@renderer/lib/providers'
-
-// ====== 编辑草稿 ======
-
-interface DraftState {
-  id: string
-  isNew: boolean
-  name: string
-  baseUrl: string
-  apiKey: string
-  /** 逗号/换行分隔的模型名 */
-  modelsText: string
-  contextWindow: string
-  maxOutput: string
-  sendReasoningParams: boolean
-  sendStreamUsage: boolean
-}
-
-function toDraft(p?: ProviderConfig): DraftState {
-  return {
-    id: p?.id ?? genId(),
-    isNew: !p,
-    name: p?.name ?? '',
-    baseUrl: p?.baseUrl ?? '',
-    apiKey: p?.apiKey ?? '',
-    modelsText: (p?.models ?? []).join(', '),
-    contextWindow: p?.contextWindowTokens ? String(p.contextWindowTokens) : '',
-    maxOutput: p?.maxOutputTokens ? String(p.maxOutputTokens) : '',
-    sendReasoningParams: p?.sendReasoningParams ?? true,
-    sendStreamUsage: p?.sendStreamUsage ?? true
-  }
-}
-
-function parseModels(text: string): string[] {
-  return text.split(/[,，\n]+/).map((s) => s.trim()).filter(Boolean)
-}
-
-const inputCls = 'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none'
-
-// ====== 单行能力开关 ======
-
-function CapToggle({ label, desc, value, onChange }: {
-  label: string; desc: string; value: boolean; onChange: (v: boolean) => void
-}): React.ReactElement {
-  return (
-    <button
-      onClick={() => onChange(!value)}
-      className="flex w-full items-center justify-between rounded-lg border border-border-subtle bg-bg-elevated px-3 py-2.5 text-left transition-colors hover:border-border-hover"
-    >
-      <div className="min-w-0 pr-3">
-        <p className="text-xs font-medium text-text-primary">{label}</p>
-        <p className="text-[10px] text-text-muted">{desc}</p>
-      </div>
-      <span className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${value ? 'bg-accent' : 'bg-border'}`}>
-        <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${value ? 'translate-x-4' : ''}`} />
-      </span>
-    </button>
-  )
-}
-
-// ====== 主组件 ======
+import { toDraft, parseModels, type DraftState } from './provider-helpers'
+import { ProviderDraftForm } from './ProviderDraftForm'
 
 export function ProvidersSection({
   local,
@@ -79,7 +20,6 @@ export function ProvidersSection({
   const [draft, setDraft] = useState<DraftState | null>(null)
   const [draftError, setDraftError] = useState('')
   const [testing, setTesting] = useState<{ id: string; result: TestResult | null } | null>(null)
-  // 自动获取模型列表状态
   const [fetching, setFetching] = useState(false)
   const [fetchMsg, setFetchMsg] = useState('')
 
@@ -137,7 +77,6 @@ export function ProvidersSection({
   const removeProvider = (id: string): void => {
     update({
       providers: providers.filter((p) => p.id !== id),
-      // 删除的若是活跃服务商，回退到内置 DeepSeek
       ...(activeId === id ? { activeProviderId: DEEPSEEK_PROVIDER_ID } : {})
     })
   }
@@ -257,102 +196,16 @@ export function ProvidersSection({
       )}
 
       {draft && (
-        <div className="mt-2 space-y-3 rounded-xl border border-border bg-bg-elevated p-4">
-          <p className="text-sm font-medium text-text-primary">{draft.isNew ? '添加服务商' : '编辑服务商'}</p>
-
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder="名称，如 OpenRouter"
-              className={inputCls}
-            />
-            <input
-              value={draft.apiKey}
-              onChange={(e) => setDraft({ ...draft, apiKey: e.target.value })}
-              placeholder="API Key（sk-...）"
-              type="password"
-              className={inputCls}
-            />
-          </div>
-
-          <input
-            value={draft.baseUrl}
-            onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })}
-            placeholder="Base URL，如 https://openrouter.ai/api/v1"
-            className={inputCls}
-          />
-
-          <textarea
-            value={draft.modelsText}
-            onChange={(e) => setDraft({ ...draft, modelsText: e.target.value })}
-            placeholder="模型名列表（逗号分隔）——可点右上「自动获取」从 /models 拉取"
-            rows={2}
-            className={`${inputCls} resize-none`}
-          />
-
-          {/* 模型获取状态 */}
-          <div className="-mt-1 flex items-center justify-between">
-            <p className={`text-[10px] ${fetchMsg ? 'text-text-muted' : 'text-transparent'}`}>
-              {fetchMsg || '.'}
-            </p>
-            <button
-              onClick={() => void fetchModels()}
-              disabled={fetching}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {fetching ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
-              {fetching ? '获取中...' : '自动获取模型'}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={draft.contextWindow}
-              onChange={(e) => setDraft({ ...draft, contextWindow: e.target.value.replace(/[^\d]/g, '') })}
-              placeholder="上下文窗口 tokens（缺省 131072）"
-              className={inputCls}
-            />
-            <input
-              value={draft.maxOutput}
-              onChange={(e) => setDraft({ ...draft, maxOutput: e.target.value.replace(/[^\d]/g, '') })}
-              placeholder="最大输出 tokens（缺省 8192）"
-              className={inputCls}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <CapToggle
-              label="Reasoning 参数"
-              desc="发送 enable_thinking 等思考参数"
-              value={draft.sendReasoningParams}
-              onChange={(v) => setDraft({ ...draft, sendReasoningParams: v })}
-            />
-            <CapToggle
-              label="流式 Usage"
-              desc="发送 stream_options.include_usage"
-              value={draft.sendStreamUsage}
-              onChange={(v) => setDraft({ ...draft, sendStreamUsage: v })}
-            />
-          </div>
-
-          {draftError && <p className="text-xs text-red-400">{draftError}</p>}
-
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => { setDraft(null); setDraftError(''); setFetchMsg('') }}
-              className="rounded-lg px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-primary"
-            >
-              取消
-            </button>
-            <button
-              onClick={saveDraft}
-              className="rounded-lg bg-accent/15 px-4 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/25"
-            >
-              保存
-            </button>
-          </div>
-        </div>
+        <ProviderDraftForm
+          draft={draft}
+          draftError={draftError}
+          fetching={fetching}
+          fetchMsg={fetchMsg}
+          onDraftChange={setDraft}
+          onCancel={() => { setDraft(null); setDraftError(''); setFetchMsg('') }}
+          onSave={saveDraft}
+          onFetchModels={fetchModels}
+        />
       )}
 
       <p className="mt-2 text-[10px] text-text-muted">

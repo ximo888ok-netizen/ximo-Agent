@@ -33,10 +33,9 @@ export function createWindow(): void {
     } as Electron.WebPreferences
   })
 
-  // 窗口显示策略（三重保障）：
-  // 1. ready-to-show: Chromium 完成首帧渲染即触发（HTML 内联背景已可见）
-  // 2. window:ready IPC: 渲染进程 JS 首帧完成后触发（React 已挂载）
-  // 3. setTimeout 2s: 兜底，防止上述两者都失败
+  // 窗口显示策略（双重保障）：
+  // 1. window:ready IPC: 渲染进程完成 init() 后触发（React 已渲染开屏动画或主界面）
+  // 2. setTimeout 4s: 兜底，防止 IPC 失败导致窗口永远不显示
   let shown = false
   const showWindow = (): void => {
     if (shown || mainWindow.isDestroyed()) return
@@ -44,12 +43,7 @@ export function createWindow(): void {
     mainWindow.show()
   }
 
-  const showFallback = setTimeout(showWindow, 2000)
-
-  mainWindow.once('ready-to-show', () => {
-    clearTimeout(showFallback)
-    showWindow()
-  })
+  const showFallback = setTimeout(showWindow, 4000)
 
   ipcMain.handle('window:ready', () => {
     clearTimeout(showFallback)

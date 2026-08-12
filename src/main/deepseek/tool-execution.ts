@@ -10,11 +10,11 @@ import type { MutableMessage } from '@shared/cache'
 import { toolRegistry } from '@main/tools'
 import { isRecording, appendStep } from '@main/SkillStore'
 import { getCheckpointStore } from '@main/CheckpointStore'
-import { evaluate, extractSubject, getConfigForMode, YOLO_CONFIG, SAFE_CONFIG } from '@main/Permission'
 import { agentConfig, truncateToolResult, sanitizeContent } from './context'
 import type { SingleCallResult, StreamHandlers } from './types'
 import { runSupervisionCheck, needsCorrection, buildCorrectionMessage } from './supervisor'
 import type { AgentRoundSnapshot } from './supervisor'
+import { checkPermissions } from './tool-permissions'
 
 /** 工具执行所需的参数 */
 export interface ExecuteToolCallsParams {
@@ -49,71 +49,9 @@ function withToolTimeout<T>(promise: Promise<T>, ms: number, onTimeout: () => T)
   })
 }
 
-/** 权限评估结果：被取消的工具调用 ID 集合 */
-async function checkPermissions(
-  toolCalls: ToolCall[],
-  request: ChatRequest,
-  handlers: StreamHandlers,
-  messages: MutableMessage[]
-): Promise<Set<string>> {
-  const permConfig = handlers.autoModeLevel === 'yolo' || handlers.yoloMode
-    ? YOLO_CONFIG
-    : handlers.autoModeLevel === 'safe'
-      ? SAFE_CONFIG
-      : getConfigForMode(request.mode)
-
-  const cancelledIds = new Set<string>()
-
-  for (const tc of toolCalls) {
-    const subject = extractSubject(tc.name, tc.arguments)
-    const decision = evaluate(permConfig, tc.name, subject)
-
-    if (decision === 'deny') {
-      cancelledIds.add(tc.id)
-      const deniedResult: ToolResult = {
-        toolCallId: tc.id, toolName: tc.name,
-        content: '此工具在当前模式下被禁止执行',
-        success: false, error: '权限拒绝：该工具在当前模式下不可用'
-      }
-      handlers.onChunk({ toolResult: deniedResult, toolStatus: 'done', toolName: tc.name })
-      // 与渲染层 buildApiMessages 重建格式保持一致（Error: 前缀），避免前缀字节漂移导致缓存 miss
-      messages.push({ role: 'tool', content: 'Error: 权限拒绝：该工具在当前模式下不可用', tool_call_id: tc.id })
-    } else if (decision === 'ask') {
-      if (handlers.requestConfirmation) {
-        const toolLabel = tc.name.replace(/_/g, ' ')
-        const argSummary = Object.entries(tc.arguments)
-          .slice(0, 3)
-          .map(([k, v]) => `${k}: ${typeof v === 'string' ? v.slice(0, 60) : JSON.stringify(v)?.slice(0, 60)}`)
-          .join(', ')
-        const confirmed = await handlers.requestConfirmation(tc.name, `工具: ${toolLabel}\n参数: ${argSummary || '(无)'}`)
-        if (!confirmed) {
-          cancelledIds.add(tc.id)
-          const cancelledResult: ToolResult = {
-            toolCallId: tc.id, toolName: tc.name,
-            content: '用户取消了此操作', success: false, error: '用户取消执行'
-          }
-          handlers.onChunk({ toolResult: cancelledResult, toolStatus: 'done', toolName: tc.name })
-          // 与渲染层重建格式保持一致（Error: 前缀）
-          messages.push({ role: 'tool', content: 'Error: 用户取消执行', tool_call_id: tc.id })
-        }
-      } else {
-        // fail-closed：requestConfirmation 未注入时按 deny 处理
-        cancelledIds.add(tc.id)
-        const deniedResult: ToolResult = {
-          toolCallId: tc.id, toolName: tc.name,
-          content: '无法确认操作：未提供确认回调，出于安全考虑拒绝执行',
-          success: false, error: '权限拒绝：requestConfirmation 未注入'
-        }
-        handlers.onChunk({ toolResult: deniedResult, toolStatus: 'done', toolName: tc.name })
-        messages.push({ role: 'tool', content: 'Error: 权限拒绝：requestConfirmation 未注入', tool_call_id: tc.id })
-      }
-    }
-  }
-
-  return cancelledIds
-}
-
-/** 并行执行所有未取消的工具调用 */
+/**
+ * 并行执行所有未取消的工具调用
+ */
 async function executeActiveCalls(
   activeCalls: ToolCall[],
   onChunk: StreamHandlers['onChunk'],

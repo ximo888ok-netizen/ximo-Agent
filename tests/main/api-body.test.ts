@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRequestBody } from '../../src/main/deepseek/api'
+import { buildRequestBody } from '../../src/main/deepseek/api-request-builder'
 import type { ToolDefinition } from '../../src/shared/types'
 
 const MSGS = [

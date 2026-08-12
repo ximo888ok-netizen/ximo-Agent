@@ -33,6 +33,8 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 let saveConvTimer: ReturnType<typeof setTimeout> | null = null
 let saveConvMaxTimer: ReturnType<typeof setTimeout> | null = null
 let pendingConversations: Conversation[] | null = null
+// 跟踪上一次未决的 resolve — 新调用取代旧调用时立即 resolve 旧的，避免 Promise 泄漏
+let pendingResolve: (() => void) | null = null
 
 // 防抖窗口：500ms 内多次调用合并为一次磁盘写入
 const SAVE_DEBOUNCE_MS = 500
@@ -76,18 +78,23 @@ export async function saveConversations(conversations: Conversation[]): Promise<
   pendingConversations = conversations
   // 清除已有的防抖定时器（保留 maxWait 定时器）
   if (saveConvTimer !== null) clearTimeout(saveConvTimer)
+  // 新调用取代旧调用时，立即 resolve 上一次未决的 Promise，避免泄漏
+  if (pendingResolve) { const prev = pendingResolve; pendingResolve = null; prev() }
   // 首次调用时启动 maxWait 兜底定时器 — 高频场景下确保最多 5s 落盘一次
   if (saveConvMaxTimer === null) {
     saveConvMaxTimer = setTimeout(() => {
       saveConvMaxTimer = null
       if (saveConvTimer !== null) { clearTimeout(saveConvTimer); saveConvTimer = null }
+      if (pendingResolve) { const r = pendingResolve; pendingResolve = null; r() }
       void doWriteConversations()
     }, SAVE_MAX_WAIT_MS)
   }
   return new Promise((resolve) => {
+    pendingResolve = resolve
     saveConvTimer = setTimeout(async () => {
       saveConvTimer = null
       if (saveConvMaxTimer !== null) { clearTimeout(saveConvMaxTimer); saveConvMaxTimer = null }
+      if (pendingResolve) { const r = pendingResolve; pendingResolve = null; r() }
       await doWriteConversations()
       resolve()
     }, SAVE_DEBOUNCE_MS)
@@ -97,6 +104,7 @@ export async function saveConversations(conversations: Conversation[]): Promise<
 /** 立即刷新待写入的会话数据（应用退出前调用） */
 export async function flushSaveConversations(): Promise<void> {
   clearConvTimers()
+  if (pendingResolve) { const r = pendingResolve; pendingResolve = null; r() }
   await doWriteConversations()
 }
 

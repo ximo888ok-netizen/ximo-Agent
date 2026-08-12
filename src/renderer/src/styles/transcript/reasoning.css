@@ -1,0 +1,102 @@
+/* ── 推理面板 ── */
+.reasoning {
+  margin-bottom: 8px;
+}
+.reasoning__head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.reasoning__head:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.reasoning__head[data-running] {
+  color: var(--theme-color);
+}
+.reasoning__head span {
+  font-weight: 500;
+}
+.reasoning__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+.reasoning__chevron {
+  transition: transform 0.25s var(--ease-out-quart);
+}
+.reasoning__chevron--open {
+  transform: rotate(90deg);
+}
+.reasoning__body {
+  padding: 8px 14px;
+  margin: 2px 0 8px;
+  border-left: 2px solid color-mix(in srgb, var(--theme-color) 20%, transparent);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* ── TurnCollapse ── */
+.turn-collapse {
+  margin: 8px 0;
+}
+.turn-collapse__head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+.turn-collapse__head:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-DEFAULT);
+  color: var(--text-secondary);
+}
+.turn-collapse__label {
+  font-weight: 500;
+}
+.turn-collapse__body {
+  margin-top: 8px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.turn-collapse__inline-reasoning {
+  margin: 4px 0;
+}
+.turn-collapse__reasoning-head {
+  font-size: 12px;
+}
+.turn-collapse__inline-body {
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  border-left: 2px solid color-mix(in srgb, var(--theme-color) 15%, transparent);
+  margin-left: 4px;
+}

@@ -61,6 +61,7 @@
   "build": {
     "appId": "com.ximo.agent",
     "productName": "XimoAgent",
+    "compression": "maximum",
     "directories": {
       "output": "release"
     },
@@ -68,7 +69,10 @@
       "out/**/*",
       "prebuilt/**/*",
       "build/icon.ico",
-      "package.json"
+      "package.json",
+      "!node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/linux/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/win32/arm64/**"
     ],
     "win": {
       "target": [

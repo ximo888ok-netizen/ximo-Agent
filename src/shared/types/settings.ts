@@ -201,6 +201,24 @@ export interface AppSettings {
   /** STT 模型名（缺省 whisper-1） */
   sttModel?: string
 
+  // ---- 语音讨论自定义UI ----
+  /** 语音讨论面板样式：default=默认, minimal=极简, cyberpunk=赛博朋克, glass=毛玻璃, neon=霓虹 */
+  voiceDiscussionStyle?: VoiceDiscussionStyle
+  /** 粒子圆环颜色（留空=跟随主题色） */
+  voiceDiscussionParticleColor?: string
+  /** 粒子圆环大小（0.5~2.0，默认1.0） */
+  voiceDiscussionParticleScale?: number
+  /** 粒子旋转速度（0.5~3.0，默认1.0） */
+  voiceDiscussionParticleSpeed?: number
+  /** 面板背景透明度（0.3~1.0，默认0.96） */
+  voiceDiscussionBgOpacity?: number
+  /** 面板圆角大小（0~32，默认24） */
+  voiceDiscussionBorderRadius?: number
+  /** 面板模糊程度（0~40，默认20） */
+  voiceDiscussionBlur?: number
+  /** 自定义面板CSS（追加到面板样式末尾） */
+  voiceDiscussionCustomCss?: string
+
   // ---- 鼠标特效（跟随 + 点击）----
   /** 鼠标特效总开关 */
   cursorEffectsEnabled?: boolean
@@ -280,6 +298,14 @@ export type CursorClickStyle =
   | 'lightning'  // 闪电
   | 'splash'     // 水花四溅
   | 'water'      // 水波纹
+
+/** 语音讨论面板样式 */
+export type VoiceDiscussionStyle =
+  | 'default'    // 默认白色/深色卡片
+  | 'minimal'    // 极简透明
+  | 'cyberpunk'  // 赛博朋克霓虹
+  | 'glass'      // 毛玻璃
+  | 'neon'       // 霓虹光效
 
 /** 背景图配置 */
 export interface BackgroundImageConfig {

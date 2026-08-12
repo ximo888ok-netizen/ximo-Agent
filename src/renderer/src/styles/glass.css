@@ -1,0 +1,63 @@
+@layer components {
+  /* ═══ 液态玻璃材质 ═══ */
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    backdrop-filter: blur(12px) saturate(130%);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+
+  /* 玻璃面板：模糊 + 光谱边缘高光 + 柔和投影 */
+  .glass-panel {
+    position: relative;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    backdrop-filter: blur(14px) saturate(130%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+    border-radius: 20px;
+  }
+
+  /* 卡片 — 悬浮玻璃卡 */
+  .ios-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 16px rgba(0, 0, 0, 0.06);
+    border-radius: 18px;
+    transition: transform 0.3s var(--ease-out-quart), box-shadow 0.3s var(--ease-out-quart),
+      border-color 0.25s ease;
+  }
+  .ios-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--theme-color) 35%, var(--glass-border));
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 30px -6px var(--glow-color);
+  }
+
+  /* 渐变描边（光从边缘流过） */
+  .edge-light {
+    position: relative;
+  }
+  .edge-light::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-color) 55%, transparent),
+      transparent 35%,
+      transparent 65%,
+      color-mix(in srgb, var(--theme-color) 30%, transparent)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}

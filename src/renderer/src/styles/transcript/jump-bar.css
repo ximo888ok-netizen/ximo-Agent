@@ -1,0 +1,97 @@
+/* ── QuestionJumpBar ── */
+.jump-bar {
+  position: absolute;
+  right: 8px;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  display: flex;
+  align-items: stretch;
+  z-index: 10;
+  pointer-events: none;
+}
+.jump-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-top: 80px;
+  padding-bottom: 80px;
+  width: 100%;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.jump-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+}
+.jump-dot {
+  display: block;
+  height: 4px;
+  min-width: 4px;
+  border-radius: 999px;
+  background: var(--text-muted);
+  opacity: 0.35;
+  transition: width 0.25s var(--ease-out-quart), opacity 0.25s ease, background 0.2s ease;
+}
+.jump-item:hover .jump-dot {
+  opacity: 0.7;
+}
+.jump-preview {
+  position: absolute;
+  right: 36px;
+  transform: translateY(-50%);
+  max-width: 280px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ── 回到底部按钮 ── */
+.transcript__jump-bottom {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border-DEFAULT);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--glass-shadow);
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 15;
+  transition: all 0.25s var(--ease-out-quart);
+}
+.transcript__jump-bottom:hover {
+  background: var(--bg-elevated);
+  color: var(--theme-color);
+  border-color: var(--theme-color);
+  transform: translateX(-50%) translateY(-2px);
+}
+.transcript__jump-bottom:active {
+  transform: translateX(-50%) scale(0.92);
+}

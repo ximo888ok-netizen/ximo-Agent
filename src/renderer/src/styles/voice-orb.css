@@ -1,0 +1,588 @@
+/* ═══ 悬浮语音圆球 VoiceOrb ═══ */
+.voice-orb {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  border-radius: 50%;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, left, top;
+  transition: box-shadow 0.3s var(--ease-out-quart);
+  background: radial-gradient(circle at 35% 30%, var(--theme-color, #6366f1), color-mix(in srgb, var(--theme-color, #6366f1) 60%, #000) 100%);
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 40%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+    inset 0 1px 2px rgba(255, 255, 255, 0.25);
+}
+.voice-orb:active {
+  cursor: grabbing;
+}
+
+/* idle 状态：呼吸动画 */
+.voice-orb--idle {
+  animation: voiceOrbBreath 3.5s ease-in-out infinite;
+}
+@keyframes voiceOrbBreath {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 25%, transparent),
+      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 6px 28px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--theme-color, #6366f1) 35%, transparent),
+      inset 0 1px 3px rgba(255, 255, 255, 0.35);
+    transform: scale(1.06);
+  }
+}
+
+/* listening 状态：红色调 + 脉冲 */
+.voice-orb--listening {
+  background: radial-gradient(circle at 35% 30%, #ef4444, #b91c1c 100%);
+  animation: voiceOrbPulse 1.2s ease-in-out infinite;
+}
+@keyframes voiceOrbPulse {
+  0%, 100% { transform: scale(1.05); }
+  50% { transform: scale(1.15); }
+}
+
+/* speaking 状态：主题色 + 跳动 */
+.voice-orb--speaking {
+  animation: voiceOrbSpeak 0.8s ease-in-out infinite;
+}
+@keyframes voiceOrbSpeak {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* transcribing 状态：蓝色调 + 缓慢呼吸 */
+.voice-orb--transcribing {
+  background: radial-gradient(circle at 35% 30%, #3b82f6, #1d4ed8 100%);
+  animation: voiceOrbBreath 2s ease-in-out infinite;
+}
+
+/* 涟漪环 — 监听/播报时从球体扩散 */
+.voice-orb__ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  color: inherit;
+  pointer-events: none;
+  animation: voiceOrbRipple 1.8s ease-out infinite;
+}
+.voice-orb--listening .voice-orb__ripple {
+  color: #ef4444;
+}
+.voice-orb--speaking .voice-orb__ripple {
+  color: var(--theme-color, #6366f1);
+}
+.voice-orb__ripple--delayed {
+  animation-delay: 0.6s;
+}
+@keyframes voiceOrbRipple {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+/* 声波柱 — 球体内部 4 根跳动柱 */
+.voice-orb__bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.voice-orb__bars span {
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  animation: voiceOrbBar 0.6s ease-in-out infinite;
+}
+.voice-orb__bars span:nth-child(2) {
+  animation-delay: 0.15s;
+  animation-duration: 0.7s;
+}
+.voice-orb__bars span:nth-child(3) {
+  animation-delay: 0.3s;
+  animation-duration: 0.5s;
+}
+.voice-orb__bars span:nth-child(4) {
+  animation-delay: 0.1s;
+  animation-duration: 0.65s;
+}
+@keyframes voiceOrbBar {
+  0%, 100% { height: 4px; opacity: 0.5; }
+  50% { height: 16px; opacity: 1; }
+}
+
+/* 中心图标 */
+.voice-orb__core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  transition: opacity 0.2s;
+}
+.voice-orb--listening .voice-orb__core,
+.voice-orb--speaking .voice-orb__core {
+  opacity: 0;
+}
+
+/* 实时识别文本浮窗 — 监听时球体上方显示 */
+.voice-orb__interim {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 220px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-DEFAULT, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  animation: voiceOrbBubble 0.25s ease-out;
+}
+.voice-orb__interim::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+}
+@keyframes voiceOrbBubble {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* discussing 状态：青绿色调 + 柔和脉冲 */
+.voice-orb--discussing {
+  background: radial-gradient(circle at 35% 30%, #14b8a6, #0d9488 100%);
+  animation: voiceOrbDiscuss 2s ease-in-out infinite;
+}
+@keyframes voiceOrbDiscuss {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px rgba(20, 184, 166, 0.35),
+      0 0 0 1px rgba(20, 184, 166, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+  }
+  50% {
+    box-shadow:
+      0 6px 28px rgba(20, 184, 166, 0.55),
+      0 0 0 3px rgba(20, 184, 166, 0.4),
+      inset 0 1px 3px rgba(255, 255, 255, 0.35);
+    transform: scale(1.1);
+  }
+}
+.voice-orb--discussing .voice-orb__ripple {
+  color: #14b8a6;
+}
+.voice-orb--discussing .voice-orb__core {
+  opacity: 1;
+}
+
+/* 错误提示 */
+.voice-orb__error {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 180px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: voiceOrbBubble 0.25s ease-out;
+}
+
+/* 最小化状态：讨论中指示徽章 */
+.voice-orb__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #14b8a6;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: voiceOrbBadgePulse 2s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
+  z-index: 10;
+}
+@keyframes voiceOrbBadgePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 3px 12px rgba(20, 184, 166, 0.6); }
+}
+
+/* ═══ 语音讨论面板 VoiceOrbPanel（全屏居中弹窗） ═══ */
+
+/* 面板遮罩层 — 居中大弹窗 */
+.voice-panel-anchor {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: voicePanelOverlayIn 0.25s ease-out;
+}
+@keyframes voicePanelOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 面板主体 — 基础样式 */
+.voice-panel {
+  width: min(520px, 90vw);
+  height: min(600px, 85vh);
+  background: var(--bg-elevated, #ffffff);
+  border-radius: 24px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.25),
+    0 0 0 1px var(--border-DEFAULT, rgba(0, 0, 0, 0.05));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: voicePanelCardIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--text-primary, #333);
+  transition: all 0.3s ease;
+}
+
+/* === 样式变体 === */
+
+/* 默认样式 */
+.voice-panel--default {
+  background: var(--bg-elevated, #ffffff);
+}
+
+/* 极简样式 — 透明背景 */
+.voice-panel--minimal {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.voice-panel--minimal .voice-panel__topbar,
+.voice-panel--minimal .voice-panel__hint {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.voice-panel--minimal .voice-panel__top-btn {
+  color: rgba(255, 255, 255, 0.8);
+}
+.voice-panel--minimal .voice-panel__top-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.voice-panel--minimal .voice-panel__action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.voice-panel--minimal .voice-panel__action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 毛玻璃样式 */
+.voice-panel--glass {
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.voice-panel--glass .voice-panel__topbar,
+.voice-panel--glass .voice-panel__hint {
+  color: #fff;
+}
+.voice-panel--glass .voice-panel__top-btn {
+  color: rgba(255, 255, 255, 0.8);
+}
+.voice-panel--glass .voice-panel__top-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.voice-panel--glass .voice-panel__action-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+.voice-panel--glass .voice-panel__action-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 霓虹样式 */
+.voice-panel--neon {
+  background: rgba(20, 20, 40, 0.95);
+  border: 1px solid var(--theme-color, #6366f1);
+  box-shadow:
+    0 0 60px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+    0 32px 80px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.voice-panel--neon .voice-panel__topbar,
+.voice-panel--neon .voice-panel__hint {
+  color: #fff;
+}
+.voice-panel--neon .voice-panel__timer {
+  color: var(--theme-color, #6366f1);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent);
+}
+.voice-panel--neon .voice-panel__action-btn {
+  background: transparent;
+  border-color: var(--theme-color, #6366f1);
+  color: var(--theme-color, #6366f1);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--theme-color, #6366f1) 20%, transparent);
+}
+.voice-panel--neon .voice-panel__action-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--theme-color, #6366f1) 15%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color, #6366f1) 40%, transparent);
+}
+.voice-panel--neon .voice-panel__action-btn--stop {
+  background: var(--theme-color, #6366f1);
+  color: #fff;
+  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent);
+}
+
+/* 赛博朋克样式 */
+.voice-panel--cyberpunk {
+  background: linear-gradient(135deg, rgba(20, 0, 40, 0.98) 0%, rgba(0, 20, 40, 0.98) 100%);
+  border: 2px solid #ff00ff;
+  box-shadow:
+    0 0 40px rgba(255, 0, 255, 0.3),
+    0 0 80px rgba(0, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  clip-path: polygon(
+    0 12px, 12px 0,
+    calc(100% - 12px) 0, 100% 12px,
+    100% calc(100% - 12px), calc(100% - 12px) 100%,
+    12px 100%, 0 calc(100% - 12px)
+  );
+}
+.voice-panel--cyberpunk .voice-panel__topbar,
+.voice-panel--cyberpunk .voice-panel__hint {
+  color: #fff;
+}
+.voice-panel--cyberpunk .voice-panel__timer {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+}
+.voice-panel--cyberpunk .voice-panel__action-btn {
+  background: transparent;
+  border-color: #00ffff;
+  color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+.voice-panel--cyberpunk .voice-panel__action-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.15);
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5);
+}
+.voice-panel--cyberpunk .voice-panel__action-btn--stop {
+  background: #ff00ff;
+  border-color: #ff00ff;
+  color: #fff;
+  box-shadow: 0 0 30px rgba(255, 0, 255, 0.6);
+}
+.voice-panel--cyberpunk .voice-panel__action-btn--active {
+  background: #00ffff;
+  border-color: #00ffff;
+  color: #000;
+  box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+}
+@keyframes voicePanelCardIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── 顶部栏 ── */
+.voice-panel__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 0;
+  flex-shrink: 0;
+}
+.voice-panel__timer {
+  font-size: 17px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #333);
+  letter-spacing: 0.04em;
+}
+.voice-panel__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.voice-panel__top-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.voice-panel__top-btn:hover {
+  background: var(--bg-hover, #f0f0f0);
+  color: var(--text-primary, #333);
+}
+.voice-panel__close {
+  margin-left: 4px;
+  padding: 5px;
+  border-radius: 50%;
+}
+.voice-panel__close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* ── 中间区域：粒子环 + 提示文字 ── */
+.voice-panel__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 16px 40px;
+  overflow: hidden;
+}
+.voice-panel__ring {
+  /* Canvas 容器 */
+}
+.voice-panel__hint {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary, #888);
+  text-align: center;
+  max-width: 380px;
+  margin: 0;
+  word-break: break-word;
+}
+.voice-panel__hint--error {
+  color: #ef4444;
+}
+
+/* ── 底部三按钮 ── */
+.voice-panel__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 24px 40px 32px;
+  flex-shrink: 0;
+}
+.voice-panel__action-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-DEFAULT, #ddd);
+  background: var(--bg-base, #fafafa);
+  color: var(--text-secondary, #555);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.voice-panel__action-btn:hover:not(:disabled) {
+  background: var(--bg-hover, #f0f0f0);
+  border-color: var(--border-strong, #ccc);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.voice-panel__action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.voice-panel__action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 麦克风按钮 — 录音中高亮 */
+.voice-panel__action-btn--active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 2px 16px rgba(239, 68, 68, 0.35);
+  animation: voicePanelMicPulse 1.5s ease-in-out infinite;
+}
+@keyframes voicePanelMicPulse {
+  0%, 100% { box-shadow: 0 2px 16px rgba(239, 68, 68, 0.35); }
+  50% { box-shadow: 0 4px 24px rgba(239, 68, 68, 0.5); }
+}
+
+/* 结束按钮 — 黑色实心 */
+.voice-panel__action-btn--stop {
+  width: 64px;
+  height: 64px;
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 15px;
+}
+.voice-panel__action-btn--stop:hover:not(:disabled) {
+  background: #333;
+  border-color: #333;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.voice-panel__action-btn--stop.voice-panel__action-btn--disabled {
+  background: #ccc;
+  border-color: #ccc;
+  color: #888;
+  box-shadow: none;
+}

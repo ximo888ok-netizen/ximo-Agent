@@ -1,0 +1,74 @@
+@layer components {
+  /* ═══ 按钮 ═══ */
+  /* 液态主按钮：内高光 + 流光扫过 + 按压回弹 */
+  .btn-liquid {
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--theme-color) 88%, white),
+      var(--theme-color) 45%,
+      color-mix(in srgb, var(--theme-color) 82%, black)
+    );
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+      0 4px 14px -2px var(--glow-color);
+    transition: transform 0.25s var(--ease-out-quart), box-shadow 0.3s var(--ease-out-quart),
+      filter 0.2s ease;
+  }
+  .btn-liquid::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s var(--ease-out-expo);
+    pointer-events: none;
+  }
+  .btn-liquid:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1),
+      0 8px 22px -4px var(--glow-color);
+  }
+  .btn-liquid:hover::after {
+    transform: translateX(120%);
+  }
+  .btn-liquid:active {
+    transform: scale(0.96);
+  }
+
+  /* 幽灵按钮 — 玻璃态次按钮 */
+  .btn-ghost {
+    border: 1px solid var(--border-DEFAULT);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    transition: background-color 0.25s var(--ease-out-quart), color 0.25s var(--ease-out-quart),
+      border-color 0.25s var(--ease-out-quart), transform 0.25s var(--ease-out-quart);
+  }
+  .btn-ghost:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    transform: translateY(-0.5px);
+  }
+  .btn-ghost:active {
+    transform: scale(0.97);
+  }
+
+  /* 图标按钮 */
+  .icon-btn {
+    @apply text-text-muted;
+    border-radius: 8px;
+    transition: background-color 0.2s var(--ease-out-quart), color 0.2s var(--ease-out-quart),
+      transform 0.2s var(--ease-out-quart);
+  }
+  .icon-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: scale(1.08);
+  }
+  .icon-btn:active {
+    transform: scale(0.92);
+  }
+}

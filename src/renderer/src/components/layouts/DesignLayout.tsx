@@ -56,10 +56,12 @@ export function DesignLayout(): React.ReactElement {
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
-    if (isNearBottom) {
-      el.scrollTop = el.scrollHeight
-    }
+    requestAnimationFrame(() => {
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+      if (isNearBottom) {
+        el.scrollTop = el.scrollHeight
+      }
+    })
   }, [conversation?.messages.length, streamingContent, streamingReasoning, streamingSegments])
 
   const isEmpty = !conversation || conversation.messages.length === 0

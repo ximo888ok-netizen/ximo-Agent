@@ -44,6 +44,19 @@ export default function App(): React.ReactElement {
     void init().then(() => setLoaded(true))
   }, [init])
 
+  // 通知主进程显示窗口 — 等 React 渲染好开屏动画/主界面且浏览器完成绘制后再 show，
+  // 避免出现黑窗（ready-to-show 时 React 尚未挂载，只看到空暗色占位）
+  // 双层 rAF：第一帧在 commit 后、paint 前；第二帧在 paint 后，确保新帧已上屏
+  useEffect(() => {
+    if (loaded && settings) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          void window.api.window.ready()
+        })
+      })
+    }
+  }, [loaded, settings])
+
   // 启动动画完成回调 — useCallback 保证引用稳定
   const handleAnimationComplete = useCallback((): void => setAnimationDone(true), [])
 

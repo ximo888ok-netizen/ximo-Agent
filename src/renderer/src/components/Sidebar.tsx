@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Plus, Users, Brain, Library, RefreshCw, BarChart3, Settings, Folder } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { MODE_CONFIGS } from '@renderer/modes'
@@ -23,8 +23,11 @@ export function Sidebar(): React.ReactElement {
   const newConversationForProject = useStore((s) => s.newConversationForProject)
   const removeProject = useStore((s) => s.removeProject)
 
-  // 按当前模式过滤会话列表
-  const conversations = allConversations.filter((c) => c.mode === currentMode)
+  // 按当前模式过滤会话列表 — useMemo 避免每次 store 更新都重新 filter
+  const conversations = useMemo(
+    () => allConversations.filter((c) => c.mode === currentMode),
+    [allConversations, currentMode],
+  )
   const modeConfig = MODE_CONFIGS[currentMode]
 
   const isProjectMode = currentMode === 'coding' || currentMode === 'design'
@@ -38,6 +41,11 @@ export function Sidebar(): React.ReactElement {
   }
 
   const [contextMenuId, setContextMenuId] = useState<string | null>(null)
+
+  // 交错动画仅在首次挂载播放，后续 re-render 不重播
+  const mountedRef = useRef(false)
+  const shouldAnimateList = !mountedRef.current
+  mountedRef.current = true
 
   const handleRefresh = async (): Promise<void> => {
     await reloadConversations()
@@ -184,8 +192,8 @@ export function Sidebar(): React.ReactElement {
             {conversations.map((conv, idx) => (
               <div
                 key={conv.id}
-                className="animate-slide-up"
-                style={{ animationDelay: `${Math.min(idx * 30, 240)}ms`, animationFillMode: 'backwards' }}
+                className={shouldAnimateList ? 'animate-slide-up' : ''}
+                style={shouldAnimateList ? { animationDelay: `${Math.min(idx * 30, 240)}ms`, animationFillMode: 'backwards' } : undefined}
               >
                 <ConversationItem
                   conv={conv}

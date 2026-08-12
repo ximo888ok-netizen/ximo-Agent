@@ -12,7 +12,7 @@ import { createProjectSlice } from './slices/projectSlice'
 import { createChatSlice } from './slices/chatSlice'
 
 // StoreState 统一由 ./types 定义，此处 re-export 保持向后兼容
-export type { StoreState, AgentTodo, CanvasItem, StreamingToolCall, ComponentMeta } from './types'
+export type { StoreState, AgentTodo, CanvasItem, StreamingToolCall, ComponentMeta, ChatMessage } from './types'
 
 export const useStore = create<StoreState>()((...args) => {
   const [set, get] = args

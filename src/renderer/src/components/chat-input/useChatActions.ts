@@ -40,7 +40,7 @@ interface UseChatActionsResult {
   handleDrop: ReturnType<typeof usePasteAndDrag>['handleDrop']
   handleSend: () => void
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
-  handleSlashCommand: (cmd: string, systemHint: string) => void
+  handleSlashCommand: (cmd: string, systemHint?: string) => void
   handleAttachFile: () => Promise<void>
 }
 
@@ -140,8 +140,8 @@ export function useChatActions(
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }, [handleMentionKeyDown, handleSend])
 
-  const handleSlashCommand = useCallback((cmd: string, systemHint: string): void => {
-    setActiveSlashCmd({ cmd, systemHint }); setText(''); setShowSlashMenu(false); textareaRef.current?.focus()
+  const handleSlashCommand = useCallback((cmd: string, systemHint?: string): void => {
+    setActiveSlashCmd({ cmd, systemHint: systemHint ?? '' }); setText(''); setShowSlashMenu(false); textareaRef.current?.focus()
   }, [setText])
 
   const handleAttachFile = useCallback(async (): Promise<void> => {

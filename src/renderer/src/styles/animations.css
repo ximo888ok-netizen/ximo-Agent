@@ -1,0 +1,45 @@
+/* 通用动效类 */
+.animate-float { animation: floatY 5.5s ease-in-out infinite; }
+.animate-fade-scale { animation: fadeScaleIn 0.5s var(--ease-out-expo) both; }
+.animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+.animate-reasoning-pulse-high { animation: reasoningPulseHigh 2.2s ease-in-out infinite; }
+.animate-reasoning-pulse-max { animation: reasoningPulseMax 1.6s ease-in-out infinite; }
+.animate-reasoning-pulse-ultra { animation: reasoningPulseUltra 1.2s ease-in-out infinite; }
+.animate-gradient-pan {
+  background-size: 200% 200%;
+  animation: gradientPan 6s ease-in-out infinite;
+}
+
+/* GPU 合成层提示 — 减少重绘 */
+.glass, .glass-strong, .glass-panel, .ios-card {
+  transform: translateZ(0);
+}
+
+/* 扩展 GPU 合成层 — 所有动画元素的 transform/opacity 走合成层 */
+.animate-fade-in, .animate-fade-scale, .animate-float, .animate-pulse-dot,
+.animate-gradient-pan, .animate-reasoning-pulse-high, .animate-reasoning-pulse-max, .animate-reasoning-pulse-ultra,
+.ambient-orb, .halo-pulse::after, .beam-border::before, .text-shine {
+  transform: translateZ(0);
+}
+
+/* 滚动容器内容隔离 — 减少布局抖动 */
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  contain: layout style;
+  overscroll-behavior: contain;
+}
+
+/* 固定定位层 — 严格隔离，零布局影响 */
+.ambient-stage, .transcript__jump-bottom {
+  contain: strict;
+}
+
+/* 消息列表项 — 离屏时跳过渲染，长对话性能优化 */
+.animate-fade-in, .animate-fade-scale {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+
+/* 拖拽时分隔条 — 启用合成层 */
+.group:active {
+  will-change: transform;
+}

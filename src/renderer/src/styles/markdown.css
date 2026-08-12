@@ -1,0 +1,58 @@
+@layer components {
+  /* ═══ Markdown 正文样式 ═══ */
+  .markdown-body {
+    @apply text-text-primary leading-relaxed;
+    font-size: var(--chat-font-size, 15px);
+  }
+  .chat-fs-sm { --chat-font-size: 13px; }
+  .chat-fs-md { --chat-font-size: 15px; }
+  .chat-fs-lg { --chat-font-size: 17px; }
+  .markdown-body p {
+    @apply my-3;
+  }
+  .markdown-body h1 {
+    @apply text-2xl font-bold mt-6 mb-3;
+    letter-spacing: -0.02em;
+  }
+  .markdown-body h2 {
+    @apply text-xl font-bold mt-5 mb-3;
+    letter-spacing: -0.018em;
+  }
+  .markdown-body h3 {
+    @apply text-lg font-semibold mt-4 mb-2;
+    letter-spacing: -0.014em;
+  }
+  .markdown-body ul {
+    @apply list-disc pl-6 my-3 space-y-1;
+  }
+  .markdown-body ol {
+    @apply list-decimal pl-6 my-3 space-y-1;
+  }
+  .markdown-body blockquote {
+    @apply border-l-4 pl-4 my-3 text-text-secondary italic rounded-r-lg py-1;
+    border-color: color-mix(in srgb, var(--theme-color) 40%, transparent);
+    background: color-mix(in srgb, var(--theme-color) 5%, transparent);
+  }
+  .markdown-body a {
+    @apply text-accent hover:text-accent-hover underline;
+  }
+  .markdown-body table {
+    @apply w-full my-4 border-collapse text-sm;
+  }
+  .markdown-body th {
+    @apply bg-bg-elevated border border-border px-3 py-2 text-left font-semibold rounded-t-lg;
+  }
+  .markdown-body td {
+    @apply border border-border px-3 py-2;
+  }
+  .markdown-body code:not(pre code) {
+    @apply text-accent px-1.5 py-0.5 rounded-md text-[13px] font-mono;
+    background: color-mix(in srgb, var(--theme-color) 8%, transparent);
+  }
+  .markdown-body pre {
+    @apply my-3 rounded-xl overflow-hidden;
+  }
+  .markdown-body hr {
+    @apply border-border my-4;
+  }
+}

@@ -1,192 +1,12 @@
-import { readFile, readdir, stat } from 'fs/promises'
-import { resolve, relative, join, extname } from 'path'
+import { readFile } from 'fs/promises'
+import { resolve, relative, extname } from 'path'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
-
-/** 文件符号索引条目 */
-interface FileSymbolEntry {
-  path: string
-  ext: string
-  exports: string[]
-  functions: string[]
-  classes: string[]
-  interfaces: string[]
-  imports: string[]
-}
+import { extractSymbols, collectSourceFiles, type FileSymbolEntry } from './project-index-symbols'
 
 /** 索引缓存（按项目路径），避免重复扫描 */
 const indexCache = new Map<string, { entries: FileSymbolEntry[]; builtAt: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 分钟
-
-const SUPPORTED_EXTS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.py', '.go', '.rs', '.java', '.kt', '.rb', '.php',
-  '.vue', '.svelte'
-])
-
-const EXCLUDE_DIRS = new Set([
-  'node_modules', '.git', '.svn', 'dist', 'out', 'build', 'release',
-  '.next', '.nuxt', 'coverage', '__pycache__', '.cache', '.idea', '.vscode',
-  '.reasonix', '.trae', '.meituan-catpaw', 'vendor', 'target', 'bin', 'obj'
-])
-
-/** 从源码中提取符号（正则匹配，轻量级） */
-function extractSymbols(content: string, ext: string): Pick<FileSymbolEntry, 'exports' | 'functions' | 'classes' | 'interfaces' | 'imports'> {
-  const exports: string[] = []
-  const functions: string[] = []
-  const classes: string[] = []
-  const interfaces: string[] = []
-  const imports: string[] = []
-
-  // JS/TS 系列
-  if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte'].includes(ext)) {
-    // export function/const/class/interface
-    for (const m of content.matchAll(/export\s+(?:async\s+)?(?:function|const|class|interface|enum|type|default)\s+(\w+)/g)) {
-      exports.push(m[1])
-    }
-    // export { name1, name2 }
-    for (const m of content.matchAll(/export\s*\{([^}]+)\}/g)) {
-      const names = m[1].split(',').map(s => s.trim().split(/\s+as\s+/)[0]).filter(Boolean)
-      exports.push(...names)
-    }
-    // function declarations (including async)
-    for (const m of content.matchAll(/(?:export\s+)?(?:async\s+)?function\s+(\w+)/g)) {
-      const name = m[1]
-      if (!functions.includes(name)) functions.push(name)
-    }
-    // arrow functions assigned to const
-    for (const m of content.matchAll(/(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\(/g)) {
-      const name = m[1]
-      if (!functions.includes(name)) functions.push(name)
-    }
-    // class declarations
-    for (const m of content.matchAll(/(?:export\s+)?(?:abstract\s+)?class\s+(\w+)/g)) {
-      classes.push(m[1])
-    }
-    // interface declarations
-    for (const m of content.matchAll(/(?:export\s+)?interface\s+(\w+)/g)) {
-      interfaces.push(m[1])
-    }
-    // import statements
-    for (const m of content.matchAll(/import\s+(?:type\s+)?(?:\{[^}]+\}|\w+|\*\s+as\s+\w+)\s+from\s+['"`]([^'"`]+)/g)) {
-      imports.push(m[1])
-    }
-  }
-
-  // Python
-  if (ext === '.py') {
-    for (const m of content.matchAll(/^(?:async\s+)?def\s+(\w+)/gm)) {
-      functions.push(m[1])
-    }
-    for (const m of content.matchAll(/^class\s+(\w+)/gm)) {
-      classes.push(m[1])
-    }
-    for (const m of content.matchAll(/^from\s+\S+\s+import\s+(.+)/gm)) {
-      imports.push(m[1].trim())
-    }
-    for (const m of content.matchAll(/^import\s+(\S+)/gm)) {
-      imports.push(m[1])
-    }
-  }
-
-  // Go
-  if (ext === '.go') {
-    for (const m of content.matchAll(/^func\s+(?:\([^)]+\)\s+)?(\w+)/gm)) {
-      functions.push(m[1])
-    }
-    for (const m of content.matchAll(/^type\s+(\w+)\s+struct/gm)) {
-      classes.push(m[1])
-    }
-    for (const m of content.matchAll(/^type\s+(\w+)\s+interface/gm)) {
-      interfaces.push(m[1])
-    }
-    for (const m of content.matchAll(/^import\s+"([^"]+)"/gm)) {
-      imports.push(m[1])
-    }
-  }
-
-  // Rust
-  if (ext === '.rs') {
-    for (const m of content.matchAll(/(?:pub\s+)?(?:async\s+)?fn\s+(\w+)/g)) {
-      functions.push(m[1])
-    }
-    for (const m of content.matchAll(/(?:pub\s+)?struct\s+(\w+)/g)) {
-      classes.push(m[1])
-    }
-    for (const m of content.matchAll(/(?:pub\s+)?trait\s+(\w+)/g)) {
-      interfaces.push(m[1])
-    }
-    for (const m of content.matchAll(/(?:pub\s+)?enum\s+(\w+)/g)) {
-      classes.push(m[1])
-    }
-  }
-
-  // Java/Kotlin
-  if (['.java', '.kt'].includes(ext)) {
-    for (const m of content.matchAll(/(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?class\s+(\w+)/g)) {
-      classes.push(m[1])
-    }
-    for (const m of content.matchAll(/(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?interface\s+(\w+)/g)) {
-      interfaces.push(m[1])
-    }
-    for (const m of content.matchAll(/(?:public|private|protected)?\s*(?:static\s+)?(?:\w+(?:<[^>]+>)?\s+)+(\w+)\s*\(/g)) {
-      const name = m[1]
-      // 过滤关键字
-      if (!['if', 'for', 'while', 'switch', 'catch', 'return', 'new'].includes(name)) {
-        functions.push(name)
-      }
-    }
-  }
-
-  // 去重
-  return {
-    exports: [...new Set(exports)],
-    functions: [...new Set(functions)],
-    classes: [...new Set(classes)],
-    interfaces: [...new Set(interfaces)],
-    imports: [...new Set(imports)]
-  }
-}
-
-/** 递归收集源码文件 */
-async function collectSourceFiles(
-  dir: string,
-  rootDir: string,
-  signal?: AbortSignal,
-  maxFiles = 500
-): Promise<string[]> {
-  const files: string[] = []
-  if (signal?.aborted) return files
-
-  async function walk(d: string): Promise<void> {
-    if (files.length >= maxFiles) return
-    if (signal?.aborted) return
-
-    let entries
-    try {
-      entries = await readdir(d, { withFileTypes: true })
-    } catch {
-      return
-    }
-
-    for (const entry of entries) {
-      if (files.length >= maxFiles) return
-      if (signal?.aborted) return
-      if (EXCLUDE_DIRS.has(entry.name)) continue
-      if (entry.name.startsWith('.') && entry.name !== '.gitignore') continue
-
-      const fullPath = join(d, entry.name)
-      if (entry.isDirectory()) {
-        await walk(fullPath)
-      } else if (SUPPORTED_EXTS.has(extname(entry.name))) {
-        files.push(fullPath)
-      }
-    }
-  }
-
-  await walk(dir)
-  return files
-}
 
 /**
  * ProjectIndexTool — 项目级语义索引
@@ -234,10 +54,10 @@ export class ProjectIndexTool implements Tool {
     onChunk?.({ toolStatus: 'calling', toolName: 'project_index' })
 
     try {
-      // 检查缓存
+      //321      // 检查缓存
       let cached = indexCache.get(normalized)
       if (refresh || !cached || Date.now() - cached.builtAt > CACHE_TTL) {
-        const files = await collectSourceFiles(normalized, normalized, signal)
+        const files = await collectSourceFiles(normalized, signal)
         const entries: FileSymbolEntry[] = []
 
         for (const filePath of files) {
@@ -276,10 +96,7 @@ export class ProjectIndexTool implements Tool {
           )
         })
 
-        const lines = [
-          `## 🔍 索引搜索结果：\`${query}\`（共 ${matches.length} 个匹配）`,
-          ''
-        ]
+        const lines = [`## 🔍 索引搜索结果：\`${query}\`（共 ${matches.length} 个匹配）`, '']
 
         for (const m of matches.slice(0, 30)) {
           const symbols: string[] = []

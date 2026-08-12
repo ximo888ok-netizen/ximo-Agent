@@ -14,7 +14,7 @@ export type {
 
 export type {
   AppSettings, BackgroundImageConfig, ProviderConfig,
-  CursorTrailStyle, CursorClickStyle
+  CursorTrailStyle, CursorClickStyle, VoiceDiscussionStyle
 } from './settings'
 
 export type {

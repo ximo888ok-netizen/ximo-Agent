@@ -95,7 +95,7 @@ export function StartupAnimation({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden"
+      className="relative h-full w-full overflow-hidden bg-bg-base"
       style={{ '--burst-duration': `${burstDuration}ms` } as React.CSSProperties}
     >
       {/* ── Layer 1: 主界面 — burst 期间从微缩组合显现 ── */}

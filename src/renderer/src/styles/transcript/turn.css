@@ -1,0 +1,170 @@
+/* ── Phase / Notice ── */
+.phase {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--theme-color) 4%, transparent);
+}
+.notice-line {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.notice-line--info {
+  background: color-mix(in srgb, var(--theme-color) 6%, transparent);
+  color: var(--text-secondary);
+}
+.notice-line--warn {
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  color: #b45309;
+}
+.dark .notice-line--warn {
+  color: #fbbf24;
+}
+.notice-line__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.notice-line__title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.notice-line__details {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.notice-line__details summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.notice-line__details div {
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border-radius: 6px;
+}
+
+/* ── TurnActions ── */
+.turn-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.msg--assistant:hover ~ .turn-actions,
+.turn-actions:hover {
+  opacity: 1;
+}
+.turn-actions__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.turn-actions__btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-DEFAULT);
+}
+
+/* ── WarmZone / WarmTurnCard ── */
+.warm-collapse {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin: 8px 0;
+  border: 1px dashed var(--border-DEFAULT);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+.warm-collapse:hover {
+  background: var(--bg-hover);
+  border-color: var(--theme-color);
+  color: var(--theme-color);
+}
+.warm-turn {
+  margin: 6px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
+.warm-turn:hover {
+  border-color: var(--border-DEFAULT);
+}
+.warm-turn--expanded {
+  border-color: var(--border-DEFAULT);
+}
+.warm-turn__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+.warm-turn__head:hover {
+  background: var(--bg-hover);
+}
+.warm-turn__chevron {
+  display: inline-flex;
+  transition: transform 0.25s var(--ease-out-quart);
+}
+.warm-turn__chevron--open {
+  transform: rotate(90deg);
+}
+.warm-turn__preview {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.warm-turn__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.warm-turn__content {
+  padding: 0 14px 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+.warm-turn__assistant {
+  padding: 0 14px 8px 36px;
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

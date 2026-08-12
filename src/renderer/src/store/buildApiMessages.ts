@@ -7,7 +7,7 @@ import type {
   ReasoningEffort
 } from '@shared/types'
 import { GLM_PARADIGM_PROMPT } from '@shared/glm-paradigm'
-import { trimContext, truncateToolResult, type AgentConfig } from '@shared/context-compress'
+import { truncateToolResult, type AgentConfig } from '@shared/context-compress'
 import { extractSkillIdFromHint, SKILL_CMD_MARKER } from '@renderer/lib/skillCommands'
 import { isToolPairComplete, buildInterruptedToolNote } from '@shared/tool-pair'
 
@@ -32,6 +32,21 @@ async function getImportedSkills(): Promise<ImportedSkill[]> {
 export function invalidateImportedSkillsCache(): void {
   _importedSkillsCache = null
   _importedSkillsCacheTime = 0
+}
+
+// ── 模式记忆缓存 — 避免每次发消息都通过 IPC 从磁盘读取 ──
+// memory_update 工具更新记忆后，会通过 IPC 通知渲染进程使此缓存失效。
+// 带 TTL 兜底：即使通知丢失，缓存也会在 MEMORY_CACHE_TTL 后过期。
+const _memoryCache = new Map<string, { content: string; time: number }>()
+const MEMORY_CACHE_TTL = 60 * 1000 // 1 分钟
+
+/** 使指定模式的记忆缓存失效 — memory_update 后调用 */
+export function invalidateMemoryCache(mode?: string): void {
+  if (mode) {
+    _memoryCache.delete(mode)
+  } else {
+    _memoryCache.clear()
+  }
 }
 
 /** 默认上下文配置 — 与 deepseek.ts 中 agentConfig 默认值保持一致 */
@@ -93,9 +108,17 @@ export async function buildApiMessages(
   // memoryEnabled 为 false 时跳过记忆加载 — Agent 完全感知不到记忆功能
   let memoryContent = ''
   if (memoryEnabled !== false) {
-    try {
-      memoryContent = (await window.api.memory.load(conversation.mode as Mode)).trim()
-    } catch { /* 记忆加载失败不应阻塞对话 */ }
+    const modeKey = conversation.mode as string
+    const cached = _memoryCache.get(modeKey)
+    if (cached && Date.now() - cached.time < MEMORY_CACHE_TTL) {
+      memoryContent = cached.content
+    } else {
+      try {
+        const raw = await window.api.memory.load(conversation.mode as Mode)
+        memoryContent = raw.trim()
+        _memoryCache.set(modeKey, { content: memoryContent, time: Date.now() })
+      } catch { /* 记忆加载失败不应阻塞对话 */ }
+    }
   }
 
   // 主 Agent 专家人格注入 — 从设置中选择的专家，将人格注入主 Agent
@@ -264,14 +287,25 @@ export async function buildApiMessages(
       }
     } else {
       // user 消息 — 如果携带 slashCommand，将 systemHint 拼接到 content 前面发送给 API
-      const userContent = msg.slashCommand ? msg.slashCommand.systemHint + msg.content : msg.content
+      // systemHint 可能在旧版本持久化数据中不存在（undefined），用 ?? '' 兜底
+      const userContent = msg.slashCommand ? (msg.slashCommand.systemHint ?? '') + msg.content : msg.content
       messages.push({ role: msg.role, content: userContent })
     }
   }
 
-  // 在返回前压缩上下文 — Agent Loop 不再重复调用 trimContext
-  // 确保 buildApiMessages 产出的消息就是最终发送给 API 的消息（chat-handler 仅插入 env_info 前缀）
-  trimContext(messages, config)
-
+  // ── 缓存稳定性关键：此处不调用 trimContext ──
+  // trimContext 使用 protectFrom = messages.length - recentKeep 做位置截断，
+  // 随对话增长 protectFrom 前移，之前受保护的全量消息变为可截断 → 内容突变 → 缓存断裂。
+  // 且 buildApiMessages 每次从原始 conversation 重建（丢失上次 snip 标记），
+  // 导致截断从零重做，protectFrom 漂移使不同消息被截断 → 前缀字节不一致。
+  //
+  // 压缩职责交给 agentLoop 内的 ContextManager.maybeCompact（基于实际 token usage），
+  // maybeCompact 在同一 messages 数组上操作，snip 标记在 loop 内跨轮保持，
+  // 且仅在 promptTokens ≥ 60% contextWindow（600K tokens）时才触发，
+  // 远高于 trimContext 的 60% maxContextChars（180K chars ≈ 45K tokens），
+  // 避免对中等长度对话做不必要的截断。
+  //
+  // truncateToolResult 仍在此处生效，限制单条工具结果 ≤ maxToolResultChars，
+  // 防止单条超长结果爆上下文，但不做位置依赖的全局截断。
   return messages
 }

@@ -1,11 +1,12 @@
 import type { StateCreator } from 'zustand'
 import type { ChatMessage } from '@shared/types'
 import type { StoreState } from '@renderer/store/types'
-import { runStream, cancelStream } from '../runStream'
+import { runStream } from '../runStream'
+import { cancelStream } from '../cancel-stream'
 import { buildUserMessage } from '../buildUserMessage'
 import { genId, makeTitle } from '../store-utils'
 import { getActiveCustomProvider } from '@renderer/lib/providers'
-import type { SetState } from '../runStream'
+import type { SetState } from '../stream-persist'
 
 export type ChatSlice = Pick<StoreState,
   | 'sendMessage'

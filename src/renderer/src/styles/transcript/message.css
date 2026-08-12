@@ -1,0 +1,101 @@
+/* ── 用户消息编辑 ── */
+.msg__body--editing {
+  display: block !important;
+  width: 100%;
+}
+.msg-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg-edit__input {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--theme-color) 30%, var(--border-DEFAULT));
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+.msg-edit__input:focus {
+  border-color: color-mix(in srgb, var(--theme-color) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 12%, transparent);
+}
+.msg-edit__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.msg-edit__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-DEFAULT);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out-quart);
+}
+.msg-edit__btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.msg-edit__btn--primary {
+  background: var(--theme-color);
+  color: #fff;
+  border-color: var(--theme-color);
+}
+.msg-edit__btn--primary:hover {
+  background: var(--theme-accent-hover);
+  color: #fff;
+}
+.msg-edit__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 消息元信息 ── */
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.msg--user:hover .msg-meta {
+  opacity: 1;
+}
+.msg-meta__time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.msg-meta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.msg-meta__btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.msg-meta__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

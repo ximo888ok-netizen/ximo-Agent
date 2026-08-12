@@ -180,3 +180,4 @@ export interface StreamChunk {
     /** 建议的任务阶段 */
     phases: string[]
   }
+}

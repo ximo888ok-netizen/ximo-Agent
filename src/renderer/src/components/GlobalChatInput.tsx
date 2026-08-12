@@ -1,16 +1,16 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { FolderOpen, X } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
 import { useStore } from '@renderer/store/useStore'
 import { SessionTokenStats } from './shared/SessionTokenStats'
-import { MODE_PLACEHOLDERS, getSlashCommands } from './chat-input/constants'
+import { MODE_PLACEHOLDERS } from './chat-input/constants'
 import { ExpertPicker } from './chat-input/ExpertPicker'
 import { StylePicker } from './chat-input/StylePicker'
 import { ComponentPicker } from './chat-input/ComponentPicker'
 import { ChatChips } from './chat-input/ChatChips'
 import { FileMentionMenu } from './chat-input/FileMentionMenu'
-import { OfficeToolbar } from './chat-input/OfficeToolbar'
 import { ChatInputActions } from './chat-input/ChatInputActions'
+import { ModeToolbars } from './chat-input/ModeToolbars'
 import { useChatActions, type SlashCommandEntry } from './chat-input/useChatActions'
+import { useEnhancePrompt } from './chat-input/useEnhancePrompt'
 
 export function GlobalChatInput(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
@@ -46,19 +46,6 @@ export function GlobalChatInput(): React.ReactElement {
   const computerUseRunning = useStore((s) => s.computerUseRunning)
   const toggleComputerUse = useStore((s) => s.toggleComputerUse)
   const refreshComputerUseStatus = useStore((s) => s.refreshComputerUseStatus)
-  const [isEnhancing, setIsEnhancing] = useState(false)
-  const [enhanceError, setEnhanceError] = useState<string | null>(null)
-  const [originalText, setOriginalText] = useState<string | null>(null)
-
-  // 增强错误提示的自动清除定时器 — 用 ref 管理，避免快速连点时叠加多个定时器
-  const enhanceErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const scheduleErrorClear = useCallback((): void => {
-    if (enhanceErrorTimerRef.current !== null) clearTimeout(enhanceErrorTimerRef.current)
-    enhanceErrorTimerRef.current = setTimeout(() => setEnhanceError(null), 4000)
-  }, [])
-  useEffect(() => () => {
-    if (enhanceErrorTimerRef.current !== null) clearTimeout(enhanceErrorTimerRef.current)
-  }, [])
 
   // 办公模式：初始化操控电脑状态
   useEffect(() => {
@@ -74,8 +61,12 @@ export function GlobalChatInput(): React.ReactElement {
     handleSend, handleKeyDown, handleSlashCommand, handleAttachFile,
   } = useChatActions(currentMode, isStreaming, sendMessage, pastedImagePaths, addAttachedFile, addPastedImage, clearPastedImages, projectPath)
 
+  const {
+    isEnhancing, enhanceError, originalText,
+    handleEnhancePrompt, handleUndoEnhance, clearOriginal,
+  } = useEnhancePrompt({ text, setText, conversation, currentMode, projectPath, textareaRef })
+
   // ---- 语音输入文本回填 ----
-  // VoiceOrb 组件通过 CustomEvent 'ximo:voice-text' 发送识别结果，此处监听并追加到输入框
   const textRef = useRef(text)
   textRef.current = text
   useEffect(() => {
@@ -92,58 +83,15 @@ export function GlobalChatInput(): React.ReactElement {
     return () => window.removeEventListener('ximo:voice-text', handler)
   }, [setText])
 
+  // ---- textarea 自动增高 ----
+  useEffect(() => {
+    const ta = textareaRef.current
+    if (!ta) return
+    ta.style.height = 'auto'
+    ta.style.height = `${Math.min(ta.scrollHeight, 180)}px`
+  }, [text])
+
   const placeholder = MODE_PLACEHOLDERS[currentMode]
-
-  const handleEnhancePrompt = useCallback(async (): Promise<void> => {
-    const trimmed = text.trim()
-    if (!trimmed) return
-    setIsEnhancing(true)
-    setEnhanceError(null)
-    try {
-      // 提取最近 3 轮对话作为上下文
-      let recentContext: string | undefined
-      if (conversation?.messages && conversation.messages.length > 0) {
-        const recent = conversation.messages.slice(-6)
-          .filter(m => m.role === 'user' || m.role === 'assistant')
-          .map(m => `[${m.role === 'user' ? '用户' : '助手'}] ${m.content.slice(0, 300)}`)
-          .join('\n')
-        if (recent) recentContext = recent
-      }
-
-      const result = await window.api.chat.enhancePrompt({
-        text: trimmed,
-        mode: currentMode,
-        recentContext,
-        projectPath: projectPath || undefined,
-      })
-
-      if (result.success && result.enhancedText) {
-        setOriginalText(trimmed)
-        setText(result.enhancedText)
-        requestAnimationFrame(() => textareaRef.current?.focus())
-      } else {
-        const errMsg = result.error || '增强失败'
-        setEnhanceError(errMsg)
-        console.error('[enhance-prompt] 失败:', errMsg)
-        scheduleErrorClear()
-      }
-    } catch (e) {
-      const errMsg = (e as Error).message || '增强异常'
-      setEnhanceError(errMsg)
-      console.error('[enhance-prompt] 异常:', e)
-      scheduleErrorClear()
-    } finally {
-      setIsEnhancing(false)
-    }
-  }, [text, setText, conversation, currentMode, projectPath, textareaRef, scheduleErrorClear])
-
-  const handleUndoEnhance = useCallback((): void => {
-    if (originalText !== null) {
-      setText(originalText)
-      setOriginalText(null)
-      requestAnimationFrame(() => textareaRef.current?.focus())
-    }
-  }, [originalText, setText, textareaRef])
 
   return (
     <div className="relative z-10 px-4 pb-3 pt-2">
@@ -176,10 +124,7 @@ export function GlobalChatInput(): React.ReactElement {
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => {
-              setText(e.target.value)
-              if (originalText !== null) setOriginalText(null)
-            }}
+            onChange={(e) => { setText(e.target.value); clearOriginal() }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
@@ -265,61 +210,25 @@ export function GlobalChatInput(): React.ReactElement {
         )}
 
         <div className="mt-1.5">
-          {currentMode === 'office' && (
-            <OfficeToolbar
-              projectPath={projectPath}
-              onOpenProject={openProject}
-              onClearProject={() => setProjectPath('')}
-              browserOpen={browserOpen}
-              onToggleBrowser={() => {
-                if (browserOpen && isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
-                else toggleBrowser()
-              }}
-              isBrowserRecording={isBrowserRecording}
-              onToggleRecording={() => {
-                if (isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
-                else toggleBrowserRecording()
-              }}
-              computerUseRunning={computerUseRunning}
-              onToggleComputerUse={toggleComputerUse}
-            />
-          )}
-
-          {currentMode === 'coding' && (
-            <div className="flex items-center gap-1 flex-wrap">
-              <button
-                onClick={openProject}
-                className="chip flex items-center gap-1 px-2 py-0.5 text-[11px] border-accent/25 text-accent hover:bg-accent/10 transition-all duration-200 active:scale-95"
-              >
-                <FolderOpen size={10} />
-                {projectPath ? projectPath.split(/[/\\]/).pop() : '打开项目'}
-              </button>
-              {projectPath && (
-                <button onClick={() => setProjectPath('')} className="text-[11px] text-text-muted hover:text-red-400 transition-colors" title="解除项目绑定">
-                  <X size={9} />
-                </button>
-              )}
-              <span className="mx-1 text-text-muted/30">|</span>
-              {getSlashCommands(currentMode).map(({ cmd, label }) => (
-                <button
-                  key={cmd}
-                  onClick={() => {
-                    const found = getSlashCommands(currentMode).find(c => c.cmd === cmd)
-                    if (found) handleSlashCommand(cmd, found.systemHint)
-                  }}
-                  className="chip px-2 py-0.5 text-[11px] text-text-muted hover:text-accent hover:border-accent/30 hover:bg-accent/5 transition-all duration-200 active:scale-95"
-                >
-                  {cmd}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {currentMode === 'design' && (
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-text-muted">试试：生成一个登录页面、设计一套颜色系统、审查 UI · 点击「风格」绑定设计风格 · 点击「组件」多选 UI 组件</span>
-            </div>
-          )}
+          <ModeToolbars
+            currentMode={currentMode}
+            projectPath={projectPath}
+            onOpenProject={openProject}
+            onClearProject={() => setProjectPath('')}
+            browserOpen={browserOpen}
+            onToggleBrowser={() => {
+              if (browserOpen && isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
+              else toggleBrowser()
+            }}
+            isBrowserRecording={isBrowserRecording}
+            onToggleRecording={() => {
+              if (isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
+              else toggleBrowserRecording()
+            }}
+            computerUseRunning={computerUseRunning}
+            onToggleComputerUse={toggleComputerUse}
+            onSlashCommand={handleSlashCommand}
+          />
         </div>
       </div>
     </div>

@@ -10,6 +10,8 @@ import type {
   StreamingSegment
 } from '@shared/types'
 
+export type { ChatMessage } from '@shared/types'
+
 /** UI 组件元数据 — 镜像 catalog 中的结构 */
 export interface ComponentMeta {
   id: string

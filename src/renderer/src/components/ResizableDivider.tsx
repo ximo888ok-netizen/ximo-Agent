@@ -25,19 +25,27 @@ export function ResizableDivider({ side, width, minWidth, maxWidth, onResize }: 
   useEffect(() => {
     if (!isDragging) return
 
+    let rafId = 0
+    let pendingX = 0
+
     const handleMouseMove = (e: MouseEvent): void => {
-      if (side === 'left') {
-        // 左侧栏：向右拖鼠标 → 宽度增大
-        const newWidth = e.clientX
-        onResize(Math.max(minWidth, Math.min(maxWidth, newWidth)))
-      } else {
-        // 右侧栏：向左拖鼠标 → 宽度增大
-        const newWidth = window.innerWidth - e.clientX
-        onResize(Math.max(minWidth, Math.min(maxWidth, newWidth)))
-      }
+      pendingX = e.clientX
+      if (rafId) return
+      // rAF 节流 — 每帧最多更新一次宽度，避免高频 mousemove 导致卡顿
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        if (side === 'left') {
+          const newWidth = pendingX
+          onResize(Math.max(minWidth, Math.min(maxWidth, newWidth)))
+        } else {
+          const newWidth = window.innerWidth - pendingX
+          onResize(Math.max(minWidth, Math.min(maxWidth, newWidth)))
+        }
+      })
     }
 
     const handleMouseUp = (): void => {
+      if (rafId) cancelAnimationFrame(rafId)
       setIsDragging(false)
     }
 
@@ -46,6 +54,7 @@ export function ResizableDivider({ side, width, minWidth, maxWidth, onResize }: 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      if (rafId) cancelAnimationFrame(rafId)
     }
   }, [isDragging, side, minWidth, maxWidth, onResize])
 
