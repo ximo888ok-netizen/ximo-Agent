@@ -1,5 +1,6 @@
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk, ToolContext } from '@shared/types'
+import { checkSsrf } from '@main/security-guard'
 
 /**
  * WebFetchTool — 网页内容抓取
@@ -40,6 +41,12 @@ const maxLength = Math.min((toolCall.arguments.maxLength as number) || (context?
 
     if (!url) return this.error(toolCall.id, '缺少 url 参数')
     if (!url.startsWith('http')) return this.error(toolCall.id, 'URL 必须以 http:// 或 https:// 开头')
+
+    // SSRF 防护 — 禁止访问内网/回环/云元数据端点
+    const ssrfCheck = checkSsrf(url)
+    if (ssrfCheck.blocked) {
+      return this.error(toolCall.id, ssrfCheck.reason || 'URL 被安全策略拦截')
+    }
 
     onChunk?.({ toolStatus: 'calling', toolName: 'web_fetch' })
 

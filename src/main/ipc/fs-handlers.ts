@@ -197,6 +197,20 @@ export function registerFsHandlers(): void {
     }
   })
 
+  // 创建目录
+  ipcMain.handle('fs:createDir', async (_event, dirPath: string) => {
+    const normalized = normalize(resolve(dirPath))
+    if (existsSync(normalized)) {
+      return { success: false, error: `目录已存在：${normalized}` }
+    }
+    try {
+      await mkdir(normalized, { recursive: true })
+      return { success: true, dirPath: normalized }
+    } catch (e) {
+      return { success: false, error: `创建目录失败：${(e as Error).message}` }
+    }
+  })
+
   // 设计组件库 — 读取 react-bits 组件源码
   ipcMain.handle('design:readComponent', async (_event, category: string, componentId: string) => {
     const mainDir = dirname(new URL(import.meta.url).pathname.replace(/^\//, ''))

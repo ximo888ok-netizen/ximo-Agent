@@ -1,6 +1,6 @@
 // ====== 应用设置类型 ======
 
-import type { ModelId, ReasoningEffort, FontSize } from './core'
+import type { ModelId, ReasoningEffort, FontSize, Mode } from './core'
 
 /**
  * 自定义模型服务商配置（OpenAI 兼容协议）。
@@ -48,6 +48,10 @@ export interface AppSettings {
   yoloMode?: boolean
   /** 最近打开的项目路径列表（coding 模式） */
   recentProjects?: string[]
+  /** 上次使用的模式 — 启动时恢复 */
+  lastMode?: Mode
+  /** 上次活跃的会话 ID — 启动时恢复 */
+  lastConversationId?: string
 
   // ---- 模型服务商 ----
   /** 自定义服务商列表（OpenAI 兼容协议） */
@@ -88,6 +92,8 @@ export interface AppSettings {
   contextSnippedKeep?: number
   /** prune 后保留的字符数 */
   contextPrunedKeep?: number
+  /** 上下文压缩触发比例（0.5~0.95，默认 0.8）— 占上下文窗口的比例达到此值时触发压缩 */
+  contextCompactionRatio?: number
 
   // ---- 终端与代码执行 ----
   /** 终端命令默认超时（秒） */
@@ -192,8 +198,10 @@ export interface AppSettings {
   backgroundImage?: BackgroundImageConfig
 
   // ---- 语音输入/输出 ----
-  /** 流式结束后自动朗读助手回复（TTS） */
-  ttsEnabled?: boolean
+/** 流式结束后自动朗读助手回复（TTS） */
+ttsEnabled?: boolean
+/** Edge TTS 音色名称（如 zh-CN-XiaoxiaoNeural），缺省 zh-CN-XiaoxiaoNeural */
+edgeTtsVoice?: string
   /** STT API Key（缺省复用 apiKey） */
   sttApiKey?: string
   /** STT Base URL（缺省复用 baseUrl） */

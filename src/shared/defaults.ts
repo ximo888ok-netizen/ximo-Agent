@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   contextRecentKeep: 5,
   contextSnippedKeep: 200,
   contextPrunedKeep: 80,
+  contextCompactionRatio: 0.8,
 
   // ---- 终端与代码执行 ----
   terminalTimeout: 60,

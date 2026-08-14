@@ -1,7 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Mic, Keyboard, Link, X, Minimize2 } from 'lucide-react'
+import { Mic, Keyboard, Link, X, Minimize2, Volume2 } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import type { DiscussionState } from '@renderer/hooks/useVoiceDiscussion'
+
+interface TtsVoiceInfo {
+  shortName: string
+  name: string
+  gender: string
+  locale: string
+}
 
 export interface VoiceOrbPanelProps {
   /** 讨论是否激活 */
@@ -18,10 +25,14 @@ export interface VoiceOrbPanelProps {
   ttsEnabled: boolean
   /** 是否正在流式回复 */
   isStreaming: boolean
+  /** 实时麦克风音量（0-255），用于排障：判断系统是否真的捕获到麦克风信号 */
+  volume: number
   /** 开始讨论 */
   onStart: () => void
   /** 结束讨论 */
   onStop: () => void
+  /** 切换录音（录音中 → 停止并发送） */
+  onToggleRecording: () => void
   /** 切换 TTS 开关 */
   onToggleTts: () => void
   /** 关闭面板（仅关闭，不触发结束讨论） */
@@ -149,10 +160,11 @@ function ParticleRing({
  *   └─────────────────────────────┘
  */
 export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
-  const { isActive, state, error, sttSupported, ttsEnabled, isStreaming, onStart, onStop, onToggleTts, onClose, onMinimize } = props
+  const { isActive, state, error, sttSupported, ttsEnabled, isStreaming, volume, onStart, onStop, onToggleRecording, onToggleTts, onClose, onMinimize } = props
 
   // 读取自定义设置
   const settings = useStore((s) => s.settings)
+  const updateSettings = useStore((s) => s.updateSettings)
   const style = settings?.voiceDiscussionStyle ?? 'default'
   const particleColor = settings?.voiceDiscussionParticleColor
   const particleScale = settings?.voiceDiscussionParticleScale ?? 1.0
@@ -164,6 +176,30 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
 
   const [seconds, setSeconds] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Edge TTS 音色列表
+  const [voices, setVoices] = useState<TtsVoiceInfo[]>([])
+  const currentVoice = settings?.edgeTtsVoice ?? 'zh-CN-XiaoxiaoNeural'
+
+  useEffect(() => {
+    void window.api.voice.tts.voices().then((list) => {
+      if (list && list.length > 0) setVoices(list)
+    })
+  }, [])
+
+  // 中文音色优先排序
+  const sortedVoices = voices.length > 0
+    ? [...voices].sort((a, b) => {
+        const aZh = a.locale.startsWith('zh') ? 0 : 1
+        const bZh = b.locale.startsWith('zh') ? 0 : 1
+        if (aZh !== bZh) return aZh - bZh
+        return a.shortName.localeCompare(b.shortName)
+      })
+    : []
+
+  const handleVoiceChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    void updateSettings({ edgeTtsVoice: e.target.value })
+  }, [updateSettings])
 
   // 计时器 — 讨论中计时
   useEffect(() => {
@@ -189,11 +225,11 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
     : !isActive
       ? '点击下方麦克风按钮开始语音讨论'
       : state === 'listening'
-        ? '聆听中 · 请说话'
+        ? '录音中 · 点击麦克风结束说话'
         : state === 'transcribing'
           ? '识别中...'
           : state === 'speaking' || isStreaming
-            ? 'AI 正在回复，你可以随时说话打断'
+            ? 'AI 正在回复 · 点击麦克风打断'
             : '讨论中'
 
   // 构建面板样式
@@ -223,6 +259,25 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
         <div className="voice-panel__topbar">
           <span className="voice-panel__timer">{formatTime(seconds)}</span>
           <div className="voice-panel__top-actions">
+            {/* 音色选择 */}
+            <div className="voice-panel__voice-select">
+              <Volume2 size={14} />
+              <select
+                value={currentVoice}
+                onChange={handleVoiceChange}
+                title="选择 TTS 音色"
+              >
+                {sortedVoices.length > 0 ? (
+                  sortedVoices.map((v) => (
+                    <option key={v.shortName} value={v.shortName}>
+                      {v.shortName.replace(/Neural$/, '')} ({v.gender})
+                    </option>
+                  ))
+                ) : (
+                  <option value={currentVoice}>{currentVoice}</option>
+                )}
+              </select>
+            </div>
             <button
               className="voice-panel__top-btn"
               onClick={onToggleTts}
@@ -251,16 +306,28 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
           <p className={`voice-panel__hint ${error ? 'voice-panel__hint--error' : ''}`}>
             {hintText}
           </p>
+          {/* 排障：实时麦克风音量条 */}
+          {isActive && volume > 0 && (
+            <div className="voice-panel__meter">
+              <div
+                className="voice-panel__meter-fill"
+                style={{ width: `${Math.min(100, (volume / 255) * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
 
         {/* 底部三按钮 */}
         <div className="voice-panel__actions">
-          {/* 麦克风按钮 */}
+          {/* 麦克风按钮 — 回合制：未激活→开始 / 录音中→停止并发送 / AI回复中→打断 / 识别中→禁用 */}
           <button
-            className={`voice-panel__action-btn ${state === 'listening' || state === 'transcribing' ? 'voice-panel__action-btn--active' : ''}`}
-            onClick={() => isActive ? undefined : void onStart()}
-            disabled={!sttSupported}
-            title={isActive ? '录音中...' : '开始讨论'}
+            className={`voice-panel__action-btn ${state === 'listening' ? 'voice-panel__action-btn--active' : ''}`}
+            onClick={() => {
+              if (!isActive) void onStart()
+              else if (state === 'listening' || state === 'speaking') onToggleRecording()
+            }}
+            disabled={!sttSupported || (isActive && state === 'transcribing')}
+            title={!isActive ? '开始讨论' : state === 'listening' ? '结束说话并发送' : state === 'speaking' ? '打断AI，开始说话' : '请稍候...'}
           >
             <Mic size={22} />
           </button>

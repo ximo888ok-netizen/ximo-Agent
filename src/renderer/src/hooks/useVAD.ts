@@ -26,7 +26,7 @@ export function useVAD(stream: MediaStream | null, options: VADOptions = {}): {
   isMonitoring: boolean
   isSpeaking: boolean
   volume: number
-  start: () => void
+  start: (s?: MediaStream) => void
   stop: () => void
 } {
   const { threshold = 18, silenceDuration = 1200, onSpeechStart, onSpeechEnd } = options
@@ -37,10 +37,14 @@ export function useVAD(stream: MediaStream | null, options: VADOptions = {}): {
 
   const audioCtxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  // 必须持有 MediaStreamAudioSourceNode 引用，否则被 GC 后通往麦克风的连接会断开，
+  // 表现为系统麦克风标志消失 + analyser 读不到音量（怎么喊都没用）
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null)
   const rafRef = useRef<number | null>(null)
   const dataRef = useRef<Uint8Array | null>(null)
   const speakingRef = useRef(false)
   const silenceStartRef = useRef<number | null>(null)
+  const startedRef = useRef(false)
   const callbacksRef = useRef({ onSpeechStart, onSpeechEnd })
 
   useEffect(() => {
@@ -56,26 +60,43 @@ export function useVAD(stream: MediaStream | null, options: VADOptions = {}): {
       audioCtxRef.current.close().catch(() => {})
       audioCtxRef.current = null
     }
+    if (sourceRef.current) {
+      sourceRef.current.disconnect()
+      sourceRef.current = null
+    }
     analyserRef.current = null
     dataRef.current = null
     speakingRef.current = false
     silenceStartRef.current = null
+    startedRef.current = false
     setIsMonitoring(false)
     setIsSpeaking(false)
     setVolume(0)
   }, [])
 
-  const start = useCallback(() => {
-    if (!stream || isMonitoring) return
+  const start = useCallback((s?: MediaStream) => {
+    // startedRef 防止重复触发时建出多个 AudioContext 与分析循环
+    if (isMonitoring || startedRef.current) return
+    const activeStream = s ?? stream
+    if (!activeStream) return
+    startedRef.current = true
 
     const audioCtx = new AudioContext()
-    const source = audioCtx.createMediaStreamSource(stream)
+    // 若处于挂起状态则主动恢复；并监听状态变化，确保后续不会中途挂起导致 analyser 读不到数据
+    const ensureRunning = (): void => {
+      if (audioCtx.state === 'suspended') void audioCtx.resume()
+    }
+    ensureRunning()
+    audioCtx.addEventListener('statechange', ensureRunning)
+    const source = audioCtx.createMediaStreamSource(activeStream)
     const analyser = audioCtx.createAnalyser()
     analyser.fftSize = 512
     analyser.smoothingTimeConstant = 0.6
     source.connect(analyser)
 
     audioCtxRef.current = audioCtx
+    // 持有 source 引用，防止被垃圾回收导致麦克风连接断开
+    sourceRef.current = source
     analyserRef.current = analyser
     dataRef.current = new Uint8Array(analyser.frequencyBinCount)
     setIsMonitoring(true)
@@ -119,8 +140,6 @@ export function useVAD(stream: MediaStream | null, options: VADOptions = {}): {
 
     rafRef.current = requestAnimationFrame(tick)
   }, [stream, isMonitoring, threshold, silenceDuration])
-
-  // 组件卸载或 stream 变化时清理
   useEffect(() => {
     return () => { stop() }
   }, [stop])

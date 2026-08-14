@@ -4,6 +4,7 @@ import type { AppSettings, Conversation, Mode } from '@shared/types'
 import { DEFAULT_SETTINGS } from './constants'
 import { settingsFile, conversationsFile, memoryDir } from './paths'
 import { ensureDir, ensureDirPath } from './ensureDir'
+import { loadEncryptedFields, saveEncryptedFields } from './secure-storage'
 
 // ---------- 设置 ----------
 
@@ -12,7 +13,9 @@ export async function loadSettings(): Promise<AppSettings> {
     await ensureDir()
     const raw = await readFile(settingsFile, 'utf-8')
     const parsed = JSON.parse(raw)
-    return { ...DEFAULT_SETTINGS, ...parsed }
+    // 合并加密字段（覆盖明文，优先级更高）
+    const encrypted = loadEncryptedFields()
+    return { ...DEFAULT_SETTINGS, ...parsed, ...encrypted }
   } catch (e) {
     console.error('加载设置失败：', e)
   }
@@ -22,7 +25,22 @@ export async function loadSettings(): Promise<AppSettings> {
 export async function saveSettings(settings: AppSettings): Promise<void> {
   try {
     await ensureDir()
-    await writeFile(settingsFile, JSON.stringify(settings, null, 2), 'utf-8')
+    // 加密敏感字段并写入 secure.enc
+    saveEncryptedFields(settings as Record<string, unknown>)
+    // settings.json 仍然保存完整数据（含明文），保持向后兼容
+    // 安全提升：safeStorage 可用时从 settings.json 中擦除敏感字段
+    const safeStorage = await import('electron')
+    const isEncAvailable = safeStorage.safeStorage?.isEncryptionAvailable?.()
+    if (isEncAvailable) {
+      const redacted = { ...settings }
+      // 敏感字段已加密到 secure.enc，settings.json 中置空
+      if (redacted.apiKey) redacted.apiKey = ''
+      if (redacted.visionApiKey) redacted.visionApiKey = ''
+      if (redacted.sttApiKey) redacted.sttApiKey = ''
+      await writeFile(settingsFile, JSON.stringify(redacted, null, 2), 'utf-8')
+    } else {
+      await writeFile(settingsFile, JSON.stringify(settings, null, 2), 'utf-8')
+    }
   } catch (e) {
     console.error('保存设置失败：', e)
   }

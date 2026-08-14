@@ -48,6 +48,8 @@ export async function callDeepSeekStream(
       handlers, emittedRef, caps
     )
 
+    // 用户取消 — 不重试，直接返回
+    if (result.finishReason === 'cancelled') return result
     // 成功或非连接错误 → 直接返回
     if (result.finishReason !== 'error') return result
     if (!isConnResetError(result.error)) return result

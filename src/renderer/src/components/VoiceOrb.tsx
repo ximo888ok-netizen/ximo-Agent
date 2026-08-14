@@ -73,10 +73,10 @@ export function VoiceOrb(): React.ReactElement | null {
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (isTranscribing || discussion.isActive) return
+    if (isTranscribing) return
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false }
     ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }, [pos.x, pos.y, isTranscribing, discussion.isActive])
+  }, [pos.x, pos.y, isTranscribing])
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const drag = dragRef.current
@@ -142,9 +142,9 @@ export function VoiceOrb(): React.ReactElement | null {
   // ---- 组件卸载清理 ----
   useEffect(() => {
     return () => {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      stopTts()
     }
-  }, [])
+  }, [stopTts])
 
   if (!supported) return null
 
@@ -170,9 +170,11 @@ export function VoiceOrb(): React.ReactElement | null {
             sttSupported={sttSupported}
             ttsSupported={ttsSupported}
             ttsEnabled={ttsEnabled}
-            isStreaming={isStreaming}
+            isStreaming={isStreaming || discussion.isAIResponding}
+            volume={discussion.volume}
             onStart={() => void discussion.start()}
             onStop={() => discussion.stop()}
+            onToggleRecording={() => discussion.toggleRecording()}
             onToggleTts={() => {
               const next = !ttsEnabled
               void updateSettings({ ttsEnabled: next })

@@ -40,13 +40,14 @@ async function getTranscriber(): Promise<PipelineFn> {
     // 开发环境若预下载模型缺失则从国内镜像站补下载
     env.remoteHost = 'https://hf-mirror.com'
 
-    // 使用 whisper-tiny — 体积小（40MB）、速度快、支持中文
+    console.log('[stt-local] 正在加载 Whisper 模型 (Xenova/whisper-tiny q8)...')
     const pipe = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
       device: 'cpu',
       dtype: 'q8', // 量化模型，进一步减少体积和加速推理
     })
 
     transcriber = pipe as unknown as PipelineFn
+    console.log('[stt-local] ✅ Whisper 模型加载完成')
     return transcriber
   })()
 
@@ -73,7 +74,13 @@ export async function transcribeLocal(
   }
 
   try {
-    const recognizer = await getTranscriber()
+    // 模型加载加超时，防止网络问题导致永久挂起
+    const recognizer = await Promise.race([
+      getTranscriber(),
+      new Promise<PipelineFn>((_, reject) =>
+        setTimeout(() => reject(new Error('模型加载超时(60s)，请预运行 npm run download-whisper')), 60000)
+      ),
+    ])
     const result = await recognizer(pcm, {
       language: 'zh',
       task: 'transcribe',

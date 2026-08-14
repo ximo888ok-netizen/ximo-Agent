@@ -51,7 +51,7 @@ export async function callDeepSeekStreamOnce(
     })
   } catch (e) {
     if ((e as Error).name === 'AbortError') {
-      return { finishReason: 'stop', content: '', reasoningContent: '', toolCalls: [], emitted: false }
+      return { finishReason: 'cancelled', content: '', reasoningContent: '', toolCalls: [], emitted: false }
     }
     const msg = e instanceof Error ? e.message : String(e)
     return { finishReason: 'error', content: '', reasoningContent: '', toolCalls: [], error: `网络请求失败：${msg}`, emitted: false }
@@ -193,7 +193,7 @@ export async function callDeepSeekStreamOnce(
   } catch (e) {
     clearIdleTimer()
     if ((e as Error).name === 'AbortError') {
-      return { finishReason: 'stop', content, reasoningContent, toolCalls: [], usage: normalizedUsage, emitted: emittedRef.value }
+      return { finishReason: 'cancelled', content, reasoningContent, toolCalls: [], usage: normalizedUsage, emitted: emittedRef.value }
     }
     const msg = e instanceof Error ? e.message : String(e)
     return { finishReason: 'error', content, reasoningContent, toolCalls: [], usage: normalizedUsage, error: `流式读取中断：${msg}`, emitted: emittedRef.value }

@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useStore } from '@renderer/store/useStore'
+
+const DEFAULT_VOICE = 'zh-CN-XiaoxiaoNeural'
 
 export interface UseVoiceOutputResult {
   /** 是否正在播放 */
   isSpeaking: boolean
-  /** 系统可用语音列表 */
-  voices: SpeechSynthesisVoice[]
-  /** 当前浏览器是否支持语音合成 */
+  /** Edge TTS 是否可用（始终 true，服务端合成） */
   supported: boolean
   /** 播放文本（自动清理 Markdown） */
   speak: (text: string) => void
@@ -30,79 +31,105 @@ function stripMarkdownForSpeech(text: string): string {
     .trim()
 }
 
+/** 将 IPC 返回的数据转为 ArrayBuffer */
+function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof ArrayBuffer) return data
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+}
+
 /**
- * 语音输出 Hook — 基于 Web Speech API (speechSynthesis)
+ * 语音输出 Hook — 基于 Edge TTS
  *
- * - 首次调用时异步加载系统语音列表
- * - 优先选择中文语音
+ * - 通过 IPC 调用主进程 Edge TTS 合成 MP3 音频
+ * - 使用 AudioContext 解码并播放
  * - 自动剥离 Markdown 标记后再朗读
  * - 组件卸载时自动停止
  */
 export function useVoiceOutput(): UseVoiceOutputResult {
   const [isSpeaking, setIsSpeaking] = useState(false)
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
-  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
+  const sessionRef = useRef(0)
+  const voiceRef = useRef(DEFAULT_VOICE)
 
-  // 加载语音列表（异步）
+  const edgeTtsVoice = useStore((s) => s.settings?.edgeTtsVoice)
   useEffect(() => {
-    if (!supported) return
+    voiceRef.current = edgeTtsVoice || DEFAULT_VOICE
+  }, [edgeTtsVoice])
 
-    const loadVoices = (): void => {
-      const list = window.speechSynthesis.getVoices()
-      if (list.length > 0) {
-        setVoices(list)
-        selectedVoiceRef.current =
-          list.find(v => v.lang.startsWith('zh')) ??
-          list[0] ??
-          null
-      }
+  /** 获取或创建 AudioContext */
+  function getAudioContext(): AudioContext {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+      audioCtxRef.current = new AudioContext()
     }
-
-    loadVoices()
-    window.speechSynthesis.onvoiceschanged = loadVoices
-
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null
-    }
-  }, [supported])
+    return audioCtxRef.current
+  }
 
   const speak = useCallback((text: string) => {
-    if (!supported || !text.trim()) return
+    if (!text.trim()) return
 
-    window.speechSynthesis.cancel()
+    // 停止当前播放
+    sessionRef.current++
+    if (currentSourceRef.current) {
+      try { currentSourceRef.current.stop() } catch { /* noop */ }
+      currentSourceRef.current = null
+    }
 
     const cleanText = stripMarkdownForSpeech(text)
     if (!cleanText) return
 
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    if (selectedVoiceRef.current) {
-      utterance.voice = selectedVoiceRef.current
-      utterance.lang = selectedVoiceRef.current.lang
-    }
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
+    const session = sessionRef.current
+    setIsSpeaking(true)
 
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    void (async () => {
+      try {
+        const { buffer, error } = await window.api.voice.tts.synthesize(cleanText, voiceRef.current)
+        if (session !== sessionRef.current || !buffer || error) {
+          setIsSpeaking(false)
+          return
+        }
 
-    window.speechSynthesis.speak(utterance)
-  }, [supported])
+        const ctx = getAudioContext()
+        const audioBuffer = await ctx.decodeAudioData(toArrayBuffer(buffer))
+        if (session !== sessionRef.current) return
+
+        const source = ctx.createBufferSource()
+        source.buffer = audioBuffer
+        source.connect(ctx.destination)
+        currentSourceRef.current = source
+        source.onended = () => {
+          currentSourceRef.current = null
+          if (session === sessionRef.current) setIsSpeaking(false)
+        }
+        source.start()
+      } catch {
+        if (session === sessionRef.current) setIsSpeaking(false)
+      }
+    })()
+  }, [])
 
   const stop = useCallback(() => {
-    if (!supported) return
-    window.speechSynthesis.cancel()
+    sessionRef.current++
+    if (currentSourceRef.current) {
+      try { currentSourceRef.current.stop() } catch { /* noop */ }
+      currentSourceRef.current = null
+    }
     setIsSpeaking(false)
-  }, [supported])
+  }, [])
 
-  // 组件卸载时停止
+  // 组件卸载时清理
   useEffect(() => {
     return () => {
-      if (supported) window.speechSynthesis.cancel()
+      sessionRef.current++
+      if (currentSourceRef.current) {
+        try { currentSourceRef.current.stop() } catch { /* noop */ }
+      }
+      if (audioCtxRef.current) {
+        audioCtxRef.current.close().catch(() => {})
+      }
     }
-  }, [supported])
+  }, [])
 
-  return { isSpeaking, voices, speak, stop, supported }
+  return { isSpeaking, supported: true, speak, stop }
 }

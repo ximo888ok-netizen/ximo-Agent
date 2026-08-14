@@ -3,6 +3,7 @@ import { existsSync } from 'fs'
 import { resolve, normalize } from 'path'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
+import { checkSensitiveFile } from '@main/security-guard'
 
 /**
  * FileReadTool — 读取本地文件内容
@@ -62,6 +63,12 @@ export class FileReadTool implements Tool {
     }
 
     const normalized = normalize(resolve(filePath))
+
+    // 敏感文件读取兜底 — 阻止读取 SSH 密钥、凭据文件等
+    const sensitiveCheck = checkSensitiveFile(normalized)
+    if (sensitiveCheck.blocked) {
+      return this.error(toolCall.id, sensitiveCheck.reason || '出于安全考虑，不允许读取此文件')
+    }
 
     if (!existsSync(normalized)) {
       return this.error(toolCall.id, `文件不存在：${normalized}`)

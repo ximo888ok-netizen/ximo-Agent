@@ -20,6 +20,8 @@ export const agentConfig = {
   contextWindow: 1_000_000,
   /** 当前服务商能力开关 — 缺省全开（DeepSeek 行为不变） */
   capabilities: { sendReasoningParams: true, sendStreamUsage: true } as ProviderCapabilities,
+  /** 上下文压缩触发比例（0.5~0.95，默认 0.8）— promptTokens 占窗口比例达到此值时触发压缩 */
+  compactionRatio: 0.8,
   // ---- 长任务模式参数 ----
   /** 长任务模式每批次最大轮次 — 到达后自动续跑 */
   longTaskRoundsPerSegment: 50,

@@ -87,6 +87,13 @@ export const extendedApi = {
   // 语音转写 — 纯本地 Whisper 模型推理，发送 PCM 数据到主进程
   voice: {
     transcribe: (pcm: Float32Array, sampleRate: number): Promise<{ text: string; error?: string }> =>
-      ipcRenderer.invoke('voice:transcribe', pcm, sampleRate)
+      ipcRenderer.invoke('voice:transcribe', pcm, sampleRate),
+    // Edge TTS — 合成语音，返回 MP3 ArrayBuffer
+    tts: {
+      synthesize: (text: string, voiceName: string): Promise<{ buffer: ArrayBuffer | null; error: string | null }> =>
+        ipcRenderer.invoke('voice:tts:synthesize', text, voiceName),
+      voices: (): Promise<{ shortName: string; name: string; gender: string; locale: string }[]> =>
+        ipcRenderer.invoke('voice:tts:voices'),
+    }
   }
 }

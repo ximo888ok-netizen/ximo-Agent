@@ -31,7 +31,7 @@ const api = {
           }
         })
     },
-    cancel: (): Promise<void> => ipcRenderer.invoke('chat:cancel'),
+    cancel: (sessionId?: string): Promise<void> => ipcRenderer.invoke('chat:cancel', sessionId),
     test: (apiKey: string, baseUrl: string, model: string, providerId?: string): Promise<TestResult> =>
       ipcRenderer.invoke('chat:test', apiKey, baseUrl, model, providerId),
     enhancePrompt: (data: { text: string; mode: string; recentContext?: string; projectPath?: string }): Promise<{ success: boolean; enhancedText?: string; error?: string }> =>
@@ -137,6 +137,8 @@ const api = {
       ipcRenderer.invoke('fs:renameFile', oldPath, newPath),
     copyFile: (srcPath: string, destPath: string): Promise<{ success: boolean; srcPath?: string; destPath?: string; error?: string }> =>
       ipcRenderer.invoke('fs:copyFile', srcPath, destPath),
+    createDir: (dirPath: string): Promise<{ success: boolean; dirPath?: string; error?: string }> =>
+      ipcRenderer.invoke('fs:createDir', dirPath),
     revertFile: (snapshotPath: string, targetPath: string): Promise<{ success: boolean; message?: string; error?: string }> =>
       ipcRenderer.invoke('fs:revertFile', snapshotPath, targetPath),
     listSnapshots: (targetFilePath?: string): Promise<{ success: boolean; snapshots: Array<{ name: string; path: string; size: number; mtime: number }> }> =>

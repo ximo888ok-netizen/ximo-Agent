@@ -18,7 +18,7 @@ export interface StreamHandlers {
 
 /** 单次 API 调用的结果 */
 export interface SingleCallResult {
-  finishReason: 'stop' | 'tool_calls' | 'length' | 'error'
+  finishReason: 'stop' | 'tool_calls' | 'length' | 'error' | 'cancelled'
   content: string
   reasoningContent: string
   toolCalls: ToolCall[]

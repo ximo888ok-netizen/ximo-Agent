@@ -40,6 +40,32 @@ export class CommandWhitelist {
     /shutdown/,
     /reboot/,
     /taskkill\s+\/f\s+\/im\s+explorer/i,
+    // 增强拦截 — 防止更多危险操作
+    /rm\s+-rf\s+\.\.?\/?$/,         // rm -rf .. 或 rm -rf ../
+    /rm\s+-rf\s+\.\/?$/,            // rm -rf . 或 rm -rf ./
+    /git\s+push\s+.*--force/i,       // git push --force
+    /git\s+push\s+.*-f\b/i,          // git push -f
+    /git\s+reset\s+--hard/i,         // git reset --hard（可能丢失未提交工作）
+    /\bcrontab\s+-r/i,              // 删除 crontab
+    /\bioreg\b/i,                    // macOS 系统注册表
+    /\bnvram\b/i,                    // NVRAM 操作
+    /\bdefaults\s+write\s+com\.apple/i,  // macOS 系统默认修改
+    /reg\s+delete\s+.*\/f/i,        // Windows 注册表删除
+    /reg\s+add/i,                    // Windows 注册表添加
+    /\bnet\s+user\s+.*\/delete/i,    // 删除 Windows 用户
+    /\bnet\s+localgroup/i,           // 修改 Windows 本地组
+    /\bsudo\s+rm\s+-rf/i,           // sudo rm -rf
+    /\bcurl\s+.*\|\s*(bash|sh|zsh)/i, // curl | shell 远程执行
+    /\bwget\s+.*\|\s*(bash|sh|zsh)/i, // wget | shell 远程执行
+    /\bexec\s+<\s*\/dev\//i,         // exec < /dev/ 管道重定向
+    /\bkill\s+-9\s+1\b/i,            // kill -9 1 (init 进程)
+    /\bkillall\s+-9\b/i,             // killall -9
+    /\bpkill\s+-9\b/i,               // pkill -9
+    /\bbase64\s+-d\s+.*\|\s*(bash|sh)/i, // base64 解码后管道执行
+    /\beval\s+\$/i,                   // eval $ 变量执行
+    /\b__import__\b/i,                // Python 危险导入
+    /\bos\.system\s*\(/i,             // Python os.system 调用
+    /\bsubprocess\.call\s*\(\s*['"]sh/i,  // Python subprocess 调用 shell
   ]
 
   static async isAllowed(command: string): Promise<{ allowed: boolean; reason?: string }> {

@@ -10,18 +10,30 @@ import { getMcpSession } from './mcp-session'
 import { buildEnvInfo } from './env-info'
 import { withTimeout, CONFIRM_TIMEOUT_MS, USER_INPUT_TIMEOUT_MS } from './chat-utils'
 import { registerEnhancePromptHandler } from './enhance-prompt-handler'
+import { setAllowedWriteRoots } from '@main/security-guard'
+import { clearRejectedCache } from '@main/deepseek/tool-permissions'
 
-// 当前流式请求的 AbortController（用于取消）
-let currentController: AbortController | null = null
+// 多会话并行流式 — 每个会话有独立的 AbortController
+const sessionControllers = new Map<string, AbortController>()
+// 非会话请求（无 sessionId）的 fallback controller
+let defaultController: AbortController | null = null
 
 export function registerChatHandlers(): void {
   // 流式聊天：渲染进程通过 invoke 触发，主进程逐块通过 send 回传
   ipcMain.handle('chat:start', async (event, request: ChatRequest) => {
+    // 清空审批拒绝缓存 — 新会话/新请求重新询问
+    clearRejectedCache()
     const settings = await loadSettings()
     const provider = resolveActiveProvider(settings, request.providerId)
     const controller = new AbortController()
-    currentController = controller
     const streamSignal = controller.signal
+
+    // 注册 controller — 支持多会话并行
+    if (request.sessionId) {
+      sessionControllers.set(request.sessionId, controller)
+    } else {
+      defaultController = controller
+    }
 
     const win = event.sender
 
@@ -93,6 +105,21 @@ export function registerChatHandlers(): void {
     await ensureModeToolsLoaded(request.mode)
     let toolNames = modeToolNames[request.mode] || []
 
+    // 环境信息（写入保护 + 消息注入共用）
+    const envInfo = buildEnvInfo()
+
+    // 写入保护 — 注入允许写入的根目录
+    const writeRoots: string[] = []
+    const cwdMatch = envInfo.match(/工作目录[::]\s*(.+)/)
+    if (cwdMatch && cwdMatch[1].trim()) {
+      writeRoots.push(cwdMatch[1].trim())
+    }
+    const recentProjects = settings.recentProjects ?? []
+    for (const p of recentProjects) {
+      if (p && !writeRoots.includes(p)) writeRoots.push(p)
+    }
+    setAllowedWriteRoots(writeRoots)
+
     configureAgentLoop({
       maxToolRounds: settings.maxToolRounds ?? 30,
       maxToolResultChars: settings.maxToolResultChars ?? 8000,
@@ -102,7 +129,8 @@ export function registerChatHandlers(): void {
       prunedKeep: settings.contextPrunedKeep ?? 80,
       checkpointEnabled: settings.checkpointEnabled ?? true,
       contextWindow: provider.contextWindow,
-      capabilities: provider.capabilities
+      capabilities: provider.capabilities,
+      compactionRatio: Math.max(0.5, Math.min(0.95, settings.contextCompactionRatio ?? 0.8))
     })
 
     const { setDefaultCommandTimeout } = await import('@main/tools/ComputerUse/PiBridge')
@@ -134,7 +162,6 @@ export function registerChatHandlers(): void {
     const allTools = [...(modeTools || []), ...mcpToolDefs]
     const sortedTools = allTools.length > 0 ? normalizeToolSchemas(allTools) : allTools
 
-    const envInfo = buildEnvInfo()
     const messagesWithEnv: ApiMessage[] = [
       request.messages[0],
       { role: 'system', content: envInfo },
@@ -188,11 +215,39 @@ export function registerChatHandlers(): void {
     } finally {
       // MCP 连接保持复用，不在此断开
 
-      // 清理 currentController — 必须在 finally 中执行，
-      // 否则 agentLoop/streamChat 抛出异常时 currentController 悬空，
-      // 后续 chat:cancel 会 abort 一个已完成的过期控制器
-      if (currentController === controller) {
-        currentController = null
+      // 清理 controller — 必须在 finally 中执行，
+      // 否则 agentLoop/streamChat 抛出异常时 controller 悬空
+      if (request.sessionId) {
+        if (sessionControllers.get(request.sessionId) === controller) {
+          sessionControllers.delete(request.sessionId)
+        }
+      } else {
+        if (defaultController === controller) {
+          defaultController = null
+        }
+      }
+
+      // 任务完成通知 — 窗口不在焦点时推送系统通知
+      const win = event.sender
+      if (!win.isDestroyed() && !win.isFocused()) {
+        try {
+          const { Notification } = await import('electron')
+          if (Notification.isSupported()) {
+            const notif = new Notification({
+              title: 'XimoAgent · 任务完成',
+              body: 'AI 已完成任务，点击查看结果',
+              silent: false
+            })
+            notif.on('click', () => {
+              if (!win.isDestroyed()) {
+                win.focus()
+              }
+            })
+            notif.show()
+          }
+        } catch {
+          // Notification 不可用时静默失败
+        }
       }
     }
   })
@@ -237,11 +292,20 @@ export function registerChatHandlers(): void {
     }
   })
 
-  // 取消当前流式请求
-  ipcMain.handle('chat:cancel', () => {
-    if (currentController) {
-      currentController.abort()
-      currentController = null
+  // 取消流式请求 — 支持按会话 ID 取消（多会话并行）
+  ipcMain.handle('chat:cancel', (_event, sessionId?: string) => {
+    if (sessionId) {
+      const controller = sessionControllers.get(sessionId)
+      if (controller) {
+        controller.abort()
+        sessionControllers.delete(sessionId)
+      }
+    } else {
+      // 无 sessionId — 取消默认 controller
+      if (defaultController) {
+        defaultController.abort()
+        defaultController = null
+      }
     }
   })
 

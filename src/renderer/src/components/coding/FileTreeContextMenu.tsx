@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Copy, Scissors, Trash2, Edit3, Clipboard, FolderInput } from 'lucide-react'
+import { Copy, Scissors, Trash2, Edit3, Clipboard, FolderInput, FilePlus, FolderPlus, Terminal } from 'lucide-react'
 
 export interface ContextMenuState {
   x: number
@@ -156,6 +156,54 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
     onClose()
   }, [state, newName, onClose, onRefresh])
 
+  const [createMode, setCreateMode] = useState<'file' | 'folder' | null>(null)
+  const [createName, setCreateName] = useState('')
+  const createInputRef = useRef<HTMLInputElement>(null)
+
+  const startCreate = useCallback((mode: 'file' | 'folder') => {
+    setCreateMode(mode)
+    setCreateName('')
+    // 延迟聚焦等待渲染
+    setTimeout(() => {
+      createInputRef.current?.focus()
+    }, 0)
+  }, [])
+
+  const confirmCreate = useCallback(async () => {
+    if (!state || !createName.trim() || !createMode) {
+      setCreateMode(null)
+      return
+    }
+    const destDir = state.isDir ? state.filePath : state.filePath.split(/[/\\]/).slice(0, -1).join('/')
+    const newPath = `${destDir}/${createName.trim()}`
+    try {
+      if (createMode === 'file') {
+        const result = await window.api.fs.writeFile(newPath, '')
+        if (!result.success) {
+          alert(result.error)
+        }
+      } else {
+        const result = await window.api.fs.createDir(newPath)
+        if (!result.success) {
+          alert(result.error)
+        }
+      }
+      onRefresh()
+    } catch (e) {
+      alert(`创建失败：${(e as Error).message}`)
+    }
+    setCreateMode(null)
+    onClose()
+  }, [state, createName, createMode, onClose, onRefresh])
+
+  const openInTerminal = useCallback(async () => {
+    if (!state) return
+    const dir = state.isDir ? state.filePath : state.filePath.split(/[/\\]/).slice(0, -1).join('/')
+    // 复制目录路径到剪贴板 — 用户可在终端粘贴
+    await navigator.clipboard.writeText(dir)
+    onClose()
+  }, [state, onClose])
+
   if (!state) return null
 
   const fileName = state.filePath.split(/[/\\]/).pop() || state.filePath
@@ -177,11 +225,57 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
         <MenuItem icon={Edit3} label="编辑文件" onClick={() => { onEdit(state.filePath); onClose() }} />
       )}
 
+      {/* 新建文件/文件夹 — 目录时显示 */}
+      {state.isDir && (
+        <>
+          {createMode === 'file' ? (
+            <div className="px-3 py-1.5">
+              <input
+                ref={createInputRef}
+                type="text"
+                value={createName}
+                placeholder="文件名"
+                onChange={(e) => setCreateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmCreate()
+                  if (e.key === 'Escape') { setCreateMode(null); onClose() }
+                }}
+                onBlur={confirmCreate}
+                className="w-full rounded border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
+              />
+            </div>
+          ) : (
+            <MenuItem icon={FilePlus} label="新建文件" onClick={() => startCreate('file')} />
+          )}
+          {createMode === 'folder' ? (
+            <div className="px-3 py-1.5">
+              <input
+                ref={createInputRef}
+                type="text"
+                value={createName}
+                placeholder="文件夹名"
+                onChange={(e) => setCreateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmCreate()
+                  if (e.key === 'Escape') { setCreateMode(null); onClose() }
+                }}
+                onBlur={confirmCreate}
+                className="w-full rounded border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
+              />
+            </div>
+          ) : (
+            <MenuItem icon={FolderPlus} label="新建文件夹" onClick={() => startCreate('folder')} />
+          )}
+          <div className="my-1 border-t border-border-subtle" />
+        </>
+      )}
+
       <MenuItem icon={Copy} label="复制" onClick={handleCopy} />
       <MenuItem icon={Scissors} label="剪切" onClick={handleCut} />
       <MenuItem icon={FolderInput} label="粘贴" onClick={handlePaste} disabled={!hasClipboard} />
       <div className="my-1 border-t border-border-subtle" />
       <MenuItem icon={Clipboard} label="复制路径" onClick={copyPath} />
+      <MenuItem icon={Terminal} label="复制目录路径" onClick={openInTerminal} />
 
       {renameMode ? (
         <div className="px-3 py-1.5">

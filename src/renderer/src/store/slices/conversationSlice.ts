@@ -62,21 +62,42 @@ export const createConversationSlice: StateCreator<StoreState, [], [], Conversat
   },
 
   deleteConversation: (id) => {
-    const remaining = get().conversations.filter((c) => c.id !== id)
     const state = get()
+    const remaining = state.conversations.filter((c) => c.id !== id)
     const ids = { ...state.currentConversationIds }
+    const deletedConv = state.conversations.find((c) => c.id === id)
+    let nextConvId = state.currentConversationId
+    let nextProjectPath = state.projectPath
+
     for (const mode of Object.keys(ids) as Mode[]) {
-      if (ids[mode] === id) ids[mode] = null
+      if (ids[mode] === id) {
+        // 删除的是当前模式的活跃会话 — 找同模式最近的会话回退
+        const fallback = remaining
+          .filter((c) => c.mode === mode)
+          .sort((a, b) => b.updatedAt - a.updatedAt)[0]
+        ids[mode] = fallback?.id ?? null
+        // 如果删除的是当前选中的会话，切换到回退会话
+        if (state.currentConversationId === id) {
+          nextConvId = fallback?.id ?? null
+          nextProjectPath = fallback?.projectPath || ''
+        }
+      }
     }
+
     const nextTodos = { ...state.agentTodosByConv }
     delete nextTodos[id]
     set({
       conversations: remaining,
-      currentConversationId: state.currentConversationId === id ? null : state.currentConversationId,
+      currentConversationId: nextConvId,
       currentConversationIds: ids,
+      projectPath: nextProjectPath,
       agentTodosByConv: nextTodos
     })
     void get()._persist()
+    // 持久化回退的会话 ID — 下次启动恢复
+    if (deletedConv) {
+      void get().updateSettings({ lastConversationId: nextConvId ?? undefined })
+    }
   },
 
   renameConversation: (id, title) => {

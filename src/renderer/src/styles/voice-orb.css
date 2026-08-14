@@ -476,6 +476,56 @@
   background: var(--bg-hover, #f0f0f0);
   color: var(--text-primary, #333);
 }
+.voice-panel__voice-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.voice-panel__voice-select:hover {
+  background: var(--bg-hover, #f0f0f0);
+  color: var(--text-primary, #333);
+}
+.voice-panel__voice-select select {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  max-width: 150px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 16px 0 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='currentColor' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+}
+.voice-panel__voice-select select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+/* 深色主题变体 */
+.voice-panel--minimal .voice-panel__voice-select,
+.voice-panel--glass .voice-panel__voice-select {
+  color: rgba(255, 255, 255, 0.8);
+}
+.voice-panel--minimal .voice-panel__voice-select:hover,
+.voice-panel--glass .voice-panel__voice-select:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.voice-panel--neon .voice-panel__voice-select,
+.voice-panel--cyberpunk .voice-panel__voice-select {
+  color: #fff;
+}
 .voice-panel__close {
   margin-left: 4px;
   padding: 5px;
@@ -511,6 +561,22 @@
 }
 .voice-panel__hint--error {
   color: #ef4444;
+}
+
+/* ── 排障音量条 ── */
+.voice-panel__meter {
+  width: 200px;
+  height: 6px;
+  margin: 12px auto 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.voice-panel__meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+  transition: width 60ms linear;
 }
 
 /* ── 底部三按钮 ── */

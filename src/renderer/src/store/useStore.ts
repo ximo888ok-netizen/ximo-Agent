@@ -65,11 +65,22 @@ export const useStore = create<StoreState>()((...args) => {
         .sort((a, b) => b.updatedAt - a.updatedAt)[0]
       if (latest) currentConversationIds[mode] = latest.id
     }
-    const currentConversationId = currentConversationIds.office
+
+    // 启动恢复 — 从 settings 中恢复上次使用的模式与会话
+    const lastMode = (settings.lastMode && ['office', 'coding', 'design'].includes(settings.lastMode))
+      ? settings.lastMode as Mode
+      : 'office'
+    const restoreConvId = settings.lastConversationId
+      && conversations.find((c) => c.id === settings.lastConversationId)
+      ? settings.lastConversationId
+      : currentConversationIds[lastMode]
+
+    const currentConversationId = restoreConvId ?? currentConversationIds.office
     const currentConv = conversations.find((c) => c.id === currentConversationId) ?? null
     set({
       settings,
       conversations,
+      currentMode: lastMode,
       currentConversationIds,
       currentConversationId,
       projectPath: currentConv?.projectPath || '',
@@ -101,6 +112,8 @@ export const useStore = create<StoreState>()((...args) => {
       error: null
     })
     get().restoreAgentTodos()
+    // 持久化模式切换 — 下次启动恢复
+    void get().updateSettings({ lastMode: mode, lastConversationId: convId ?? undefined })
   },
 
   setNetworkSearchOn: (on) => set({ networkSearchOn: on }),

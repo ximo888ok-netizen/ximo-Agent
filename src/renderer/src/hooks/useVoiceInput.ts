@@ -81,7 +81,7 @@ export function useVoiceInput(onFinalText: (text: string) => void): UseVoiceInpu
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
+          // 不强制 channelCount: 1 —— 某些 Windows 声卡/驱动对单声道申请会直接导致音频轨失效
           echoCancellation: true,
           noiseSuppression: true,
         },

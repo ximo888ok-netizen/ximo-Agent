@@ -4,6 +4,7 @@ import { resolve, normalize, basename, dirname, join } from 'path'
 import { tmpdir } from 'os'
 import type { Tool } from '@main/tools/Tool'
 import type { ToolDefinition, ToolCall, ToolResult, StreamChunk } from '@shared/types'
+import { checkWriteAccess } from '@main/security-guard'
 
 /** 在编辑前备份文件快照到系统临时目录（不污染项目目录），返回快照路径 */
 async function snapshotFile(filePath: string): Promise<string | null> {
@@ -63,6 +64,12 @@ export class FileEditTool implements Tool {
     if (!oldStr) return this.error(toolCall.id, '缺少 oldStr 参数（要替换的原始文本）')
 
     const normalized = normalize(resolve(filePath))
+
+    // 写入保护 — 检查路径是否在允许写入的范围内
+    const writeCheck = checkWriteAccess(normalized)
+    if (!writeCheck.allowed) {
+      return this.error(toolCall.id, writeCheck.reason || '写入被拒绝：路径不在允许范围内')
+    }
 
     if (!existsSync(normalized)) {
       return this.error(toolCall.id, `文件不存在：${normalized}`)

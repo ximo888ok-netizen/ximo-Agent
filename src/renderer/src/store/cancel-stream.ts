@@ -27,7 +27,8 @@ import type { StoreState } from './useStore'
  * 强制重置流式状态，避免残留。
  */
 export async function cancelStream(get: () => StoreState, set: SetState): Promise<void> {
-  await window.api.chat.cancel()
+  const convId = get().streamingConversationId
+  await window.api.chat.cancel(convId ?? undefined)
 
   // 立即解除 isStreaming 锁 — 避免用户取消后立即发送新消息被静默丢弃。
   // 不重置 streamingConversationId/streamingAssistantId 等其他状态，

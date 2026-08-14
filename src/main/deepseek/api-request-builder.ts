@@ -39,11 +39,16 @@ export function buildRequestBody(
     return clean
   })
 
+  // maxTokens 安全防护 — 防止过大值导致 API 拒绝
+  // DeepSeek-V4 支持最大 393216 输出 token，自定义服务商通常上限 8192
+  // 此处统一钳制到合理范围内，具体上限由 provider.maxOutputTokens 控制
+  const safeMaxTokens = Math.max(1, Math.min(maxTokens, 393216))
+
   const body: Record<string, unknown> = {
     model,
     messages: sanitizedMessages,
     stream: true,
-    max_tokens: maxTokens
+    max_tokens: safeMaxTokens
   }
 
   if (sendUsage) {

@@ -36,12 +36,14 @@ export interface CompactInput {
   promptTokens: number
   /** 上下文窗口大小（tokens），0 = 禁用 */
   contextWindow: number
+  /** 压缩触发比例（默认 0.8）— 可由用户配置 */
+  compactionRatio?: number
 }
 
-const SOFT_RATIO = 0.5
-const SNIP_RATIO = 0.6
-const COMPACT_RATIO = 0.8
-const FORCE_RATIO = 0.9
+/** soft/snip 比例因子 — 相对于压缩触发比例 */
+const SOFT_FACTOR = 0.625  // soft = ratio * 0.625（默认 0.8 * 0.625 = 0.5）
+const SNIP_FACTOR = 0.75   // snip = ratio * 0.75（默认 0.8 * 0.75 = 0.6）
+const FORCE_FACTOR = 1.125 // force = ratio * 1.125（默认 0.8 * 1.125 = 0.9）
 
 export class ContextManager {
   /** 连续压缩次数 — 达到 2 次触发 stuck 暂停 */
@@ -61,16 +63,17 @@ export class ContextManager {
    */
   maybeCompact(input: CompactInput): CompactionStats {
     const { messages, config, promptTokens, contextWindow } = input
+    const ratio = input.compactionRatio ?? 0.8
     const empty: CompactionStats = {
       tier: 'none', snippedResults: 0, prunedResults: 0, savedChars: 0, stuckPaused: this.compactStuck
     }
 
     if (contextWindow <= 0 || promptTokens === 0) return empty
 
-    const soft = contextWindow * SOFT_RATIO
-    const snip = contextWindow * SNIP_RATIO
-    const high = contextWindow * COMPACT_RATIO
-    const force = contextWindow * FORCE_RATIO
+    const soft = contextWindow * ratio * SOFT_FACTOR
+    const snip = contextWindow * ratio * SNIP_FACTOR
+    const high = contextWindow * ratio
+    const force = contextWindow * ratio * FORCE_FACTOR
 
     // ── soft 阶段：仅通知，不动前缀 ──
     if (promptTokens >= soft && promptTokens < snip && !this.softNoticed) {

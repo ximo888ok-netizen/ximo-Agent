@@ -149,7 +149,8 @@ export async function agentLoop(
             prunedKeep: agentConfig.prunedKeep
           },
           promptTokens: result.usage.promptTokens,
-          contextWindow
+          contextWindow,
+          compactionRatio: agentConfig.compactionRatio
         })
         if (compactStats.tier === 'soft') {
           onChunk({ toolStatus: 'thinking', toolName: 'context' })
@@ -161,6 +162,12 @@ export async function agentLoop(
             messages, contextWindow, agentConfig.recentKeep, signal
           )
         }
+      }
+
+      // 用户取消 — 不当作正常结束，发送 cancelled 标记
+      if (result.finishReason === 'cancelled') {
+        onChunk({ done: true, error: '用户已取消任务' })
+        return
       }
 
       // 错误处理
@@ -231,7 +238,9 @@ export async function agentLoop(
     request.thinkingMode, request.reasoningEffort, request.temperature, request.maxTokens, handlers,
     agentConfig.capabilities
   )
-  if (finalResult.finishReason === 'error') {
+  if (finalResult.finishReason === 'cancelled') {
+    onChunk({ done: true, error: '用户已取消任务' })
+  } else if (finalResult.finishReason === 'error') {
     onChunk({ done: true, error: finalResult.error })
   } else {
     onChunk({ done: true })

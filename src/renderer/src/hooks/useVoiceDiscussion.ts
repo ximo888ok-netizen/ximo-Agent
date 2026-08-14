@@ -1,44 +1,51 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useStore } from '@renderer/store/useStore'
-import { useVAD } from './useVAD'
 import { useStreamingTTS } from './useStreamingTTS'
+import type { ApiMessage, ChatRequest, StreamChunk } from '@shared/types'
 
 export type DiscussionState = 'idle' | 'listening' | 'transcribing' | 'speaking'
 
 /**
- * 语音讨论模式 — 用户与 AI 实时语音对话，讨论结束后自动转入实施。
+ * 语音讨论模式 — 回合制，讨论内容存本地实例，不污染主对话框。
  *
  * 流程：
- * 1. start() → 打开麦克风 → VAD 持续监测语音活动
- * 2. VAD 检测到说话 → 若 AI 正在回复则打断（cancel + stopTTS）→ 启动 MediaRecorder
- * 3. VAD 检测到说话结束 → 停止 MediaRecorder → 解码为 PCM → Whisper STT → 自动发送消息
- * 4. AI 流式回复 → 监听 store.streamingContent 变化 → 逐句推送 TTS 朗读
- * 5. 用户再次说话 → 打断 AI 回复（回到步骤 2）
- * 6. stop() → 关闭麦克风 → 发送"讨论结束，开始实施"触发正式任务执行
+ * 1. start() → 打开麦克风 → 自动开始录音 → state='listening'
+ * 2. 用户点击麦克风 → 停止录音 → 转写 → discussWithAI() → state='speaking'
+ * 3. AI 回复通过 window.api.chat.stream 直接流式获取 → TTS 朗读（不经过 store）
+ * 4. TTS 朗读完毕 → 自动开始下一轮录音 → state='listening'
+ * 5. stop() → 汇总所有讨论内容 → 改写为明确任务描述 → 一次性 sendMessage 到主对话框
  */
 export function useVoiceDiscussion(): {
   isActive: boolean
   state: DiscussionState
   volume: number
   error: string | null
+  isAIResponding: boolean
   start: () => Promise<void>
-  stop: () => void
+  stop: () => Promise<void>
+  toggleRecording: () => void
 } {
   const [isActive, setIsActive] = useState(false)
   const [state, setState] = useState<DiscussionState>('idle')
   const [error, setError] = useState<string | null>(null)
-
-  const isStreaming = useStore((s) => s.isStreaming)
-  const streamingContent = useStore((s) => s.streamingContent)
+  const [isAIResponding, setIsAIResponding] = useState(false)
 
   const streamRef = useRef<MediaStream | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const isActiveRef = useRef(false)
-  const prevContentRef = useRef('')
-  const prevStreamingRef = useRef(false)
+  const isAIRespondingRef = useRef(false)
 
-  const streamingTTS = useStreamingTTS()
+  // 讨论消息 — 完全存本地，不进入 store 的 conversation
+  const discussionMessagesRef = useRef<ApiMessage[]>([])
+
+  const edgeTtsVoice = useStore((s) => s.settings?.edgeTtsVoice)
+  const streamingTTS = useStreamingTTS(edgeTtsVoice)
+  const ttsPush = streamingTTS.push
+  const ttsFlush = streamingTTS.flush
+  const ttsStop = streamingTTS.stop
+  const ttsSpeakingRef = useRef(false)
+  useEffect(() => { ttsSpeakingRef.current = streamingTTS.isSpeaking }, [streamingTTS.isSpeaking])
 
   /** 解码音频 Blob 为 16kHz 单声道 PCM */
   const decodeToPCM = useCallback(async (blob: Blob): Promise<Float32Array> => {
@@ -57,20 +64,90 @@ export function useVoiceDiscussion(): {
     return rendered.getChannelData(0).slice()
   }, [])
 
-  /** 发送转写文本到 AI */
-  const sendText = useCallback(async (text: string) => {
-    if (!text.trim()) {
-      setState('listening')
-      return
+  // startRecording 用 ref 持有，避免循环依赖
+  const startRecordingRef = useRef<() => void>(() => {})
+  // 标记 AI 被用户手动打断，跳过自动重新录音
+  const interruptedRef = useRef(false)
+
+  /** 直接调用 AI 流式接口 — 绕过 store，讨论内容不进入主对话框 */
+  const discussWithAI = useCallback(async (userText: string) => {
+    const store = useStore.getState()
+    const settings = store.settings
+    if (!settings) return
+
+    // 追加用户消息到讨论历史
+    discussionMessagesRef.current.push({ role: 'user', content: userText })
+
+    // 构建请求 — 简洁讨论模式，无工具、无思维链
+    const request: ChatRequest = {
+      mode: store.currentMode,
+      messages: [
+        { role: 'system', content: '你是用户的语音讨论伙伴。正在通过语音讨论任务方案。回复规则：极简口语化，不超过两句话，直接回答核心问题，不用列表/代码/标题。' },
+        ...discussionMessagesRef.current,
+      ],
+      model: settings.model,
+      thinkingMode: false,
+      reasoningEffort: 'off',
+      temperature: settings.temperature,
+      maxTokens: 2048,
+      sessionId: 'voice-discussion',
+      providerId: settings.activeProviderId ?? 'deepseek',
     }
-    prevContentRef.current = ''
-    await useStore.getState().sendMessage(text, { skipNetworkHint: true })
-  }, [])
+
+    isAIRespondingRef.current = true
+    setIsAIResponding(true)
+    setState('speaking')
+
+    let fullResponse = ''
+    try {
+      await window.api.chat.stream(request, (chunk: StreamChunk) => {
+        if (chunk.content) {
+          fullResponse += chunk.content
+          ttsPush(chunk.content)
+        }
+        if (chunk.error) {
+          setError(chunk.error)
+        }
+      })
+    } catch {
+      // 流式异常 — 不中断讨论，继续下一轮
+    }
+
+    // 追加 AI 回复到讨论历史
+    if (fullResponse.trim()) {
+      discussionMessagesRef.current.push({ role: 'assistant', content: fullResponse })
+    }
+
+    isAIRespondingRef.current = false
+    setIsAIResponding(false)
+
+    if (!interruptedRef.current) {
+      // 正常结束 → 等待 TTS 朗读完毕 → 自动开始下一轮录音
+      // 需要连续 3 次（600ms）检测到非播放状态才确认 TTS 真正结束，避免 isSpeaking 异步更新导致的竞态
+      ttsFlush()
+      let stableCount = 0
+      const check = setInterval(() => {
+        if (!ttsSpeakingRef.current) {
+          stableCount++
+          if (stableCount >= 3) {
+            clearInterval(check)
+            if (isActiveRef.current) startRecordingRef.current()
+          }
+        } else {
+          stableCount = 0
+        }
+      }, 200)
+      setTimeout(() => clearInterval(check), 30000)
+    } else {
+      // 用户已手动打断 → 跳过自动重新录音
+      interruptedRef.current = false
+    }
+  }, [ttsPush, ttsFlush])
 
   /** 处理录音结束后的音频 */
   const processAudio = useCallback(async (blob: Blob) => {
     if (blob.size < 500) {
-      setState('listening')
+      startRecordingRef.current()
       return
     }
     setState('transcribing')
@@ -79,182 +156,173 @@ export function useVoiceDiscussion(): {
       const result = await window.api.voice.transcribe(pcm, 16000)
       if (result.error) {
         setError(result.error)
-        setState('listening')
+        startRecordingRef.current()
       } else if (result.text) {
-        await sendText(result.text)
+        await discussWithAI(result.text)
       } else {
-        setState('listening')
+        startRecordingRef.current()
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setError('语音识别失败: ' + msg)
-      setState('listening')
+      startRecordingRef.current()
     }
-  }, [decodeToPCM, sendText])
+  }, [decodeToPCM, discussWithAI])
 
-  // VAD 回调 — 使用 ref 保持最新引用
-  const onSpeechStart = useCallback(() => {
+  /** 开始一轮新录音 */
+  const startRecording = useCallback(() => {
     if (!isActiveRef.current) return
-    // 用户开始说话 → 打断 AI 回复
-    const store = useStore.getState()
-    if (store.isStreaming) void store.cancelStream()
-    streamingTTS.stop()
-
-    setState('listening')
-
-    // 启动 MediaRecorder 录制这段语音
-    try {
-      const stream = streamRef.current
-      if (!stream) return
+    const stream = streamRef.current
+    if (!stream) return
+    const old = recorderRef.current
+    if (old && old.state !== 'inactive') {
+      old.onstop = null
+      old.stop()
+    }
+    chunksRef.current = []
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : ''
+    const recorder = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream)
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data)
+    }
+    recorder.onstop = () => {
+      const audioBlob = new Blob(chunksRef.current, {
+        type: recorder.mimeType || 'audio/webm',
+      })
       chunksRef.current = []
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : ''
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream)
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
+      if (isActiveRef.current) void processAudio(audioBlob)
+    }
+    recorder.start()
+    recorderRef.current = recorder
+    setState('listening')
+  }, [processAudio])
+
+  useEffect(() => { startRecordingRef.current = startRecording }, [startRecording])
+
+  /** 切换录音 — listening→停止并发送 / speaking→打断AI并开始新录音 */
+  const toggleRecording = useCallback(() => {
+    if (state === 'listening') {
+      const recorder = recorderRef.current
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop()
+        recorderRef.current = null
       }
-      recorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || 'audio/webm',
-        })
-        chunksRef.current = []
-        if (isActiveRef.current) void processAudio(audioBlob)
-      }
-      recorder.start()
-      recorderRef.current = recorder
-    } catch {
-      // recorder 启动失败，忽略
+    } else if (state === 'speaking') {
+      // 用户手动打断 AI → 取消流 + 停止 TTS + 立即开始新录音
+      interruptedRef.current = true
+      void window.api.chat.cancel()
+      ttsStop()
+      ttsSpeakingRef.current = false
+      isAIRespondingRef.current = false
+      setIsAIResponding(false)
+      startRecordingRef.current()
     }
-  }, [streamingTTS, processAudio])
-
-  const onSpeechEnd = useCallback(() => {
-    if (!isActiveRef.current) return
-    const recorder = recorderRef.current
-    if (recorder && recorder.state !== 'inactive') {
-      recorder.stop()
-      recorderRef.current = null
-    }
-  }, [])
-
-  // VAD — 传入 stream（start 后才有）
-  const { isSpeaking: vadSpeaking, volume, start: vadStart, stop: vadStop } = useVAD(
-    streamRef.current,
-    { onSpeechStart, onSpeechEnd, threshold: 15, silenceDuration: 1000 },
-  )
-
-  // 监听 streamingContent → 推送流式 TTS
-  useEffect(() => {
-    if (!isActive || !isStreaming) return
-    const prev = prevContentRef.current
-    if (streamingContent.length > prev.length) {
-      const newPart = streamingContent.slice(prev.length)
-      streamingTTS.push(newPart)
-      setState('speaking')
-    }
-    prevContentRef.current = streamingContent
-  }, [streamingContent, isStreaming, isActive, streamingTTS])
-
-  // 流式结束 → flush 剩余 TTS，回到 listening
-  useEffect(() => {
-    if (prevStreamingRef.current && !isStreaming && isActive) {
-      streamingTTS.flush()
-      // 等待 TTS 朗读完毕后回到 listening
-      const check = setInterval(() => {
-        if (!streamingTTS.isSpeaking) {
-          clearInterval(check)
-          if (isActiveRef.current) setState('listening')
-        }
-      }, 200)
-      setTimeout(() => clearInterval(check), 30000) // 兜底
-    }
-    prevStreamingRef.current = isStreaming
-  }, [isStreaming, isActive, streamingTTS])
-
-  // 同步 vadSpeaking 到 state
-  useEffect(() => {
-    if (isActive && vadSpeaking && !isStreaming) setState('listening')
-  }, [vadSpeaking, isActive, isStreaming])
+  }, [state, ttsStop])
 
   /** 进入语音讨论模式 */
   const start = useCallback(async () => {
     setError(null)
     try {
+      // 清理残留状态
+      const store = useStore.getState()
+      if (store.isStreaming) await store.cancelStream()
+      ttsStop()
+      ttsSpeakingRef.current = false
+      discussionMessagesRef.current = []
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,
         },
       })
       streamRef.current = stream
       isActiveRef.current = true
       setIsActive(true)
-      setState('listening')
-      prevContentRef.current = ''
-      // VAD 需要在 stream 设置后启动
-      // useVAD 的 start 在下一轮 effect 中调用（stream ref 更新后）
-      setTimeout(() => vadStart(), 0)
+      startRecording()
+      stream.getTracks().forEach((t) => {
+        t.onended = () => {
+          if (isActiveRef.current) {
+            setError('麦克风被系统关闭（可能被其他应用占用或系统隐私设置）')
+          }
+        }
+      })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       if (msg.includes('NotAllowed') || msg.includes('Permission')) {
         setError('麦克风权限被拒绝，请在系统设置中允许')
       } else {
-        setError('启动语音讨论失败: ' + msg)
+        setError('启动语音讨论失败:B ' + msg)
       }
     }
-  }, [vadStart])
+  }, [startRecording, ttsStop])
 
-  /** 结束讨论 → 触发 AI 开始实施 */
-  const stop = useCallback(() => {
+  /** 结束讨论 → 汇总讨论内容 → 一次性发送到主对话框 */
+  const stop = useCallback(async () => {
     isActiveRef.current = false
     setIsActive(false)
     setState('idle')
     setError(null)
+    setIsAIResponding(false)
+    isAIRespondingRef.current = false
 
-    // 停止 VAD
-    vadStop()
-    // 停止 TTS
-    streamingTTS.stop()
-    // 停止录音
+    ttsStop()
     const recorder = recorderRef.current
     if (recorder && recorder.state !== 'inactive') {
-      recorder.onstop = null // 阻止触发 processAudio
+      recorder.onstop = null
       recorder.stop()
       recorderRef.current = null
     }
-    // 关闭麦克风流
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
-    prevContentRef.current = ''
 
-    // 取消正在进行的流式回复
+    // 取消可能正在进行的讨论流
+    await window.api.chat.cancel()
+
+    // 汇总讨论内容
+    const messages = discussionMessagesRef.current
+    discussionMessagesRef.current = []
+
+    if (messages.length === 0) return
+
+    // 将讨论内容格式化为一条明确的任务描述
+    const discussionTranscript = messages
+      .map((m) => m.role === 'user' ? `用户：${m.content}` : `AI：${m.content}`)
+      .join('\n\n')
+
+    const summaryPrompt = `以下是用户与AI通过语音讨论的完整内容：
+
+${discussionTranscript}
+
+---
+
+请基于以上讨论，汇总并改写为明确的任务描述，然后直接开始实施。不需要再确认，直接执行。`
+
+    // 一次性发送到主对话框
     const store = useStore.getState()
-    if (store.isStreaming) void store.cancelStream()
-
-    // 发送"讨论结束，开始实施"消息 — AI 基于讨论内容开始正式工作
-    void store.sendMessage(
-      '讨论结束。请基于以上讨论的方案，直接开始实施。不需要再确认，直接执行。',
-      { skipNetworkHint: true },
-    )
-  }, [vadStop, streamingTTS])
+    if (store.isStreaming) await store.cancelStream()
+    void store.sendMessage(summaryPrompt, { skipNetworkHint: true })
+  }, [ttsStop])
 
   // 组件卸载时清理
   useEffect(() => {
     return () => {
       isActiveRef.current = false
-      vadStop()
-      streamingTTS.stop()
+      isAIRespondingRef.current = false
+      ttsStop()
       const recorder = recorderRef.current
       if (recorder && recorder.state !== 'inactive') recorder.stop()
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-  }, [vadStop, streamingTTS])
+  }, [ttsStop])
 
-  return { isActive, state, volume, error, start, stop }
+  return { isActive, state, volume: 0, error, isAIResponding, start, stop, toggleRecording }
 }
