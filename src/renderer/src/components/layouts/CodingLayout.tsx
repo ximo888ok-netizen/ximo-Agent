@@ -6,18 +6,14 @@ import { SessionBar } from '@renderer/components/coding/SessionBar'
 import { Transcript } from '@renderer/components/transcript/Transcript'
 import { adaptMessages, buildLiveStream } from '@renderer/lib/transcriptAdapter'
 import type { ChatMessage } from '@shared/types'
-import { extractChangeRows, type ChangeRow } from '@renderer/components/coding/change-rows'
-import { SessionTimer, ErrorBanner, ChangeSummarySection, CodingActionBar } from '@renderer/components/coding/CodingParts'
+import { SessionTimer, ErrorBanner } from '@renderer/components/coding/CodingParts'
 
-// 懒加载检查点浏览器 — 仅在有文件变更时才显示
-const CheckpointViewer = lazy(() => import('@renderer/components/coding/CheckpointViewer').then(m => ({ default: m.CheckpointViewer })))
 // 懒加载空状态欢迎页
 const CodingWelcome = lazy(() => import('@renderer/CodingWelcome').then(m => ({ default: m.CodingWelcome })))
 
 export function CodingLayout(): React.ReactElement {
   // 精确选择当前会话 — 避免订阅整个 conversations 数组
   const conversation = useStore((s) => s.conversations.find((c) => c.id === s.currentConversationId) ?? null)
-  const currentConversationId = useStore((s) => s.currentConversationId)
   const isStreaming = useStore((s) => s.isStreaming)
   const streamingContent = useStore((s) => s.streamingContent)
   const streamingReasoning = useStore((s) => s.streamingReasoning)
@@ -37,14 +33,6 @@ export function CodingLayout(): React.ReactElement {
 
   const isEmpty = !conversation || conversation.messages.length === 0
   const isStreamingThis = isStreaming && streamingConversationId === conversation?.id
-
-  const changeRows = useMemo(() => {
-    if (!conversation?.messages) return []
-    return extractChangeRows(conversation.messages)
-  }, [conversation?.messages])
-
-  const totalAdditions = changeRows.reduce((sum, r) => sum + r.additions, 0)
-  const totalDeletions = changeRows.reduce((sum, r) => sum + r.deletions, 0)
 
   // ── 适配：把 ChatMessage[] 转成扁平 TranscriptItem[] ──────────────────
   const items = useMemo(() => {
@@ -127,26 +115,6 @@ export function CodingLayout(): React.ReactElement {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <ToolPanel />
 
-          {/* 变更摘要区域 — 默认收起，点击展开 */}
-          {changeRows.length > 0 && (
-            <ChangeSummarySection
-              changeRows={changeRows}
-              totalAdditions={totalAdditions}
-              totalDeletions={totalDeletions}
-              projectPath={projectPath}
-              sendMessage={sendMessage}
-            />
-          )}
-
-          {/* 检查点浏览器 */}
-          {currentConversationId && changeRows.length > 0 && (
-          <div className="px-4 py-1.5">
-            <Suspense fallback={null}>
-              <CheckpointViewer sessionId={currentConversationId} />
-            </Suspense>
-          </div>
-          )}
-
           {/* ── 新 Transcript 会话区 ── */}
           <Transcript
             items={items}
@@ -159,15 +127,6 @@ export function CodingLayout(): React.ReactElement {
           />
 
           {error && <ErrorBanner message={error} />}
-
-          {/* 操作工具条 */}
-          {changeRows.length > 0 && !isStreamingThis && (
-            <CodingActionBar
-              changeRows={changeRows}
-              projectPath={projectPath}
-              sendMessage={sendMessage}
-            />
-          )}
         </div>
       </div>
     </div>

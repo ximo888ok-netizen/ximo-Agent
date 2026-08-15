@@ -3,11 +3,16 @@ import {
   FileText, SearchCode, GitBranch, CheckCircle, FolderSearch, Bug, FlaskConical,
   FolderTree, Sparkles, Package, FolderOpen, RefreshCw, Loader2, Search,
   ChevronRight, ChevronDown, Folder, FileCode, FileJson, File,
+  ListTodo, FileDiff,
 } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import type { FileTreeNode } from '@shared/types'
 import { FileEditorPanel } from './FileEditorPanel'
 import { FileTreeContextMenu, type ContextMenuState } from './FileTreeContextMenu'
+import { CodingChangesPanel } from './CodingChangesPanel'
+import { CodingTasksPanel } from './CodingTasksPanel'
+
+type RightTab = 'files' | 'changes' | 'tasks'
 
 interface ContextEntry {
   id: string
@@ -30,18 +35,80 @@ const CODING_ENTRIES: ContextEntry[] = [
   { id: 'scan-project', label: '扫描项目', icon: FolderSearch, subtitle: '分析项目架构和技术栈', prompt: '请使用 project_context 工具扫描当前项目目录，帮我了解项目架构和技术栈。' },
 ]
 
-/** 编程模式右侧面板 — 有项目时显示文件树，无项目时显示编码工具入口 */
-export function CodingRightPanel({ hasConversation }: { hasConversation: boolean }): React.ReactElement {
+/** 编程模式右侧面板 — 标签页：文件目录 / 变更（摘要·回溯·Git）/ 任务规划 */
+export function CodingRightPanel(): React.ReactElement {
   const projectPath = useStore((s) => s.projectPath)
-  if (projectPath) return <ProjectFileTreePanel projectPath={projectPath} />
-  return <CodingEntriesPanel />
+  const [tab, setTab] = useState<RightTab>('files')
+
+  return (
+    <aside className="flex h-full w-full flex-col border-l border-border-subtle glass">
+      {/* 标签页栏 */}
+      <div className="flex shrink-0 border-b border-border-subtle">
+        <TabButton
+          active={tab === 'files'}
+          icon={<FolderTree size={12} />}
+          label="文件"
+          onClick={() => setTab('files')}
+        />
+        <TabButton
+          active={tab === 'changes'}
+          icon={<FileDiff size={12} />}
+          label="变更"
+          onClick={() => setTab('changes')}
+        />
+        <TabButton
+          active={tab === 'tasks'}
+          icon={<ListTodo size={12} />}
+          label="任务"
+          onClick={() => setTab('tasks')}
+        />
+      </div>
+
+      {/* 标签页内容 — 全部保持挂载（CSS 显隐），切换不丢面板状态 */}
+      <div className="min-h-0 flex-1">
+        <div className={tab === 'files' ? 'h-full' : 'hidden'}>
+          {projectPath ? <ProjectFileTreePanel projectPath={projectPath} /> : <CodingEntriesPanel />}
+        </div>
+        <div className={tab === 'changes' ? 'h-full' : 'hidden'}>
+          <CodingChangesPanel />
+        </div>
+        <div className={tab === 'tasks' ? 'h-full' : 'hidden'}>
+          <CodingTasksPanel />
+        </div>
+      </div>
+    </aside>
+  )
+}
+
+/** 标签页按钮 */
+function TabButton({
+  active, icon, label, onClick,
+}: {
+  active: boolean
+  icon: React.ReactNode
+  label: string
+  onClick: () => void
+}): React.ReactElement {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium transition-colors border-b-2 ${
+        active
+          ? 'border-accent text-accent bg-accent/5'
+          : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-bg-hover/50'
+      }`}
+    >
+      {icon}
+      <span className="truncate">{label}</span>
+    </button>
+  )
 }
 
 /** 无项目时的编码工具入口面板 */
 function CodingEntriesPanel(): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
   return (
-    <aside className="flex h-full w-full flex-col border-l border-border-subtle glass">
+    <div className="flex h-full w-full flex-col">
       <div className="px-4 pt-5 pb-3">
         <h3 className="text-sm font-semibold tracking-tight text-text-primary">编码工具</h3>
         <p className="mt-1 text-xs text-text-muted">快速执行编码操作</p>
@@ -73,7 +140,7 @@ function CodingEntriesPanel(): React.ReactElement {
           <p className="text-[11px] text-text-muted">打开项目后显示文件树</p>
         </div>
       </div>
-    </aside>
+    </div>
   )
 }
 
@@ -144,7 +211,7 @@ function ProjectFileTreePanel({ projectPath }: { projectPath: string }): React.R
       {editingFile ? (
         <FileEditorPanel filePath={editingFile} onBack={() => setEditingFile(null)} onSaved={fetchTree} />
       ) : (
-        <aside className="flex h-full w-full flex-col border-l border-border-subtle glass">
+        <div className="flex h-full w-full flex-col">
           <div className="flex items-center justify-between px-3 pt-4 pb-2 border-b border-border-subtle shrink-0">
             <div className="flex min-w-0 items-center gap-2">
               <FolderOpen size={14} className="shrink-0 text-accent" />
@@ -185,7 +252,7 @@ function ProjectFileTreePanel({ projectPath }: { projectPath: string }): React.R
               <FileTreeList nodes={filteredTree} depth={0} onFileClick={handleFileClick} onContextMenu={handleContextMenu} forceExpand={!!searchQuery.trim()} />
             )}
           </div>
-        </aside>
+        </div>
       )}
 
       <FileTreeContextMenu state={contextMenu} onClose={() => setContextMenu(null)} onRefresh={fetchTree} onEdit={(path) => setEditingFile(path)} />

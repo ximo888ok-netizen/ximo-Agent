@@ -9,7 +9,6 @@ import { StartupAnimation } from './components/StartupAnimation'
 import { CursorEffects } from './components/CursorEffects'
 import { VoiceOrb } from './components/VoiceOrb'
 import { TaskListPanel } from './components/TaskListPanel'
-import { VoiceOrb } from './components/VoiceOrb'
 import { useAppEffects, useConfirmDialog } from './hooks/useAppEffects'
 
 // 懒加载布局组件 — 只有当前模式的布局被加载
@@ -107,7 +106,8 @@ export default function App(): React.ReactElement {
               {currentMode === 'design' && <DesignLayout />}
             </Suspense>
           </div>
-          <TaskListPanel />
+          {/* coding 模式的任务规划已移入右侧「任务」标签页 */}
+          {currentMode !== 'coding' && <TaskListPanel />}
           <Suspense fallback={null}>
             <GlobalChatInput />
           </Suspense>

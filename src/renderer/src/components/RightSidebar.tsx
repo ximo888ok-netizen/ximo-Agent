@@ -10,6 +10,6 @@ export function RightSidebar(): React.ReactElement {
   const hasConversation = useStore((s) => s.conversations.some((c) => c.id === s.currentConversationId))
 
   if (currentMode === 'design') return <DesignRightPanel hasConversation={hasConversation} />
-  if (currentMode === 'coding') return <CodingRightPanel hasConversation={hasConversation} />
+  if (currentMode === 'coding') return <CodingRightPanel />
   return <ContextRightPanel hasConversation={hasConversation} />
 }

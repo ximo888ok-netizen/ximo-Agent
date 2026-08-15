@@ -88,8 +88,8 @@ export const TaskListPanel = memo(function TaskListPanel(): React.ReactElement |
   )
 })
 
-/** 递归渲染 todo 列表 — 支持两级嵌套 */
-const TodoListView = memo(function TodoListView({ todos }: { todos: AgentTodo[] }): React.ReactElement {
+/** 递归渲染 todo 列表 — 支持两级嵌套（同时供右侧任务面板复用） */
+export const TodoListView = memo(function TodoListView({ todos }: { todos: AgentTodo[] }): React.ReactElement {
   // 一次遍历分离平铺项和阶段+子步骤
   const { flat, phases } = useMemo(() => {
     const flat: AgentTodo[] = []

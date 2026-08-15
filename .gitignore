@@ -38,3 +38,6 @@ resources/officecli/officecli
 src/renderer/public/ui-previews/*.gif
 src/renderer/src/components/design/ui-components-precompiled.json
 
+# 群友版参考源码（仅用于对比分析，不入库）
+ximo-Agent-Furnace/
+
