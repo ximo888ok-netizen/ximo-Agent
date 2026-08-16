@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { CursorTrailStyle, CursorClickStyle } from '@shared/types'
 import { TRAIL_STYLES, CLICK_STYLES, findTrailStyle, findClickStyle } from './cursor-style-config'
-import '../styles/cursor-effects.css'
+import '../../styles/cursor-effects.css'
 
 /**
  * CursorEffects — 鼠标跟随 + 点击特效全局层
