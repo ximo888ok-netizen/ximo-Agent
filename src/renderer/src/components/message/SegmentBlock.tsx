@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Brain, ChevronDown, ChevronUp } from 'lucide-react'
 import type { StreamingSegment, SegmentEvent } from '@shared/types'
-import { MarkdownRenderer } from './MarkdownRenderer'
+import { MarkdownRenderer } from '@renderer/components/markdown/MarkdownRenderer'
 import { ToolCallGroup } from './ToolCallGroup'
 
 /** 思考链截断阈值 — 超过此长度的 reasoning 默认只显示最后 N 字（最近思考） */

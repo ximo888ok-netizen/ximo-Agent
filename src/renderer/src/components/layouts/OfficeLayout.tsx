@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react'
 import { FolderOpen, X } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { MODE_CONFIGS } from '@renderer/modes'
-import { MessageItem } from '@renderer/components/MessageItem'
-import { ToolPanel } from '@renderer/components/ToolPanel'
+import { MessageItem } from '@renderer/components/message/MessageItem'
+import { ToolPanel } from '@renderer/components/message/ToolPanel'
 import type { Mode } from '@shared/types'
 
 // 功能胶囊按钮（空状态下隐藏导出，因为无内容可导出）

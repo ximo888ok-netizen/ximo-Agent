@@ -7,22 +7,11 @@ import type {
   RecordingSession,
   CapturedRequest,
   ImportedSkill,
-  StreamingSegment
+  StreamingSegment,
+  ComponentMeta
 } from '@shared/types'
 
-export type { ChatMessage } from '@shared/types'
-
-/** UI 组件元数据 — 镜像 catalog 中的结构 */
-export interface ComponentMeta {
-  id: string
-  name: string
-  nameCn: string
-  category: string
-  categoryCn: string
-  dependencies: string[]
-  props: string[]
-  files: { jsx: string; css: string | null; assets: string[] | null }
-}
+export type { ChatMessage, ComponentMeta } from '@shared/types'
 
 /** Agent 任务列表项 — 镜像 TodoWriteTool 的 TodoItem */
 export interface AgentTodo {

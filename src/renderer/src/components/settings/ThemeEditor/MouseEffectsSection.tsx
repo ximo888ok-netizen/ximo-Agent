@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { MousePointer2, Sparkles, Palette, Maximize2, Zap, Clock, Wand2 } from 'lucide-react'
 import type { AppSettings } from '@shared/types'
-import { TRAIL_STYLES, CLICK_STYLES, type CursorStyleDef } from '../../cursor-style-config'
+import { TRAIL_STYLES, CLICK_STYLES, type CursorStyleDef } from '@renderer/components/startup/cursor-style-config'
 import { CollapsibleSection, ToggleRow } from '../shared-components'
 
 /**

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, HelpCircle, FileCheck, Check, XCircle, Circle, CheckCircle2, MessageSquareText } from 'lucide-react'
-import { parseQuestion, type ParsedQuestion } from './planSpec/parseQuestion'
+import { parseQuestion, type ParsedQuestion } from '@renderer/components/planSpec/parseQuestion'
 
 interface UserInputRequest {
   type: 'ask' | 'review'

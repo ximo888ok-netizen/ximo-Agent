@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import { ChevronDown, CheckCircle } from 'lucide-react'
-import { MessageItem } from '@renderer/components/MessageItem'
+import { MessageItem } from '@renderer/components/message/MessageItem'
 import { InlineFileEdit } from './InlineFileEdit'
 import { InlineTerminalOutput } from './InlineTerminalOutput'
 import type { ChatMessage, ToolResult, StreamingSegment } from '@shared/types'

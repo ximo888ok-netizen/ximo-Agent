@@ -1,9 +1,9 @@
 import { useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { useStore } from '@renderer/store/useStore'
 import { MODE_CONFIGS } from '@renderer/modes'
-import { MessageItem } from '@renderer/components/MessageItem'
+import { MessageItem } from '@renderer/components/message/MessageItem'
 import { Icon } from '@renderer/components/Icon'
-import { ToolPanel } from '@renderer/components/ToolPanel'
+import { ToolPanel } from '@renderer/components/message/ToolPanel'
 import type { Mode, ChatMessage } from '@shared/types'
 
 // 懒加载空状态欢迎页

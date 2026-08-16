@@ -5,10 +5,9 @@ import { Sidebar } from './components/Sidebar'
 import { RightSidebar } from './components/RightSidebar'
 import { ResizableDivider } from './components/ResizableDivider'
 import { ConfirmDialog } from './components/ConfirmDialog'
-import { StartupAnimation } from './components/StartupAnimation'
-import { CursorEffects } from './components/CursorEffects'
-import { VoiceOrb } from './components/VoiceOrb'
-import { TaskListPanel } from './components/TaskListPanel'
+import { StartupAnimation } from './components/startup/StartupAnimation'
+import { CursorEffects } from './components/startup/CursorEffects'
+import { VoiceOrb } from './components/voice/VoiceOrb'
 import { useAppEffects, useConfirmDialog } from './hooks/useAppEffects'
 
 // 懒加载布局组件 — 只有当前模式的布局被加载
@@ -17,12 +16,12 @@ const CodingLayout = lazy(() => import('./components/layouts/CodingLayout').then
 const DesignLayout = lazy(() => import('./components/layouts/DesignLayout').then(m => ({ default: m.DesignLayout })))
 
 // 懒加载弹窗组件 — 首次打开时才加载
-const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
-const AgentExpertPanel = lazy(() => import('./components/AgentExpertPanel').then(m => ({ default: m.AgentExpertPanel })))
-const MemoryPanel = lazy(() => import('./components/MemoryPanel').then(m => ({ default: m.MemoryPanel })))
-const KnowledgePanel = lazy(() => import('./components/KnowledgePanel').then(m => ({ default: m.KnowledgePanel })))
-const PlanSpecDialog = lazy(() => import('./components/PlanSpecDialog').then(m => ({ default: m.PlanSpecDialog })))
-const TokenStatsModal = lazy(() => import('./components/TokenStatsModal').then(m => ({ default: m.TokenStatsModal })))
+const SettingsModal = lazy(() => import('./components/settings/SettingsModal').then(m => ({ default: m.SettingsModal })))
+const AgentExpertPanel = lazy(() => import('./components/panels/AgentExpertPanel').then(m => ({ default: m.AgentExpertPanel })))
+const MemoryPanel = lazy(() => import('./components/panels/MemoryPanel').then(m => ({ default: m.MemoryPanel })))
+const KnowledgePanel = lazy(() => import('./components/panels/KnowledgePanel').then(m => ({ default: m.KnowledgePanel })))
+const PlanSpecDialog = lazy(() => import('./components/panels/PlanSpecDialog').then(m => ({ default: m.PlanSpecDialog })))
+const TokenStatsModal = lazy(() => import('./components/panels/TokenStatsModal').then(m => ({ default: m.TokenStatsModal })))
 
 // 懒加载输入框 — 1193 行 + 大量 lucide 图标 + agents 数据，首屏不需要
 const GlobalChatInput = lazy(() => import('./components/GlobalChatInput').then(m => ({ default: m.GlobalChatInput })))
@@ -106,8 +105,6 @@ export default function App(): React.ReactElement {
               {currentMode === 'design' && <DesignLayout />}
             </Suspense>
           </div>
-          {/* coding 模式的任务规划已移入右侧「任务」标签页 */}
-          {currentMode !== 'coding' && <TaskListPanel />}
           <Suspense fallback={null}>
             <GlobalChatInput />
           </Suspense>

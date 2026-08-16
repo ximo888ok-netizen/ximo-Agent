@@ -1,15 +1,15 @@
 import { memo, useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { Check, ChevronDown, Copy, RotateCcw, Brain, Cpu, Pencil } from 'lucide-react'
 import type { ChatMessage, StreamingSegment, StreamChunk } from '@shared/types'
-import { MarkdownRenderer } from './MarkdownRenderer'
+import { MarkdownRenderer } from '@renderer/components/markdown/MarkdownRenderer'
 import { ToolCallGroup, CollapsedToolResults, CollapsedToolErrors } from './ToolCallGroup'
 import { SegmentBlock } from './SegmentBlock'
-import { ExpertWorkCard } from './message/ExpertWorkCard'
+import { ExpertWorkCard } from '@renderer/components/message/ExpertWorkCard'
 
 type SubAgentEvent = NonNullable<StreamChunk['subAgentEvent']>
 
 // 懒加载截图预览 — 仅在点击截图放大时才需要
-const ScreenshotPreview = lazy(() => import('./ScreenshotPreview').then(m => ({ default: m.ScreenshotPreview })))
+const ScreenshotPreview = lazy(() => import('@renderer/components/ScreenshotPreview').then(m => ({ default: m.ScreenshotPreview })))
 
 interface MessageItemProps {
   message: ChatMessage

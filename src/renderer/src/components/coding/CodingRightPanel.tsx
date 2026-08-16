@@ -293,6 +293,13 @@ function FileTreeItem({ node, depth, onFileClick, onContextMenu, forceExpand = f
       <button
         onClick={() => (isDir ? setExpanded(!expanded) : onFileClick(node.path))}
         onContextMenu={(e) => onContextMenu?.(e, node)}
+        draggable
+        onDragStart={(e) => {
+          // 拖拽文件到输入栏附加 — 自定义类型避免与系统文件拖拽混淆
+          e.dataTransfer.setData('application/x-ximo-file', node.path)
+          e.dataTransfer.setData('text/plain', node.path)
+          e.dataTransfer.effectAllowed = 'copy'
+        }}
         className="flex w-full items-center gap-1.5 py-[3px] text-left text-xs transition-colors hover:bg-bg-hover"
         style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '8px' }}
         title={node.path}

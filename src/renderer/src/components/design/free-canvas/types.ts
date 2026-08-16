@@ -1,20 +1,5 @@
-export interface StyleEntry {
-  id: string
-  name: string
-  category: string
-  tokens: { accent: string; bg: string; fg: string; surface: string }
-}
-
-export interface ComponentMeta {
-  id: string
-  name: string
-  nameCn: string
-  category: string
-  categoryCn: string
-  dependencies: string[]
-  props: string[]
-  files: { jsx: string; css: string | null; assets: string[] | null }
-}
+import type { StyleEntry, ComponentMeta } from '@shared/types'
+export type { StyleEntry, ComponentMeta }
 
 export interface LayoutItem {
   componentId: string

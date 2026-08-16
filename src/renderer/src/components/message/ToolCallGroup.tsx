@@ -5,7 +5,7 @@ import { TOOL_LABELS } from './message-constants'
 import { ToolCallCard } from './ToolCallCard'
 
 // 懒加载工具结果卡片 — 含 CodeBlock + InlineFileEdit，仅在展开工具结果时才需要
-const ToolResultCard = lazy(() => import('./shared/ToolResultCard').then(m => ({ default: m.ToolResultCard })))
+const ToolResultCard = lazy(() => import('@renderer/components/shared/ToolResultCard').then(m => ({ default: m.ToolResultCard })))
 
 /** 工具调用分组 — 将多个 ToolCallCard 收纳为一个可折叠区块 */
 export function ToolCallGroup({ calls }: { calls: { name: string; status: string; args?: string; result?: string }[] }): React.ReactElement {

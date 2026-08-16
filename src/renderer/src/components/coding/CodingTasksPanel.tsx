@@ -4,7 +4,7 @@
 import { useMemo } from 'react'
 import { ListTodo, Loader2, Users } from 'lucide-react'
 import { useStore, type AgentTodo } from '@renderer/store/useStore'
-import { TodoListView } from '@renderer/components/TaskListPanel'
+import { TodoListView } from '@renderer/components/panels/TaskListPanel'
 import { SubAgentTreeSection, TaskIntentSection } from './SubAgentSections'
 
 const EMPTY_TODOS: AgentTodo[] = []

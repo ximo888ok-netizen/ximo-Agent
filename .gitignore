@@ -38,6 +38,9 @@ resources/officecli/officecli
 src/renderer/public/ui-previews/*.gif
 src/renderer/src/components/design/ui-components-precompiled.json
 
-# 群友版参考源码（仅用于对比分析，不入库）
+# 群友增强版源码（仅参考，不入库）
 ximo-Agent-Furnace/
 
+# 审计脚本临时输出
+scripts/check-*.txt
+scripts/audit-*.cjs

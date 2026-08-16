@@ -1,7 +1,7 @@
 import { useMemo, useCallback, lazy, Suspense } from 'react'
 import { FileCode2 } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
-import { ToolPanel } from '@renderer/components/ToolPanel'
+import { ToolPanel } from '@renderer/components/message/ToolPanel'
 import { SessionBar } from '@renderer/components/coding/SessionBar'
 import { Transcript } from '@renderer/components/transcript/Transcript'
 import { adaptMessages, buildLiveStream } from '@renderer/lib/transcriptAdapter'
@@ -127,6 +127,7 @@ export function CodingLayout(): React.ReactElement {
           />
 
           {error && <ErrorBanner message={error} />}
+
         </div>
       </div>
     </div>
