@@ -62,7 +62,9 @@ export function useStreamingTTS(voice?: string): {
   /** 将 IPC 返回的数据转为 ArrayBuffer */
   function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
     if (data instanceof ArrayBuffer) return data
-    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+    // TS 只把 .buffer 标成 ArrayBufferLike（含 SharedArrayBuffer），而这里是普通
+    // Uint8Array 上的视图，slice 出来的必然是 ArrayBuffer —— 收窄是安全的
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
   }
 
   /** 朗读队列中下一句 */

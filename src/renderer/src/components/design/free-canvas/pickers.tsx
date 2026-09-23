@@ -14,13 +14,13 @@ export function ScenarioPicker({ scenarios, selectedId, onSelect, onClose }: {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-xl border border-border-subtle bg-bg-surface shadow-xl">
+      <div className="absolute left-0 top-full z-50 mt-1 w-44 rounded-panel border border-border-subtle bg-bg-surface shadow-xl">
         <div className="p-1.5">
           {/* 清除按钮 */}
           {selectedId && (
             <button
               onClick={() => onSelect(null)}
-              className="mb-1 w-full rounded-md px-2 py-1 text-left text-[10px] text-text-muted hover:bg-bg-elevated"
+              className="mb-1 w-full rounded-control px-2 py-1 text-left text-caption text-text-muted hover:bg-bg-elevated active:scale-[0.97]"
             >
               ✕ 清除场景选择
             </button>
@@ -32,20 +32,20 @@ export function ScenarioPicker({ scenarios, selectedId, onSelect, onClose }: {
               <button
                 key={scenario.id}
                 onClick={() => onSelect(scenario.id)}
-                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors ${
                   isSelected ? 'bg-accent/10' : 'hover:bg-bg-elevated'
                 }`}
               >
-                <Icon size={14} className={isSelected ? 'text-accent' : 'text-text-muted'} />
+                <Icon size={13} className={isSelected ? 'text-accent' : 'text-text-muted'} />
                 <div className="flex-1">
-                  <span className={`text-[11px] font-medium ${isSelected ? 'text-accent' : 'text-text-primary'}`}>
+                  <span className={`text-caption font-medium ${isSelected ? 'text-accent' : 'text-text-primary'}`}>
                     {scenario.name}
                   </span>
-                  <span className="ml-1 text-[9px] text-text-muted">
+                  <span className="ml-1 text-caption text-text-muted">
                     {scenario.layouts.length} 布局
                   </span>
                 </div>
-                {isSelected && <Check size={12} className="text-accent" />}
+                {isSelected && <Check size={13} className="text-accent" />}
               </button>
             )
           })}
@@ -62,18 +62,18 @@ export function LayoutCard({ layout, onApply }: {
   onApply: () => void
 }): React.ReactElement {
   return (
-    <button
+    <button aria-label={layout.desc}
       onClick={onApply}
-      className="group shrink-0 w-36 rounded-lg border border-border-subtle bg-bg-surface p-1.5 text-left transition-all hover:border-accent/40 hover:shadow-md hover:scale-[1.02] active:scale-95"
+      className="group shrink-0 w-36 rounded-card border border-border-subtle bg-bg-surface p-1.5 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:border-accent/40 hover:shadow-md hover:scale-[1.02] active:scale-95"
       title={layout.desc}
     >
       {/* 迷你布局预览 */}
-      <div className="mb-1.5 h-12 rounded bg-bg-base/60 overflow-hidden relative">
+      <div className="mb-1.5 h-12 rounded-control bg-bg-base-soft overflow-hidden relative">
         <div className="absolute inset-1 flex flex-col gap-0.5">
           {layout.blocks.map((block, i) => (
             <div
               key={i}
-              className="rounded-sm transition-all group-hover:opacity-80"
+              className="rounded-control transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] group-hover:opacity-80"
               style={{
                 backgroundColor: BLOCK_COLORS[block] || '#64748b',
                 opacity: 0.7,
@@ -85,10 +85,10 @@ export function LayoutCard({ layout, onApply }: {
             >
               {(block === 'row3' || block === 'grid4' || block === 'kpi3') && (
                 <>
-                  <div className="flex-1 rounded-sm" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
-                  <div className="flex-1 rounded-sm" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
-                  <div className="flex-1 rounded-sm" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
-                  {block === 'grid4' && <div className="flex-1 rounded-sm" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />}
+                  <div className="flex-1 rounded-control" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
+                  <div className="flex-1 rounded-control" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
+                  <div className="flex-1 rounded-control" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />
+                  {block === 'grid4' && <div className="flex-1 rounded-control" style={{ backgroundColor: BLOCK_COLORS[block] || '#64748b' }} />}
                 </>
               )}
             </div>
@@ -96,8 +96,8 @@ export function LayoutCard({ layout, onApply }: {
         </div>
       </div>
       {/* 名称和描述 */}
-      <div className="text-[10px] font-medium text-text-primary truncate">{layout.name}</div>
-      <div className="text-[8px] text-text-muted truncate mt-0.5">{layout.desc}</div>
+      <div className="text-caption font-medium text-text-primary truncate">{layout.name}</div>
+      <div className="text-caption text-text-muted truncate mt-0.5">{layout.desc}</div>
     </button>
   )
 }
@@ -125,7 +125,7 @@ export function StylePicker({ styles, selectedId, onSelect, onClose }: {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border-subtle bg-bg-surface shadow-xl">
+      <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-panel border border-border-subtle bg-bg-surface shadow-xl">
         <div className="p-2">
           <div className="relative mb-1.5">
             <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -134,14 +134,14 @@ export function StylePicker({ styles, selectedId, onSelect, onClose }: {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜索风格..."
-              className="w-full rounded-md bg-bg-elevated/60 py-1 pl-7 pr-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-accent/30"
+              className="w-full rounded-control bg-bg-elevated-soft py-1 pl-7 pr-2 text-caption focus-ring focus:ring-1 focus:ring-accent/30"
             />
           </div>
 
           {selectedId && (
             <button
               onClick={() => onSelect(null)}
-              className="mb-1 w-full rounded-md px-2 py-1 text-left text-[10px] text-text-muted hover:bg-bg-elevated"
+              className="mb-1 w-full rounded-control px-2 py-1 text-left text-caption text-text-muted hover:bg-bg-elevated active:scale-[0.97]"
             >
               ✕ 清除风格绑定
             </button>
@@ -152,19 +152,19 @@ export function StylePicker({ styles, selectedId, onSelect, onClose }: {
               <button
                 key={style.id}
                 onClick={() => onSelect(style.id)}
-                className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-left transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-control px-2 py-1 text-left transition-colors ${
                   selectedId === style.id ? 'bg-accent/10' : 'hover:bg-bg-elevated'
                 }`}
               >
-                <div className="flex h-4 w-8 shrink-0 overflow-hidden rounded">
+                <div className="flex h-4 w-8 shrink-0 overflow-hidden rounded-control">
                   <div className="flex-1" style={{ backgroundColor: style.tokens.accent }} />
                   <div className="flex-1" style={{ backgroundColor: style.tokens.bg }} />
                   <div className="flex-1" style={{ backgroundColor: style.tokens.surface }} />
                 </div>
-                <span className={`flex-1 truncate text-[10px] ${selectedId === style.id ? 'text-accent font-medium' : 'text-text-secondary'}`}>
+                <span className={`flex-1 truncate text-caption ${selectedId === style.id ? 'text-accent font-medium' : 'text-text-secondary'}`}>
                   {style.name}
                 </span>
-                <span className="text-[8px] text-text-muted">{style.category}</span>
+                <span className="text-caption text-text-muted">{style.category}</span>
               </button>
             ))}
           </div>

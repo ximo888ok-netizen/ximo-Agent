@@ -24,7 +24,7 @@ export interface MutableMessage {
   content: string
   tool_calls?: unknown
   tool_call_id?: string
-  /** A2 reasoning_content 空 key — DeepSeek thinking 模式下 tool_calls turn 必须带此 key */
+  /** reasoning_content — 思考模式下所有 assistant 轮都必须原样回传（DeepSeek 硬约束，漏传 400） */
   reasoning_content?: string
 }
 

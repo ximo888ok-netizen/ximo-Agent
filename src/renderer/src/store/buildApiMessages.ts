@@ -59,8 +59,11 @@ const DEFAULT_CONFIG: AgentConfig = {
 }
 
 /**
- * 构造发送给 API 的消息列表（含系统提示，不含历史中的 reasoning_content）
+ * 构造发送给 API 的消息列表（含系统提示）
  * 关键：保留 tool_calls / tool 结果，让 LLM 在多轮对话中记住之前的操作
+ *
+ * A2' reasoning_content：思考模式下历史 assistant 轮的思维链必须原样回传，
+ * 否则带 tools 的请求会被 DeepSeek 以 400 拒绝。详见下方 replayReasoning 注释。
  *
  * 缓存优化策略（按稳定性分层前缀）：
  * DeepSeek prompt 缓存基于前缀匹配——Turn N+1 的消息列表必须是 Turn N 的严格扩展，
@@ -234,6 +237,19 @@ export async function buildApiMessages(
     })
   }
 
+  // ── A2' reasoning_content 回传策略 ──
+  // 官方约束（api-docs.deepseek.com/guides/thinking_mode）：
+  // 请求携带 tools 参数时，历史里**所有** assistant 轮的 reasoning_content 都必须
+  // 原样回传 —— 包括没有发生工具调用的轮次。回传不正确 = 400
+  // 「The reasoning_content in the thinking mode must be passed back to the API」。
+  //
+  // 两条判定：
+  //   1. 本次是思考模式 → 历史每个 assistant 轮都要带（没有存储值的补空串，
+  //      至少保证字段存在；空串不影响 API 侧的上下文拼接）
+  //   2. 本轮自身存了 reasoning → 带真实内容（思考模式中途关掉时，
+  //      历史里已有的思维链仍须回传，否则下一次带 tools 的请求照样 400）
+  const replayReasoning = Boolean(thinkingMode && reasoningEffort !== 'off')
+
   for (const msg of conversation.messages) {
     // 保留持久化的 system 消息（监督纠正等 Loop 内注入的），跳过运行时的 system 消息（记忆等）
     // 监督纠正消息以「--- 监督审查（第 X 轮）---」开头（buildCorrectionMessage 格式），
@@ -266,9 +282,10 @@ export async function buildApiMessages(
             type: 'function' as const,
             function: { name: tc.name, arguments: JSON.stringify(tc.arguments) }
           })),
-          // A2 与主进程 tool-execution.ts 保持一致：thinking 模式下工具调用轮带空 reasoning_content key，
-          // 避免重建消息时与 Loop 内追加的消息前缀字节不一致 → 缓存全部 miss（ultra 模式工具轮最多，损失最大）
-          ...(thinkingMode && reasoningEffort !== 'off' ? { reasoning_content: '' } : {})
+          // A2' 回传真实 reasoning（原来是空串 —— 空串就是"思维链丢了"，直接 400）
+          ...(replayReasoning || msg.reasoningContent !== undefined
+            ? { reasoning_content: msg.reasoningContent ?? '' }
+            : {})
         })
         // 追加每条 tool 结果作为 tool 角色消息
         // 使用 truncateToolResult 截断 — 与 Agent Loop 中的截断逻辑一致，确保缓存前缀一致
@@ -283,7 +300,16 @@ export async function buildApiMessages(
           }
         }
       } else {
-        messages.push({ role: 'assistant', content: msg.content })
+        // 纯文本 assistant 轮 —— 同样要回传 reasoning_content。
+        // 官方明确「即使是模型没有进行工具调用的轮次也要回传」，
+        // 这条原先完全没带，是 400 最常见的触发点（每轮无工具回答都会留下一个缺字段的消息）
+        messages.push({
+          role: 'assistant',
+          content: msg.content,
+          ...(replayReasoning || msg.reasoningContent !== undefined
+            ? { reasoning_content: msg.reasoningContent ?? '' }
+            : {})
+        })
       }
     } else {
       // user 消息 — 如果携带 slashCommand，将 systemHint 拼接到 content 前面发送给 API

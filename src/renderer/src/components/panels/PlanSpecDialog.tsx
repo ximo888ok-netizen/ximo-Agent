@@ -100,18 +100,18 @@ export function PlanSpecDialog(): React.ReactElement | null {
       onClick={handleClose}
     >
       <div
-        className="glass-panel flex h-[80vh] w-[720px] max-w-[94vw] flex-col overflow-hidden animate-fade-scale"
+        className="glass-panel flex h-[76vh] w-[760px] max-w-[94vw] flex-col overflow-hidden animate-fade-scale"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 标题栏 */}
         <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3.5">
           <div className="flex items-center gap-3">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-xl shadow-lg ${
+            <div className={`flex h-9 w-9 items-center justify-center rounded-panel shadow-lg ${
               isAsk
                 ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/20'
                 : 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/20'
             }`}>
-              {isAsk ? <HelpCircle size={18} className="text-white" /> : <FileCheck size={18} className="text-white" />}
+              {isAsk ? <HelpCircle size={16} className="text-white" /> : <FileCheck size={16} className="text-white" />}
             </div>
             <div>
               <h2 className="text-base font-semibold text-text-primary">{request.title}</h2>
@@ -120,15 +120,15 @@ export function PlanSpecDialog(): React.ReactElement | null {
               </p>
             </div>
           </div>
-          <button onClick={handleClose} className="icon-btn rounded-lg p-1.5">
-            <X size={18} />
+          <button onClick={handleClose} aria-label="关闭" className="icon-btn rounded-card p-1.5">
+            <X size={16} />
           </button>
         </div>
 
         {/* 内容区 */}
         <div className="flex min-h-0 flex-1 flex-col px-5 py-4 overflow-y-auto">
           {/* ── 问题正文 / 规范文档 ── */}
-          <div className="max-h-[40vh] overflow-y-auto rounded-xl border border-border bg-bg-input px-4 py-3">
+          <div className="max-h-[40vh] overflow-y-auto rounded-panel border border-border bg-bg-input px-4 py-3">
             <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed text-text-primary" style={{ fontFamily: 'inherit' }}>
               {isChoice ? parsed!.body || request.content : request.content}
             </pre>
@@ -141,7 +141,7 @@ export function PlanSpecDialog(): React.ReactElement | null {
                 <button
                   key={i}
                   onClick={() => setSelectedOption(i)}
-                  className={`flex w-full items-start gap-3 rounded-xl border px-4 py-2.5 text-left text-sm transition-all duration-200 ${
+                  className={`flex w-full items-start gap-3 rounded-panel border px-4 py-2 text-left text-sm transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
                     selectedOption === i
                       ? 'border-accent bg-accent/10 text-text-primary shadow-glow'
                       : 'border-border bg-bg-input text-text-secondary hover:border-accent/30 hover:bg-accent/5'
@@ -150,7 +150,7 @@ export function PlanSpecDialog(): React.ReactElement | null {
                   <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                     selectedOption === i ? 'border-accent bg-accent' : 'border-border-subtle'
                   }`}>
-                    {selectedOption === i && <Check size={12} className="text-white" />}
+                    {selectedOption === i && <Check size={13} className="text-white" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className="font-mono text-accent mr-1.5">{opt.label}.</span>
@@ -166,16 +166,16 @@ export function PlanSpecDialog(): React.ReactElement | null {
             <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 onClick={handleAccept}
-                className="flex items-center justify-center gap-2 rounded-xl border-2 border-green-500/30 bg-green-500/10 px-4 py-3 text-sm font-medium text-green-400 transition-all duration-200 hover:border-green-500/50 hover:bg-green-500/15 active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 rounded-panel border-2 border-green-500/30 bg-green-500/10 px-4 py-3 text-sm font-medium text-green-400 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:border-green-500/50 hover:bg-green-500/15 active:scale-[0.98]"
               >
-                <CheckCircle2 size={18} />
+                <CheckCircle2 size={16} />
                 接受方案
               </button>
               <button
                 onClick={handleDecline}
-                className="flex items-center justify-center gap-2 rounded-xl border-2 border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/15 active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 rounded-panel border-2 border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:border-red-500/50 hover:bg-red-500/15 active:scale-[0.98]"
               >
-                <XCircle size={18} />
+                <XCircle size={16} />
                 拒绝方案
               </button>
             </div>
@@ -183,7 +183,7 @@ export function PlanSpecDialog(): React.ReactElement | null {
 
           {/* ── 自定义输入框 — 所有类型都显示 ── */}
           <div className="mt-3">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
+            <div className="mb-1.5 flex items-center gap-1.5 text-caption text-text-muted">
               <MessageSquareText size={11} />
               <span>{isChoice ? '补充说明（可选）— 选择选项后可追加其他想法' : isConfirm ? '修改意见（可选）— 拒绝时填写具体原因' : '在此输入你的回答...（Ctrl+Enter 发送）'}</span>
             </div>
@@ -211,7 +211,7 @@ export function PlanSpecDialog(): React.ReactElement | null {
                     : '输入你的回答...（Ctrl+Enter 发送）'
               }
               rows={isChoice || isConfirm ? 2 : 3}
-              className="w-full resize-none rounded-xl border border-border bg-bg-input px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/60 focus:border-accent/40 focus:outline-none focus:ring-1 focus:ring-accent/20"
+              className="w-full resize-none rounded-panel border border-border bg-bg-input px-4 py-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/40 focus-ring focus:ring-1 focus:ring-accent/20"
               style={{ fontFamily: 'inherit', lineHeight: 1.6 }}
             />
           </div>
@@ -223,43 +223,43 @@ export function PlanSpecDialog(): React.ReactElement | null {
             <>
               <button
                 onClick={handleClose}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-all hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
+                className="flex items-center gap-1.5 rounded-card border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
               >
-                <XCircle size={14} />
+                <XCircle size={13} />
                 跳过
               </button>
               <button
                 onClick={handleChoiceSubmit}
                 disabled={selectedOption === null}
-                className="btn-liquid flex items-center gap-1.5 rounded-lg px-5 py-2 text-xs font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-liquid flex items-center gap-1.5 rounded-card px-5 py-2 text-xs font-semibold transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Check size={14} />
+                <Check size={13} />
                 确认选择
               </button>
             </>
           ) : isConfirm ? (
             <button
               onClick={handleClose}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-all hover:bg-bg-hover/80 active:scale-95"
+              className="flex items-center gap-1.5 rounded-card border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-bg-hover-soft active:scale-95"
             >
-              <X size={14} />
+              <X size={13} />
               关闭
             </button>
           ) : isAsk ? (
             <>
               <button
                 onClick={handleReject}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-all hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
+                className="flex items-center gap-1.5 rounded-card border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
               >
-                <XCircle size={14} />
+                <XCircle size={13} />
                 跳过此问题
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={!response.trim()}
-                className="btn-liquid flex items-center gap-1.5 rounded-lg px-5 py-2 text-xs font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                className="btn-liquid flex items-center gap-1.5 rounded-card px-5 py-2 text-xs font-semibold transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Check size={14} />
+                <Check size={13} />
                 发送回答
               </button>
             </>
@@ -267,16 +267,16 @@ export function PlanSpecDialog(): React.ReactElement | null {
             <>
               <button
                 onClick={handleReject}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-all hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
+                className="flex items-center gap-1.5 rounded-card border border-border bg-bg-hover px-4 py-2 text-xs font-medium text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/30 active:scale-95"
               >
-                <XCircle size={14} />
+                <XCircle size={13} />
                 打回修改
               </button>
               <button
                 onClick={handleConfirm}
-                className="btn-liquid flex items-center gap-1.5 rounded-lg px-5 py-2 text-xs font-semibold transition-all active:scale-95"
+                className="btn-liquid flex items-center gap-1.5 rounded-card px-5 py-2 text-xs font-semibold transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] active:scale-95"
               >
-                <Check size={14} />
+                <Check size={13} />
                 确认执行
               </button>
             </>

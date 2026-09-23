@@ -107,7 +107,9 @@ export async function executeToolCalls(params: ExecuteToolCallsParams): Promise<
     onChunk({ toolStatus: 'calling', toolName: tc.name, toolCall: tc })
   }
 
-  // A2 reasoning_content 本地保留请求剥离（空字符串 key）
+  // A2' reasoning_content 原样回传 —— 官方约束：请求带 tools 时，历史里所有 assistant
+  // 轮的 reasoning_content 都必须回传。这里用**真实内容**而不是空串：
+  // 空串等于"这一轮的思维链丢了"，DeepSeek 会以 400 拒绝整个请求。
   const assistantMsg: MutableMessage = {
     role: 'assistant',
     content: result.content || '',
@@ -117,7 +119,7 @@ export async function executeToolCalls(params: ExecuteToolCallsParams): Promise<
     }))
   }
   if (request.thinkingMode && request.reasoningEffort !== 'off') {
-    assistantMsg.reasoning_content = ''
+    assistantMsg.reasoning_content = result.reasoningContent ?? ''
   }
   messages.push(assistantMsg)
 

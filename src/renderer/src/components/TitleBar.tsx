@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Minus, X, Briefcase, Code2, PenTool } from 'lucide-react'
+import { Minus, X, Briefcase, Code2, PenTool, PanelRightOpen, PanelRightClose } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import type { Mode } from '@shared/types'
 
@@ -34,7 +34,13 @@ export function TitleBar(): React.ReactElement {
   const conversations = useStore((s) => s.conversations)
   const currentConversationId = useStore((s) => s.currentConversationId)
   const isStreaming = useStore((s) => s.isStreaming)
+  const browserOpen = useStore((s) => s.browserOpen)
+  const rightPanelCollapsed = useStore((s) => s.rightPanelCollapsed)
+  const toggleRightPanel = useStore((s) => s.toggleRightPanel)
   const [isMaximized, setIsMaximized] = useState(false)
+
+  // 浏览器开启期间右栏锁定为展开（webview + 录制现场不能卸载），此时开关不可用
+  const rightPanelLocked = browserOpen
 
   useEffect(() => {
     void window.api.window.isMaximized().then(setIsMaximized)
@@ -49,7 +55,7 @@ export function TitleBar(): React.ReactElement {
     <div className="drag-region relative z-20 flex h-[52px] flex-shrink-0 items-center justify-between border-b border-border-subtle glass pr-0">
       {/* 左侧：iOS 分段控件模式切换 */}
       <div className="no-drag flex items-center pl-3">
-        <div className="flex items-center gap-0.5 rounded-full border border-border-subtle bg-bg-elevated/70 p-1 shadow-inner">
+        <div className="flex items-center gap-0.5 rounded-full border border-border-subtle bg-bg-elevated-soft p-1 shadow-inner">
           {TAB_ITEMS.map((tab) => {
             const IconCmp = tab.icon
             const isActive = currentMode === tab.id
@@ -57,14 +63,14 @@ export function TitleBar(): React.ReactElement {
               <button
                 key={tab.id}
                 onClick={() => setMode(tab.id)}
-                className={`relative flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-all duration-300 ease-out-quart ${
+                className={`relative flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-base ease-out-quart ${
                   isActive
-                    ? 'bg-accent text-white shadow-glow'
+                    ? 'accent-fill shadow-glow'
                     : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
                 }`}
               >
-                <IconCmp size={14} className={isActive ? 'drop-shadow' : ''} />
-                <span>{tab.label}</span>
+                <IconCmp size={13} className={isActive ? 'drop-shadow' : ''} />
+                <span className="mode-tab-label">{tab.label}</span>
               </button>
             )
           })}
@@ -83,28 +89,48 @@ export function TitleBar(): React.ReactElement {
         </span>
       </div>
 
-      {/* 右侧：窗口控制按钮 */}
+      {/* 右侧：右侧栏开关 + 窗口控制按钮 */}
       <div className="no-drag flex h-full">
+        <button aria-label={rightPanelLocked
+              ? '内嵌浏览器开启中，右侧栏保持展开'
+              : rightPanelCollapsed ? '展开右侧栏 (Ctrl+B)' : '收起右侧栏 (Ctrl+B)'}
+          onClick={toggleRightPanel}
+          disabled={rightPanelLocked}
+          className={`flex h-full w-11 items-center justify-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-90 disabled:cursor-not-allowed ${
+            rightPanelLocked
+              ? 'text-text-muted opacity-30'
+              : rightPanelCollapsed
+                ? 'text-text-muted hover:bg-bg-hover hover:text-accent'
+                : 'text-accent hover:bg-bg-hover'
+          }`}
+          title={
+            rightPanelLocked
+              ? '内嵌浏览器开启中，右侧栏保持展开'
+              : rightPanelCollapsed ? '展开右侧栏 (Ctrl+B)' : '收起右侧栏 (Ctrl+B)'
+          }
+        >
+          {rightPanelCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}
+        </button>
         <button
           onClick={() => void window.api.window.minimize()}
-          className="flex h-full w-11 items-center justify-center text-text-secondary transition-all duration-200 hover:bg-bg-hover hover:text-text-primary active:scale-90"
+          className="flex h-full w-11 items-center justify-center text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-bg-hover hover:text-text-primary active:scale-90"
           title="最小化"
         >
-          <Minus size={15} />
+          <Minus size={16} />
         </button>
         <button
           onClick={() => void window.api.window.maximize()}
-          className="flex h-full w-11 items-center justify-center text-text-secondary transition-all duration-200 hover:bg-bg-hover hover:text-text-primary active:scale-90"
+          className="flex h-full w-11 items-center justify-center text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-bg-hover hover:text-text-primary active:scale-90"
           title={isMaximized ? '还原' : '最大化'}
         >
-          {isMaximized ? <RestoreIcon size={14} /> : <MaximizeIcon size={14} />}
+          {isMaximized ? <RestoreIcon size={13} /> : <MaximizeIcon size={13} />}
         </button>
         <button
           onClick={() => void window.api.window.close()}
-          className="flex h-full w-11 items-center justify-center text-text-secondary transition-all duration-200 hover:bg-gradient-to-br hover:from-red-500 hover:to-red-600 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.35)] active:scale-90"
+          className="flex h-full w-11 items-center justify-center text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-gradient-to-br hover:from-red-500 hover:to-red-600 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.35)] active:scale-90"
           title="关闭"
         >
-          <X size={15} />
+          <X size={16} />
         </button>
       </div>
     </div>

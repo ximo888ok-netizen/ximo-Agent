@@ -46,7 +46,7 @@
   justify-content: center;
   font-size: 15px;
   line-height: 1;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 6px var(--inset-highlight-strong);
   filter: drop-shadow(0 0 3px var(--ce-c-weak));
 }
 

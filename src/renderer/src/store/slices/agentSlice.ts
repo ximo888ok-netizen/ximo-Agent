@@ -5,14 +5,26 @@ export type AgentSlice = Pick<StoreState,
   | 'showAgentPanel'
   | 'showMemoryPanel'
   | 'showKnowledgePanel'
+  | 'showMcpPanel'
+  | 'showSkillPanel'
   | 'activeExperts'
   | 'agentTodosByConv'
   | 'taskListCollapsedByConv'
   | 'showTokenStats'
+  | 'rightPanelCollapsed'
+  | 'officePanelTabs'
+  | 'officePanelActive'
   | 'pendingDraft'
   | 'setShowAgentPanel'
   | 'setShowMemoryPanel'
   | 'setShowKnowledgePanel'
+  | 'setShowMcpPanel'
+  | 'setShowSkillPanel'
+  | 'setRightPanelCollapsed'
+  | 'toggleRightPanel'
+  | 'openOfficePanel'
+  | 'closeOfficePanel'
+  | 'setOfficePanelActive'
   | 'toggleExpert'
   | 'toggleTaskListCollapsed'
   | 'restoreAgentTodos'
@@ -26,10 +38,17 @@ export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (s
   showAgentPanel: false,
   showMemoryPanel: false,
   showKnowledgePanel: false,
+  showMcpPanel: false,
+  showSkillPanel: false,
   activeExperts: [],
   agentTodosByConv: {},
   taskListCollapsedByConv: {},
   showTokenStats: false,
+  // 默认收起 — 平常只保留左侧栏 + 会话区，右侧栏按需展开（右上角按钮 / Ctrl+B）
+  rightPanelCollapsed: true,
+  // 右栏工作区：overview 常驻、browser 由 browserOpen 派生，此处只存 terminal / file 这类附加 tab
+  officePanelTabs: [],
+  officePanelActive: 'overview',
   pendingDraft: null,
 
   setShowAgentPanel: (show) => set({ showAgentPanel: show }),
@@ -37,6 +56,10 @@ export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (s
   setShowMemoryPanel: (show) => set({ showMemoryPanel: show }),
 
   setShowKnowledgePanel: (show) => set({ showKnowledgePanel: show }),
+
+  setShowMcpPanel: (show) => set({ showMcpPanel: show }),
+
+  setShowSkillPanel: (show) => set({ showSkillPanel: show }),
 
   toggleExpert: (expertId) => set((s) => ({
     activeExperts: s.activeExperts.includes(expertId)
@@ -122,4 +145,41 @@ export const createAgentSlice: StateCreator<StoreState, [], [], AgentSlice> = (s
   clearDraft: () => set({ pendingDraft: null }),
 
   setShowTokenStats: (show) => set({ showTokenStats: show }),
+
+  setRightPanelCollapsed: (collapsed) => {
+    set({ rightPanelCollapsed: collapsed })
+    const settings = get().settings
+    // 仅在值真正变化时落盘，避免拖拽过程中的高频写入
+    if (settings && settings.rightPanelCollapsed !== collapsed) {
+      void get().updateSettings({ rightPanelCollapsed: collapsed })
+    }
+  },
+
+  toggleRightPanel: () => {
+    get().setRightPanelCollapsed(!get().rightPanelCollapsed)
+  },
+
+  openOfficePanel: (tab) => {
+    // browser 的真实开关是 browserOpen（webview / 抓包 / 录制都挂在它上面），不重复存一份 tab 状态
+    if (tab === 'browser' && !get().browserOpen) get().toggleBrowser()
+    set((s) => ({
+      officePanelTabs: tab === 'browser' || s.officePanelTabs.includes(tab)
+        ? s.officePanelTabs
+        : [...s.officePanelTabs, tab],
+      officePanelActive: tab
+    }))
+  },
+
+  closeOfficePanel: (tab) => {
+    if (tab === 'overview') return
+    if (tab === 'browser' && get().browserOpen) get().toggleBrowser()
+    set((s) => {
+      const tabs = s.officePanelTabs.filter((t) => t !== tab)
+      // 关掉当前激活项时回退到剩余最后一个，全关则回概览
+      const active = s.officePanelActive === tab ? (tabs[tabs.length - 1] ?? 'overview') : s.officePanelActive
+      return { officePanelTabs: tabs, officePanelActive: active }
+    })
+  },
+
+  setOfficePanelActive: (tab) => set({ officePanelActive: tab }),
 })

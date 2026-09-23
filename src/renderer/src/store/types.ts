@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  AutoModeLevel,
   ChatMessage,
   Conversation,
   Mode,
@@ -78,8 +79,8 @@ export interface StoreState {
 
   /** 联网搜索开关 — 开启后 sendMessage 会注入联网提示 */
   networkSearchOn: boolean
-  /** Auto Mode 等级：off（手动确认）、safe（仅读操作自动）、yolo（全部自动） */
-  autoModeLevel: 'off' | 'safe' | 'yolo'
+  /** Auto Mode 等级 —— 语义见 AutoModeLevel */
+  autoModeLevel: AutoModeLevel
   /** 当前工作目录/项目路径（从当前会话的 projectPath 派生） */
   projectPath: string
   /** 附加文件列表（文件路径） */
@@ -93,6 +94,10 @@ export interface StoreState {
   showMemoryPanel: boolean
   /** 知识库面板是否显示 */
   showKnowledgePanel: boolean
+  /** MCP 服务器面板是否显示 */
+  showMcpPanel: boolean
+  /** 技能面板是否显示 */
+  showSkillPanel: boolean
   /** 已激活的专家 ID 列表 */
   activeExperts: string[]
 
@@ -113,6 +118,16 @@ export interface StoreState {
   pendingDraft: { text: string; slashCommand?: { cmd: string; systemHint: string } } | null
   /** Token 统计面板是否显示 */
   showTokenStats: boolean
+
+  // ---- 布局 ----
+  /** 右侧栏是否收起 — 收起后会话区占满宽度 */
+  rightPanelCollapsed: boolean
+
+  // ---- 办公模式右栏工作区 ----
+  /** 已打开的附加面板 tab（不含常驻的 overview 与派生的 browser） */
+  officePanelTabs: string[]
+  /** 当前激活的面板 tab */
+  officePanelActive: string
 
   /** 技能列表 */
   skills: Skill[]
@@ -192,6 +207,8 @@ export interface StoreState {
   setShowAgentPanel: (show: boolean) => void
   setShowMemoryPanel: (show: boolean) => void
   setShowKnowledgePanel: (show: boolean) => void
+  setShowMcpPanel: (show: boolean) => void
+  setShowSkillPanel: (show: boolean) => void
   toggleExpert: (expertId: string) => void
 
   // ---- 设计风格绑定 ----
@@ -223,6 +240,18 @@ export interface StoreState {
 
   // ---- Token 统计 ----
   setShowTokenStats: (show: boolean) => void
+
+  // ---- 布局 ----
+  /** 设置右侧栏收起状态并持久化 */
+  setRightPanelCollapsed: (collapsed: boolean) => void
+  toggleRightPanel: () => void
+
+  // ---- 办公模式右栏工作区 ----
+  /** 打开（或切换到）一个面板 tab；'browser' 会同时开启内嵌浏览器 */
+  openOfficePanel: (tab: string) => void
+  /** 关闭一个面板 tab（'overview' 不可关闭） */
+  closeOfficePanel: (tab: string) => void
+  setOfficePanelActive: (tab: string) => void
 
   // ---- 项目折叠 ----
   collapsedProjects: Record<string, boolean>

@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   activeProviderId: 'deepseek',
 
   // ---- 主子 Agent 设置 ----
-  subAgentModel: 'deepseek-v4-flash',
+  subAgentModel: 'deepseek-flash',
   subAgentMaxTokens: 393216,
   subAgentTemperature: 0.7,
   subAgentTimeout: 60,

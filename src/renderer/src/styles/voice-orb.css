@@ -13,11 +13,11 @@
   justify-content: center;
   will-change: transform, left, top;
   transition: box-shadow 0.3s var(--ease-out-quart);
-  background: radial-gradient(circle at 35% 30%, var(--theme-color, #6366f1), color-mix(in srgb, var(--theme-color, #6366f1) 60%, #000) 100%);
+  background: radial-gradient(circle at 35% 30%, var(--theme-color), color-mix(in srgb, var(--theme-color) 60%, #000) 100%);
   box-shadow:
-    0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 40%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
-    inset 0 1px 2px rgba(255, 255, 255, 0.25);
+    0 4px 20px color-mix(in srgb, var(--theme-color) 40%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--theme-color) 30%, transparent),
+    inset 0 1px 2px var(--inset-highlight);
 }
 .voice-orb:active {
   cursor: grabbing;
@@ -30,23 +30,23 @@
 @keyframes voiceOrbBreath {
   0%, 100% {
     box-shadow:
-      0 4px 20px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
-      0 0 0 1px color-mix(in srgb, var(--theme-color, #6366f1) 25%, transparent),
-      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+      0 4px 20px color-mix(in srgb, var(--theme-color) 30%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--theme-color) 25%, transparent),
+      inset 0 1px 2px var(--inset-highlight);
     transform: scale(1);
   }
   50% {
     box-shadow:
-      0 6px 28px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--theme-color, #6366f1) 35%, transparent),
-      inset 0 1px 3px rgba(255, 255, 255, 0.35);
+      0 6px 28px color-mix(in srgb, var(--theme-color) 50%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--theme-color) 35%, transparent),
+      inset 0 1px 3px var(--inset-highlight-strong);
     transform: scale(1.06);
   }
 }
 
 /* listening 状态：红色调 + 脉冲 */
 .voice-orb--listening {
-  background: radial-gradient(circle at 35% 30%, #ef4444, #b91c1c 100%);
+  background: radial-gradient(circle at 35% 30%, var(--state-error), #b91c1c 100%);
   animation: voiceOrbPulse 1.2s ease-in-out infinite;
 }
 @keyframes voiceOrbPulse {
@@ -65,7 +65,7 @@
 
 /* transcribing 状态：蓝色调 + 缓慢呼吸 */
 .voice-orb--transcribing {
-  background: radial-gradient(circle at 35% 30%, #3b82f6, #1d4ed8 100%);
+  background: radial-gradient(circle at 35% 30%, var(--state-info), #1d4ed8 100%);
   animation: voiceOrbBreath 2s ease-in-out infinite;
 }
 
@@ -80,10 +80,10 @@
   animation: voiceOrbRipple 1.8s ease-out infinite;
 }
 .voice-orb--listening .voice-orb__ripple {
-  color: #ef4444;
+  color: var(--state-error);
 }
 .voice-orb--speaking .voice-orb__ripple {
-  color: var(--theme-color, #6366f1);
+  color: var(--theme-color);
 }
 .voice-orb__ripple--delayed {
   animation-delay: 0.6s;
@@ -141,7 +141,7 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 1px 2px var(--inset-shade));
   transition: opacity 0.2s;
 }
 .voice-orb--listening .voice-orb__core,
@@ -158,11 +158,11 @@
   max-width: 220px;
   padding: 6px 12px;
   border-radius: 12px;
-  background: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+  background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--border-DEFAULT, rgba(255, 255, 255, 0.1));
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-DEFAULT);
+  box-shadow: 0 4px 16px var(--inset-shade);
   color: var(--text-primary);
   font-size: 12px;
   line-height: 1.4;
@@ -180,7 +180,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: var(--glass-bg-strong, rgba(30, 30, 46, 0.95));
+  border-top-color: var(--glass-bg-strong);
 }
 @keyframes voiceOrbBubble {
   from { opacity: 0; transform: translateX(-50%) translateY(4px); }
@@ -189,27 +189,27 @@
 
 /* discussing 状态：青绿色调 + 柔和脉冲 */
 .voice-orb--discussing {
-  background: radial-gradient(circle at 35% 30%, #14b8a6, #0d9488 100%);
+  background: radial-gradient(circle at 35% 30%, var(--state-connected), var(--state-connected-deep) 100%);
   animation: voiceOrbDiscuss 2s ease-in-out infinite;
 }
 @keyframes voiceOrbDiscuss {
   0%, 100% {
     box-shadow:
-      0 4px 20px rgba(20, 184, 166, 0.35),
-      0 0 0 1px rgba(20, 184, 166, 0.3),
-      inset 0 1px 2px rgba(255, 255, 255, 0.25);
+      0 4px 20px color-mix(in srgb, var(--state-connected) 35%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--state-connected) 30%, transparent),
+      inset 0 1px 2px var(--inset-highlight);
     transform: scale(1.05);
   }
   50% {
     box-shadow:
-      0 6px 28px rgba(20, 184, 166, 0.55),
-      0 0 0 3px rgba(20, 184, 166, 0.4),
-      inset 0 1px 3px rgba(255, 255, 255, 0.35);
+      0 6px 28px color-mix(in srgb, var(--state-connected) 55%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--state-connected) 40%, transparent),
+      inset 0 1px 3px var(--inset-highlight-strong);
     transform: scale(1.1);
   }
 }
 .voice-orb--discussing .voice-orb__ripple {
-  color: #14b8a6;
+  color: var(--state-connected);
 }
 .voice-orb--discussing .voice-orb__core {
   opacity: 1;
@@ -224,7 +224,7 @@
   max-width: 180px;
   padding: 5px 10px;
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.95);
+  background: color-mix(in srgb, var(--state-error) 95%, transparent);
   color: #fff;
   font-size: 11px;
   text-align: center;
@@ -240,19 +240,19 @@
   right: -6px;
   padding: 3px 8px;
   border-radius: 10px;
-  background: #14b8a6;
+  background: var(--state-connected);
   color: #fff;
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
   animation: voiceOrbBadgePulse 2s ease-in-out infinite;
-  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--state-connected) 40%, transparent);
   z-index: 10;
 }
 @keyframes voiceOrbBadgePulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(20, 184, 166, 0.4); }
-  50% { transform: scale(1.05); box-shadow: 0 3px 12px rgba(20, 184, 166, 0.6); }
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px color-mix(in srgb, var(--state-connected) 40%, transparent); }
+  50% { transform: scale(1.05); box-shadow: 0 3px 12px color-mix(in srgb, var(--state-connected) 55%, transparent); }
 }
 
 /* ═══ 语音讨论面板 VoiceOrbPanel（全屏居中弹窗） ═══ */
@@ -279,31 +279,31 @@
 .voice-panel {
   width: min(520px, 90vw);
   height: min(600px, 85vh);
-  background: var(--bg-elevated, #ffffff);
+  background: var(--bg-elevated);
   border-radius: 24px;
   box-shadow:
     0 32px 80px rgba(0, 0, 0, 0.25),
-    0 0 0 1px var(--border-DEFAULT, rgba(0, 0, 0, 0.05));
+    0 0 0 1px var(--border-DEFAULT);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: voicePanelCardIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  color: var(--text-primary, #333);
-  transition: all 0.3s ease;
+  color: var(--text-primary);
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 
 /* === 样式变体 === */
 
 /* 默认样式 */
 .voice-panel--default {
-  background: var(--bg-elevated, #ffffff);
+  background: var(--bg-elevated);
 }
 
 /* 极简样式 — 透明背景 */
 .voice-panel--minimal {
   background: transparent;
   box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--hairline);
 }
 .voice-panel--minimal .voice-panel__topbar,
 .voice-panel--minimal .voice-panel__hint {
@@ -314,10 +314,10 @@
   color: rgba(255, 255, 255, 0.8);
 }
 .voice-panel--minimal .voice-panel__top-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hairline);
 }
 .voice-panel--minimal .voice-panel__action-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hairline);
   border-color: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
@@ -332,8 +332,8 @@
   backdrop-filter: blur(40px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
-    0 32px 80px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 32px 80px var(--inset-shade),
+    inset 0 1px 0 var(--hairline);
 }
 .voice-panel--glass .voice-panel__topbar,
 .voice-panel--glass .voice-panel__hint {
@@ -347,7 +347,7 @@
 }
 .voice-panel--glass .voice-panel__action-btn {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--inset-highlight);
   color: #fff;
 }
 .voice-panel--glass .voice-panel__action-btn:hover:not(:disabled) {
@@ -357,34 +357,34 @@
 /* 霓虹样式 */
 .voice-panel--neon {
   background: rgba(20, 20, 40, 0.95);
-  border: 1px solid var(--theme-color, #6366f1);
+  border: 1px solid var(--theme-color);
   box-shadow:
-    0 0 60px color-mix(in srgb, var(--theme-color, #6366f1) 30%, transparent),
+    0 0 60px color-mix(in srgb, var(--theme-color) 30%, transparent),
     0 32px 80px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 var(--hairline);
 }
 .voice-panel--neon .voice-panel__topbar,
 .voice-panel--neon .voice-panel__hint {
   color: #fff;
 }
 .voice-panel--neon .voice-panel__timer {
-  color: var(--theme-color, #6366f1);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent);
+  color: var(--theme-color);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--theme-color) 50%, transparent);
 }
 .voice-panel--neon .voice-panel__action-btn {
   background: transparent;
-  border-color: var(--theme-color, #6366f1);
-  color: var(--theme-color, #6366f1);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--theme-color, #6366f1) 20%, transparent);
+  border-color: var(--theme-color);
+  color: var(--theme-color);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--theme-color) 20%, transparent);
 }
 .voice-panel--neon .voice-panel__action-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--theme-color, #6366f1) 15%, transparent);
-  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color, #6366f1) 40%, transparent);
+  background: color-mix(in srgb, var(--theme-color) 15%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color) 40%, transparent);
 }
 .voice-panel--neon .voice-panel__action-btn--stop {
-  background: var(--theme-color, #6366f1);
+  background: var(--theme-color);
   color: #fff;
-  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color, #6366f1) 50%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--theme-color) 50%, transparent);
 }
 
 /* 赛博朋克样式 */
@@ -394,7 +394,7 @@
   box-shadow:
     0 0 40px rgba(255, 0, 255, 0.3),
     0 0 80px rgba(0, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 var(--hairline);
   clip-path: polygon(
     0 12px, 12px 0,
     calc(100% - 12px) 0, 100% 12px,
@@ -451,7 +451,7 @@
   font-size: 17px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--text-primary, #333);
+  color: var(--text-primary);
   letter-spacing: 0.04em;
 }
 .voice-panel__top-actions {
@@ -466,15 +466,15 @@
   padding: 5px 10px;
   border: none;
   background: transparent;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   border-radius: 8px;
-  transition: all 0.15s;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .voice-panel__top-btn:hover {
-  background: var(--bg-hover, #f0f0f0);
-  color: var(--text-primary, #333);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .voice-panel__voice-select {
   display: inline-flex;
@@ -484,14 +484,14 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .voice-panel__voice-select:hover {
-  background: var(--bg-hover, #f0f0f0);
-  color: var(--text-primary, #333);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 .voice-panel__voice-select select {
   border: none;
@@ -520,7 +520,7 @@
 }
 .voice-panel--minimal .voice-panel__voice-select:hover,
 .voice-panel--glass .voice-panel__voice-select:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hairline);
 }
 .voice-panel--neon .voice-panel__voice-select,
 .voice-panel--cyberpunk .voice-panel__voice-select {
@@ -532,8 +532,8 @@
   border-radius: 50%;
 }
 .voice-panel__close:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--state-error) 10%, transparent);
+  color: var(--state-error);
 }
 
 /* ── 中间区域：粒子环 + 提示文字 ── */
@@ -553,14 +553,14 @@
 .voice-panel__hint {
   font-size: 14px;
   line-height: 1.55;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   text-align: center;
   max-width: 380px;
   margin: 0;
   word-break: break-word;
 }
 .voice-panel__hint--error {
-  color: #ef4444;
+  color: var(--state-error);
 }
 
 /* ── 排障音量条 ── */
@@ -575,7 +575,7 @@
 .voice-panel__meter-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+  background: linear-gradient(90deg, var(--state-success), #eab308, var(--state-error));
   transition: width 60ms linear;
 }
 
@@ -592,21 +592,21 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 1.5px solid var(--border-DEFAULT, #ddd);
-  background: var(--bg-base, #fafafa);
-  color: var(--text-secondary, #555);
+  border: 1.5px solid var(--border-DEFAULT);
+  background: var(--bg-base);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
 }
 .voice-panel__action-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #f0f0f0);
-  border-color: var(--border-strong, #ccc);
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -620,15 +620,15 @@
 
 /* 麦克风按钮 — 录音中高亮 */
 .voice-panel__action-btn--active {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: var(--state-error);
+  border-color: var(--state-error);
   color: #fff;
-  box-shadow: 0 2px 16px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 16px color-mix(in srgb, var(--state-error) 35%, transparent);
   animation: voicePanelMicPulse 1.5s ease-in-out infinite;
 }
 @keyframes voicePanelMicPulse {
-  0%, 100% { box-shadow: 0 2px 16px rgba(239, 68, 68, 0.35); }
-  50% { box-shadow: 0 4px 24px rgba(239, 68, 68, 0.5); }
+  0%, 100% { box-shadow: 0 2px 16px color-mix(in srgb, var(--state-error) 35%, transparent); }
+  50% { box-shadow: 0 4px 24px color-mix(in srgb, var(--state-error) 50%, transparent); }
 }
 
 /* 结束按钮 — 黑色实心 */

@@ -6,8 +6,10 @@ import {
   Sparkles,
   MessageSquareText
 } from 'lucide-react'
-import type { AppSettings, ModelId, ReasoningEffort } from '@shared/types'
+import type { AppSettings } from '@shared/types'
+import { DS_MODEL_FLASH, DS_MODEL_PRO } from '@shared/models'
 import { isReasoningCapable } from '@renderer/lib/providers'
+import { REASONING_LEVELS } from '@renderer/lib/reasoning-levels'
 import {
   SectionTitle,
   Divider,
@@ -31,22 +33,22 @@ export function ModelTab({
 
       <div className="grid grid-cols-2 gap-3">
         <ModelCard
-          active={local.model === 'deepseek-v4-pro'}
-          onClick={() => update({ model: 'deepseek-v4-pro' as ModelId })}
-          icon={<Cpu size={18} />}
-          title="V4-Pro"
+          active={local.model === DS_MODEL_PRO}
+          onClick={() => update({ model: DS_MODEL_PRO })}
+          icon={<Cpu size={16} />}
+          title="V4 Pro"
           subtitle="旗舰版"
           specs={['1.6T 参数', '49B 激活', '1M 上下文']}
           desc="深度推理、复杂编码、科研分析等高阶场景"
         />
         <ModelCard
-          active={local.model === 'deepseek-v4-flash'}
-          onClick={() => update({ model: 'deepseek-v4-flash' as ModelId })}
-          icon={<Zap size={18} />}
-          title="V4-Flash"
-          subtitle="轻量版"
+          active={local.model === DS_MODEL_FLASH}
+          onClick={() => update({ model: DS_MODEL_FLASH })}
+          icon={<Zap size={16} />}
+          title="Flash"
+          subtitle="原生多模态"
           specs={['284B 参数', '13B 激活', '1M 上下文']}
-          desc="日常办公、内容创作、快速问答等高频场景"
+          desc="原生多模态 · 日常办公、内容创作、快速问答等高频场景"
         />
       </div>
 
@@ -56,7 +58,7 @@ export function ModelTab({
 
       {/* 思考模式 */}
       <ToggleRow
-        icon={<Brain size={15} />}
+        icon={<Brain size={16} />}
         label="思考模式"
         desc="开启后模型输出思维链推理过程（reasoning_content）"
         active={local.thinkingMode}
@@ -80,44 +82,39 @@ export function ModelTab({
 
       {/* 思考强度 — 仅在思考模式开启且服务商支持时显示 */}
       {local.thinkingMode && reasoningCapable && (
-        <div className="ios-card p-3.5 space-y-3">
+        <div className="ios-card p-3 space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles size={15} className="text-accent" />
+            <Sparkles size={16} className="text-accent" />
             <div>
               <p className="text-sm font-medium text-text-primary">思考强度</p>
               <p className="text-xs text-text-muted">控制推理深度，强度越高回答越精准但耗时更长</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {([
-              { value: 'off' as ReasoningEffort, label: '关闭', desc: '不输出思维链' },
-              { value: 'high' as ReasoningEffort, label: 'High', desc: '深度推理' },
-              { value: 'max' as ReasoningEffort, label: 'Max', desc: '极致推理' },
-              { value: 'ultra' as ReasoningEffort, label: 'Ultra', desc: '范式+监督' }
-            ]).map((level) => (
-              <button
-                key={level.value}
-                onClick={() => update({ reasoningEffort: level.value })}
-                className={`flex-1 rounded-lg border p-2.5 text-center transition-all duration-200 ${
-                  local.reasoningEffort === level.value
-                    ? level.value === 'ultra'
-                      ? 'border-accent bg-accent/20 shadow-[0_0_16px_color-mix(in_srgb,var(--theme-color)_50%,transparent)]'
-                      : level.value === 'max'
-                        ? 'border-accent bg-accent/15 shadow-[0_0_12px_color-mix(in_srgb,var(--theme-color)_40%,transparent)]'
-                        : level.value === 'high'
-                          ? 'border-accent bg-accent/10'
-                          : 'border-border bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-border-hover'
-                }`}
-              >
-                <p className={`text-xs font-semibold ${
-                  local.reasoningEffort === level.value ? 'text-accent' : 'text-text-primary'
-                }`}>
-                  {level.label}
-                </p>
-                <p className="text-[10px] text-text-muted mt-0.5">{level.desc}</p>
-              </button>
-            ))}
+          <div className="grid grid-cols-5 gap-2">
+            {REASONING_LEVELS.map((level) => {
+              const active = local.reasoningEffort === level.value
+              return (
+                <button
+                  key={level.value}
+                  onClick={() => update({ reasoningEffort: level.value })}
+                  title={level.desc}
+                  className={`rounded-card border p-2.5 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
+                    active
+                      ? `border-accent bg-accent/15 ${
+                          level.value === 'ultra'
+                            ? 'shadow-[0_0_16px_color-mix(in_srgb,var(--theme-color)_45%,transparent)]'
+                            : ''
+                        }`
+                      : 'border-border bg-bg-elevated hover:border-border-hover'
+                  }`}
+                >
+                  <p className={`text-xs font-semibold ${active ? 'text-accent' : 'text-text-primary'}`}>
+                    {level.label}
+                  </p>
+                  <p className="mt-0.5 text-caption text-text-muted">{level.desc}</p>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -126,7 +123,7 @@ export function ModelTab({
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label className="text-sm font-medium text-text-primary">温度（Temperature）</label>
-          <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
+          <span className="rounded-control bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
             {local.temperature.toFixed(1)}
           </span>
         </div>
@@ -140,7 +137,7 @@ export function ModelTab({
           className="w-full accent-accent"
           disabled={local.thinkingMode}
         />
-        <div className="mt-1 flex justify-between text-[10px] text-text-muted">
+        <div className="mt-1 flex justify-between text-caption text-text-muted">
           <span>精确 (0)</span>
           <span>平衡 (1.0)</span>
           <span>发散 (2.0)</span>
@@ -157,7 +154,7 @@ export function ModelTab({
       {/* 自定义提示词 */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <MessageSquareText size={15} className="text-accent" />
+          <MessageSquareText size={16} className="text-accent" />
           <label className="text-sm font-medium text-text-primary">自定义附加指令</label>
         </div>
         <textarea
@@ -165,7 +162,7 @@ export function ModelTab({
           onChange={(e) => update({ customPrompt: e.target.value })}
           rows={4}
           placeholder="输入额外指令，将追加到所有模式的系统提示词之后。例如：&#10;- 始终用中文回答&#10;- 输出更简洁，避免冗余解释&#10;- 代码注释用英文"
-          className="w-full resize-none rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+          className="w-full resize-none rounded-card border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus-ring"
         />
         <p className="mt-1.5 text-xs text-text-muted">
           这些指令会附加到每个模式的系统提示词末尾，影响所有对话

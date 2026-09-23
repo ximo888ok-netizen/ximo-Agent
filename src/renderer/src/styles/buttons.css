@@ -4,14 +4,15 @@
   .btn-liquid {
     position: relative;
     overflow: hidden;
-    color: #fff;
+    /* 三档同属"填充支"，白字在整条渐变上都 ≥4.5:1（含亮端与深端） */
+    color: var(--accent-on-fill, #fff);
     background: linear-gradient(
       160deg,
-      color-mix(in srgb, var(--theme-color) 88%, white),
-      var(--theme-color) 45%,
-      color-mix(in srgb, var(--theme-color) 82%, black)
+      var(--accent-fill-top, color-mix(in srgb, var(--theme-color) 88%, white)),
+      var(--accent-fill, var(--theme-color)) 45%,
+      var(--accent-fill-deep, color-mix(in srgb, var(--theme-color) 82%, black))
     );
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    box-shadow: inset 0 1px 0 var(--inset-highlight-strong), inset 0 -1px 0 rgba(0, 0, 0, 0.12),
       0 4px 14px -2px var(--glow-color);
     transition: transform 0.25s var(--ease-out-quart), box-shadow 0.3s var(--ease-out-quart),
       filter 0.2s ease;
@@ -70,5 +71,20 @@
   }
   .icon-btn:active {
     transform: scale(0.92);
+  }
+
+  /* ── 焦点环 ──
+     键盘可用性的统一入口。原先组件里写的是 `focus:outline-none` —— 它把
+     base.css 里的全局 :focus-visible 兜底一并干掉了（utilities 层优先级高于
+     base 层），结果是键盘用户在那些控件上完全看不到焦点。
+     这个类把两件事说清楚：鼠标点不画环（:focus），键盘导航画环（:focus-visible）。
+     环色用 --focus-ring —— 它由 lib/accent.ts 按"对底色 ≥3:1"归一化后给出，
+     所以浅色主色 + 浅色底也不会看不见。 */
+  .focus-ring:focus {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--focus-ring, color-mix(in srgb, var(--theme-color) 55%, transparent));
+    outline-offset: 2px;
   }
 }

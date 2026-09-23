@@ -34,44 +34,44 @@ export const TaskListPanel = memo(function TaskListPanel(): React.ReactElement |
 
   return (
     <div className="mx-auto max-w-4xl px-4">
-      <div className="mb-1.5 overflow-hidden rounded-xl border border-border-subtle bg-bg-elevated/60 backdrop-blur-md transition-all duration-300 ease-out-quart animate-fade-scale">
+      <div className="mb-1.5 overflow-hidden rounded-panel border border-border-subtle bg-bg-elevated-soft backdrop-blur-md transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-base ease-out-quart animate-fade-scale">
         {/* 折叠头部条 */}
         <button
           onClick={toggleCollapsed}
-          className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover/30"
+          className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
         >
           <ChevronDown
-            size={14}
-            className={`shrink-0 text-text-muted transition-transform duration-200 ${collapsed ? '' : 'rotate-180'}`}
+            size={13}
+            className={`shrink-0 text-text-muted transition-transform duration-fast ${collapsed ? '' : 'rotate-180'}`}
           />
           <span className="text-xs font-medium text-text-secondary">任务规划</span>
           {/* 进度条 */}
           <div className="relative h-1.5 w-24 overflow-hidden rounded-full bg-border">
             <div
-              className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-accent/60 to-accent transition-all duration-500 ease-out-quart"
+              className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-accent/60 to-accent transition-[width] duration-slow ease-out-quart"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-[11px] text-text-muted tabular-nums">
+          <span className="text-caption text-text-muted tabular-nums">
             {done}/{total}
           </span>
           {inProgress > 0 && (
             <Loader2 size={11} className="shrink-0 animate-spin text-accent" />
           )}
           {hasAssignee && (
-            <span className="flex items-center gap-0.5 text-[10px] text-accent/70">
-              <Users size={10} />
+            <span className="flex items-center gap-0.5 text-caption text-accent/70">
+              <Users size={11} />
               子Agent
             </span>
           )}
           {/* 展开时显示当前进行中的任务 */}
           {!collapsed && activeText && (
-            <span className="ml-auto truncate text-[11px] text-accent">
+            <span className="ml-auto truncate text-caption text-accent">
               {activeText}
             </span>
           )}
           {collapsed && (
-            <span className="ml-auto truncate text-[11px] text-text-muted">
+            <span className="ml-auto truncate text-caption text-text-muted">
               {activeText || (progress === 100 ? '全部完成' : `${progress}%`)}
             </span>
           )}
@@ -79,7 +79,7 @@ export const TaskListPanel = memo(function TaskListPanel(): React.ReactElement |
 
         {/* 展开内容 */}
         {!collapsed && (
-          <div className="border-t border-border-subtle/50 px-3 py-2 space-y-0.5 animate-fade-in">
+          <div className="border-t border-border-subtle-soft px-3 py-2 space-y-0.5 animate-fade-in">
             <TodoListView todos={todos} />
           </div>
         )}
@@ -123,7 +123,7 @@ export const TodoListView = memo(function TodoListView({ todos }: { todos: Agent
         <div key={`phase-${phaseIdx}`} className="py-0.5">
           <TodoRow todo={p.phase} isPhase />
           {p.subSteps.length > 0 && (
-            <div className="ml-3 border-l border-border-subtle/40 pl-2 space-y-0.5">
+            <div className="ml-3 border-l border-border-subtle-soft pl-2 space-y-0.5">
               {p.subSteps.map((sub, i) => (
                 <TodoRow key={`sub-${phaseIdx}-${i}`} todo={sub} />
               ))}
@@ -138,14 +138,14 @@ export const TodoListView = memo(function TodoListView({ todos }: { todos: Agent
 /** 单个任务行 */
 const TodoRow = memo(function TodoRow({ todo, isPhase = false }: { todo: AgentTodo; isPhase?: boolean }): React.ReactElement {
   const icon = todo.status === 'completed'
-    ? <Check size={12} className="text-green-400" />
+    ? <Check size={13} className="text-green-400" />
     : todo.status === 'in_progress'
-      ? <Loader2 size={12} className="animate-spin text-accent" />
-      : <Circle size={10} className="text-text-muted/50" />
+      ? <Loader2 size={13} className="animate-spin text-accent" />
+      : <Circle size={11} className="text-text-tertiary" />
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors ${
+      className={`flex items-center gap-2 rounded-card px-1.5 py-1 transition-colors ${
         todo.status === 'in_progress' ? 'bg-accent/5' : ''
       } ${isPhase ? 'mt-1' : ''}`}
     >
@@ -164,8 +164,8 @@ const TodoRow = memo(function TodoRow({ todo, isPhase = false }: { todo: AgentTo
           : todo.content}
       </span>
       {todo.assignee && (
-        <span className="ml-auto flex shrink-0 items-center gap-0.5 rounded-md bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent/80">
-          <Users size={9} />
+        <span className="ml-auto flex shrink-0 items-center gap-0.5 rounded-control bg-accent/10 px-1.5 py-0.5 text-caption text-accent/80">
+          <Users size={11} />
           {todo.assignee}
         </span>
       )}

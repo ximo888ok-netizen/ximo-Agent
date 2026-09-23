@@ -34,7 +34,8 @@ function stripMarkdownForSpeech(text: string): string {
 /** 将 IPC 返回的数据转为 ArrayBuffer */
 function toArrayBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
   if (data instanceof ArrayBuffer) return data
-  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+  // 同 useStreamingTTS.ts：普通 Uint8Array 上的视图，slice 结果必然是 ArrayBuffer
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer
 }
 
 /**

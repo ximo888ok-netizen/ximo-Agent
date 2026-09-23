@@ -53,16 +53,16 @@ function makeHandlers(): {
   }
 }
 
-function makeRequest(tools?: ToolDefinition[]) {
+function makeRequest(tools?: ToolDefinition[], overrides?: Partial<{ thinkingMode: boolean; reasoningEffort: string; messages: any[] }>) {
   return {
     mode: 'coding' as const,
-    messages: [
+    messages: overrides?.messages ?? [
       { role: 'system' as const, content: 'You are a helpful assistant.' },
       { role: 'user' as const, content: 'Hello' }
     ],
     model: 'deepseek-v4-pro' as const,
-    thinkingMode: false,
-    reasoningEffort: 'off' as const,
+    thinkingMode: overrides?.thinkingMode ?? false,
+    reasoningEffort: (overrides?.reasoningEffort ?? 'off') as any,
     temperature: 0.7,
     maxTokens: 4096,
     tools: tools || []
@@ -79,14 +79,20 @@ function makeStopResult(content = 'Done!'): SingleCallResult {
   }
 }
 
-function makeToolCallResult(name: string, args: Record<string, unknown> = {}): SingleCallResult {
+function makeToolCallResult(name: string, args: Record<string, unknown> = {}, reasoningContent = ''): SingleCallResult {
   return {
     finishReason: 'tool_calls',
     content: '',
-    reasoningContent: '',
+    reasoningContent,
     toolCalls: [{ id: 'tc_1', name, arguments: args }],
     emitted: true
   }
+}
+
+/** 取出第 n 次 API 调用收到的 messages 数组（第 2 个参数） */
+function apiMessagesOf(callIndex: number): Array<Record<string, unknown>> {
+  const call = mockCallDeepSeek.mock.calls[callIndex]
+  return (call?.[3] as unknown as Array<Record<string, unknown>>) ?? []
 }
 
 function makeMockTool(name: string, result: ToolResult): Tool {
@@ -376,5 +382,76 @@ describe('agentLoop', () => {
     const chunks = handlers.onChunk.mock.calls.map(c => c[0] as StreamChunk)
     const cancelled = chunks.find(c => c.toolResult?.success === false && c.toolResult?.error?.includes('取消'))
     expect(cancelled).toBeDefined()
+  })
+
+  // ── A2' reasoning_content 回传（DeepSeek 思考模式硬约束）──
+  // 官方规格：请求带 tools 参数时，历史里**所有** assistant 轮的 reasoning_content
+  // 都必须原样回传（含没有发生工具调用的轮次），漏传 = 400
+  // 「The reasoning_content in the thinking mode must be passed back to the API」
+
+  it('透传 request.messages 里的 reasoning_content（纯文本 assistant 轮也要带）', async () => {
+    mockCallDeepSeek.mockResolvedValue(makeStopResult('ok'))
+
+    const request = makeRequest(undefined, {
+      thinkingMode: true,
+      reasoningEffort: 'high',
+      messages: [
+        { role: 'system', content: 'sys' },
+        { role: 'user', content: 'q1' },
+        // 上一轮"没有工具调用"的纯文本回答 —— 这一轮原先完全不回传，是 400 最常见的触发点
+        { role: 'assistant', content: 'a1', reasoning_content: '上一轮我这样想的' },
+        { role: 'user', content: 'q2' }
+      ]
+    })
+
+    await agentLoop('sk-test', 'https://api.deepseek.com/v1', request as any, makeHandlers() as any)
+
+    const msgs = apiMessagesOf(0)
+    const assistant = msgs.find(m => m.role === 'assistant')
+    expect(assistant).toBeDefined()
+    expect(assistant!.reasoning_content).toBe('上一轮我这样想的')
+  })
+
+  it('工具调用轮把真实 reasoning 写入下一条 assistant 消息（不是空串）', async () => {
+    toolRegistry.register(makeMockTool('file_read', {
+      toolCallId: 'tc_1', toolName: 'file_read', content: 'file body', success: true
+    }))
+
+    mockCallDeepSeek
+      .mockResolvedValueOnce(makeToolCallResult('file_read', { filePath: '/a.txt' }, '先看日期，再读文件'))
+      .mockResolvedValueOnce(makeStopResult('done'))
+
+    const request = makeRequest(undefined, { thinkingMode: true, reasoningEffort: 'high' })
+    await agentLoop('sk-test', 'https://api.deepseek.com/v1', request as any, makeHandlers() as any)
+
+    // 第 2 次调用必须带上第 1 轮 tool_calls 那条 assistant 消息的完整思维链
+    const secondMsgs = apiMessagesOf(1)
+    const toolTurn = secondMsgs.find(m => m.role === 'assistant' && Array.isArray(m.tool_calls))
+    expect(toolTurn).toBeDefined()
+    expect(toolTurn!.reasoning_content).toBe('先看日期，再读文件')
+
+    // 工具结果仍需跟在后面（配对不能断）
+    expect(secondMsgs.some(m => m.role === 'tool')).toBe(true)
+  })
+
+  it('非思考模式不注入 reasoning_content（不污染非思考会话的请求体）', async () => {
+    mockCallDeepSeek.mockResolvedValue(makeStopResult('ok'))
+
+    const request = makeRequest(undefined, {
+      thinkingMode: false,
+      reasoningEffort: 'off',
+      messages: [
+        { role: 'system', content: 'sys' },
+        { role: 'user', content: 'q1' },
+        { role: 'assistant', content: 'a1' }
+      ]
+    })
+
+    await agentLoop('sk-test', 'https://api.deepseek.com/v1', request as any, makeHandlers() as any)
+
+    const assistant = apiMessagesOf(0).find(m => m.role === 'assistant')
+    expect(assistant).toBeDefined()
+    // 没有存过 reasoning 的历史消息，在非思考会话里不应凭空多出一个空字段
+    expect('reasoning_content' in assistant!).toBe(false)
   })
 })

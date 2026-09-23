@@ -261,7 +261,7 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
           <div className="voice-panel__top-actions">
             {/* 音色选择 */}
             <div className="voice-panel__voice-select">
-              <Volume2 size={14} />
+              <Volume2 size={13} />
               <select
                 value={currentVoice}
                 onChange={handleVoiceChange}
@@ -278,18 +278,18 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
                 )}
               </select>
             </div>
-            <button
+            <button aria-label={ttsEnabled ? '关闭字幕播报' : '开启字幕播报'}
               className="voice-panel__top-btn"
               onClick={onToggleTts}
               title={ttsEnabled ? '关闭字幕播报' : '开启字幕播报'}
             >
-              <Keyboard size={14} />
+              <Keyboard size={13} />
               <span>{ttsEnabled ? '开启字幕' : '关闭字幕'}</span>
             </button>
-            <button className="voice-panel__top-btn" onClick={onMinimize} title="最小化">
+            <button aria-label="最小化" className="voice-panel__top-btn" onClick={onMinimize} title="最小化">
               <Minimize2 size={16} />
             </button>
-            <button className="voice-panel__top-btn voice-panel__close" onClick={handleClose} title="关闭">
+            <button aria-label="关闭" className="voice-panel__top-btn voice-panel__close" onClick={handleClose} title="关闭">
               <X size={16} />
             </button>
           </div>
@@ -329,7 +329,7 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
             disabled={!sttSupported || (isActive && state === 'transcribing')}
             title={!isActive ? '开始讨论' : state === 'listening' ? '结束说话并发送' : state === 'speaking' ? '打断AI，开始说话' : '请稍候...'}
           >
-            <Mic size={22} />
+            <Mic size={20} />
           </button>
 
           {/* 结束按钮 */}
@@ -343,7 +343,7 @@ export function VoiceOrbPanel(props: VoiceOrbPanelProps): React.ReactElement {
           </button>
 
           {/* 链接/分享按钮 */}
-          <button
+          <button aria-label="分享讨论记录"
             className="voice-panel__action-btn"
             title="分享讨论记录"
           >

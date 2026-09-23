@@ -4,6 +4,7 @@ import type {
   StoreState, AgentTodo, CanvasItem, StreamingToolCall, ComponentMeta,
 } from './types'
 import { createDesignSlice } from './slices/designSlice'
+import { normalizeAutoMode } from '@renderer/lib/auto-mode'
 import { createBrowserSlice } from './slices/browserSlice'
 import { createSkillsSlice } from './slices/skillsSlice'
 import { createAgentSlice } from './slices/agentSlice'
@@ -84,8 +85,10 @@ export const useStore = create<StoreState>()((...args) => {
       currentConversationIds,
       currentConversationId,
       projectPath: currentConv?.projectPath || '',
-      autoModeLevel: settings.defaultAutoModeLevel ?? 'off',
-      networkSearchOn: settings.defaultNetworkSearchOn ?? false
+      autoModeLevel: normalizeAutoMode(settings.defaultAutoModeLevel),
+      networkSearchOn: settings.defaultNetworkSearchOn ?? false,
+      // 缺省收起 — 未设置过的用户也走「左栏 + 会话区」的默认形态
+      rightPanelCollapsed: settings.rightPanelCollapsed ?? true
     })
   },
 
@@ -137,7 +140,11 @@ export const useStore = create<StoreState>()((...args) => {
     set({ autoModeLevel: level })
     const settings = get().settings
     if (settings && settings.defaultAutoModeLevel !== level) {
-      void get().updateSettings({ defaultAutoModeLevel: level, yoloMode: level === 'yolo' })
+      // 归一化后再落盘，避免非法值进 settings。
+      // `yoloMode` 是历史遗留的布尔镜像，仍同步写以兼容老读取方；
+      // 权限判定已改为只看 autoModeLevel（见 chat-handler）。
+      const next = normalizeAutoMode(level)
+      void get().updateSettings({ defaultAutoModeLevel: next, yoloMode: next === 'yolo' })
     }
   },
 

@@ -45,7 +45,7 @@ export function NumberInputRow({
   const clamp = (v: number): number => Math.min(max, Math.max(min, v))
   return (
     <div className="flex items-center justify-between gap-3 py-2">
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
         <span className="text-text-muted shrink-0">{icon}</span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-text-primary">{label}</p>
@@ -55,7 +55,7 @@ export function NumberInputRow({
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={() => onChange(clamp(value - step))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-bg-elevated text-text-secondary hover:border-accent hover:text-accent transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-control border border-border bg-bg-elevated text-text-secondary hover:border-accent hover:text-accent transition-colors active:scale-[0.97]"
         >
           <Minus size={13} />
         </button>
@@ -69,12 +69,12 @@ export function NumberInputRow({
             const v = parseInt(e.target.value)
             if (!isNaN(v)) onChange(clamp(v))
           }}
-          className="w-20 rounded-md border border-border bg-bg-elevated px-2 py-1 text-center text-sm font-mono text-text-primary focus:border-accent focus:outline-none"
+          className="w-20 rounded-control border border-border bg-bg-elevated px-2 py-1 text-center text-sm font-mono text-text-primary focus:border-accent focus-ring"
         />
         <span className="text-xs text-text-muted w-8">{unit}</span>
         <button
           onClick={() => onChange(clamp(value + step))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-bg-elevated text-text-secondary hover:border-accent hover:text-accent transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-control border border-border bg-bg-elevated text-text-secondary hover:border-accent hover:text-accent transition-colors active:scale-[0.97]"
         >
           <Plus size={13} />
         </button>
@@ -101,9 +101,9 @@ export function CollapsibleSection({
     <div className="ios-card overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between p-3.5 text-left transition-colors hover:bg-bg-elevated/50"
+        className="flex w-full items-center justify-between p-3 text-left transition-colors hover:bg-bg-elevated-soft active:scale-[0.97]"
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <span className="text-accent">{icon}</span>
           <div>
             <p className="text-sm font-medium text-text-primary">{title}</p>
@@ -112,11 +112,11 @@ export function CollapsibleSection({
         </div>
         <ChevronDown
           size={16}
-          className={`text-text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`text-text-muted transition-transform duration-fast ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
-        <div className="border-t border-border-subtle px-3.5 py-1">
+        <div className="border-t border-border-subtle px-3 py-1">
           {children}
         </div>
       )}
@@ -144,7 +144,7 @@ export function ModelCard({
   return (
     <button
       onClick={onClick}
-      className={`ios-card p-4 text-left transition-all ${
+      className={`ios-card p-4 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
         active
           ? 'border-accent shadow-glow'
           : 'hover:border-border-hover'
@@ -153,7 +153,7 @@ export function ModelCard({
       <div className="mb-2 flex items-center justify-between">
         <span className={active ? 'text-accent' : 'text-text-muted'}>{icon}</span>
         <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+          className={`rounded-control px-1.5 py-0.5 text-caption font-medium ${
             active ? 'bg-accent/20 text-accent' : 'bg-bg-base text-text-muted'
           }`}
         >
@@ -165,12 +165,12 @@ export function ModelCard({
       </p>
       <div className="mt-1.5 space-y-0.5">
         {specs.map((s) => (
-          <p key={s} className="text-[11px] text-text-muted">
+          <p key={s} className="text-caption text-text-muted">
             {s}
           </p>
         ))}
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-text-secondary">{desc}</p>
+      <p className="mt-2 text-caption leading-relaxed text-text-secondary">{desc}</p>
     </button>
   )
 }
@@ -194,12 +194,12 @@ export function ToggleRow({
 }): React.ReactElement {
   return (
     <div
-      className={`ios-card p-3.5 transition-all ${
+      className={`ios-card p-3 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
         active ? 'border-accent/40' : ''
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <span className={active ? 'text-accent' : 'text-text-muted'}>{icon}</span>
           <div>
             <p className="text-sm font-medium text-text-primary">{label}</p>
@@ -207,13 +207,17 @@ export function ToggleRow({
           </div>
         </div>
         <button
+          type="button"
+          role="switch"
+          aria-checked={active}
+          aria-label={label}
           onClick={onToggle}
-          className={`relative h-6 w-10 rounded-full transition-colors duration-300 ease-out-quart ${
-            active ? 'bg-accent shadow-glow' : 'bg-border'
+          className={`relative h-6 w-10 rounded-full transition-colors duration-base ease-out-quart ${
+            active ? 'bg-accent-fill shadow-glow' : 'bg-border'
           }`}
         >
           <div
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ease-out-quart ${
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-base ease-out-quart ${
               active ? 'translate-x-[18px]' : 'translate-x-0.5'
             }`}
           />

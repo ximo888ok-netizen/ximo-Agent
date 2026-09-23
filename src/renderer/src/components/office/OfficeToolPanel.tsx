@@ -108,18 +108,18 @@ export function OfficeToolPanel(): React.ReactElement {
     <div className="glass flex w-72 flex-col border-l border-border-subtle overflow-y-auto">
       {/* 录制状态指示器 */}
       {isRecording && (
-        <div className="px-3 py-2.5 bg-red-500/10 border-b border-red-500/20 animate-pulse-subtle">
+        <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20 animate-pulse-subtle">
           <div className="flex items-center gap-2">
             <div className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
             </div>
             <span className="text-xs font-medium text-red-400">rrweb 录制中</span>
-            <span className="text-[10px] text-red-400/70 ml-auto">{recordingStepCount} 步 · {rrwebEventCount} 事件</span>
+            <span className="text-caption text-red-400/70 ml-auto">{recordingStepCount} 步 · {rrwebEventCount} 事件</span>
           </div>
           <button
             onClick={handleStopRecording}
-            className="mt-1.5 w-full flex items-center justify-center gap-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 px-2.5 py-1.5 text-xs text-red-400 transition-all"
+            className="mt-1.5 w-full flex items-center justify-center gap-1.5 rounded-card bg-red-500/20 hover:bg-red-500/30 px-3 py-1.5 text-xs text-red-400 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] active:scale-[0.97]"
           >
             <Square size={11} />
             停止录制并生成技能
@@ -130,11 +130,11 @@ export function OfficeToolPanel(): React.ReactElement {
       {/* 技能录制与复用 */}
       <div className="border-b border-border-subtle">
         <div className="px-3 pt-3 pb-1.5 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">技能录制与复用</span>
+          <span className="text-caption font-medium text-text-muted uppercase tracking-wider">技能录制与复用</span>
           {!isRecording && (
-            <button
+            <button aria-label="开始录制技能"
               onClick={handleStartRecording}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] text-accent hover:bg-accent/10 rounded-lg transition-all"
+              className="flex items-center gap-1 px-2 py-1 text-caption text-accent hover:bg-accent/10 rounded-card transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] active:scale-[0.97]"
               title="开始录制技能"
             >
               <CircleDot size={11} />
@@ -149,46 +149,46 @@ export function OfficeToolPanel(): React.ReactElement {
             {skills.map((skill) => (
               <div
                 key={skill.id}
-                className="group flex items-center gap-2 rounded-lg px-2.5 py-1.5 bg-bg-hover/50 hover:bg-bg-hover transition-all"
+                className="group flex items-center gap-2 rounded-card px-3 py-1.5 bg-bg-hover-soft hover:bg-bg-hover transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
               >
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
-                  <Play size={10} />
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-control bg-accent/10 text-accent">
+                  <Play size={11} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-text-primary truncate">{skill.name}</p>
-                  <p className="text-[10px] text-text-muted truncate">{skill.description}</p>
+                  <p className="text-caption text-text-muted truncate">{skill.description}</p>
                 </div>
-                <span className="text-[9px] text-text-muted/60">{skill.invokeCount}次 {skill.rrwebEvents ? '🎬' : '📋'}</span>
+                <span className="text-caption text-text-tertiary">{skill.invokeCount}次 {skill.rrwebEvents ? '🎬' : '📋'}</span>
                 <button
                   onClick={() => handleInvokeSkill(skill)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity icon-btn rounded-md p-1 text-accent hover:bg-accent/10"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity icon-btn rounded-control p-1 text-accent hover:bg-accent/10"
                   title={`调用技能 "${skill.name}"`}
                 >
-                  <Play size={10} />
+                  <Play size={11} />
                 </button>
                 <button
                   onClick={() => void handleDeleteSkill(skill.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity icon-btn rounded-md p-1 text-text-muted hover:text-red-400"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity icon-btn rounded-control p-1 text-text-muted hover:text-red-400"
                   title="删除技能"
                 >
-                  <span className="text-[10px]">×</span>
+                  <span className="text-caption">×</span>
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <div className="px-3 pb-2 text-[11px] text-text-muted text-center">
+          <div className="px-3 pb-2 text-caption text-text-muted text-center">
             <p>暂无技能</p>
-            <p className="mt-0.5 text-[10px]">点击「录制」开始创建（基于 rrweb 网页录制技术）</p>
+            <p className="mt-0.5 text-caption">点击「录制」开始创建（基于 rrweb 网页录制技术）</p>
           </div>
         )}
 
         <div className="px-2 pb-1.5 flex gap-1">
           <button
             onClick={handleViewSkills}
-            className="chip flex items-center gap-1 px-2 py-1 text-[10px] text-text-secondary hover:text-text-primary hover:border-accent/30 transition-all"
+            className="chip flex items-center gap-1 px-2 py-1 text-caption text-text-secondary hover:text-text-primary hover:border-accent/30 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
           >
-            <ListTree size={10} />
+            <ListTree size={11} />
             查看全部
           </button>
         </div>
@@ -196,18 +196,18 @@ export function OfficeToolPanel(): React.ReactElement {
 
       {/* 搜索栏 */}
       <div className="p-3 border-b border-border-subtle">
-        <label className="text-[11px] font-medium text-text-muted uppercase tracking-wider mb-1.5 block">快速搜索</label>
+        <label className="text-caption font-medium text-text-muted uppercase tracking-wider mb-1.5 block">快速搜索</label>
         <div className="flex gap-1.5">
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="搜索关键词..."
-            className="flex-1 rounded-lg border border-border bg-bg-input px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none transition-colors"
+            className="flex-1 rounded-card border border-border bg-bg-input px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus-ring transition-colors"
           />
           <button
             onClick={handleSearch}
-            className="btn-liquid rounded-lg px-3 py-1.5 text-xs font-medium"
+            className="btn-liquid rounded-card px-3 py-1.5 text-xs font-medium"
           >
             搜索
           </button>
@@ -218,14 +218,14 @@ export function OfficeToolPanel(): React.ReactElement {
       {toolButtons.map((group) => (
         <div key={group.section} className="border-b border-border-subtle last:border-b-0">
           <div className="px-3 pt-3 pb-1.5">
-            <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{group.section}</span>
+            <span className="text-caption font-medium text-text-muted uppercase tracking-wider">{group.section}</span>
           </div>
           <div className="px-2 pb-2 space-y-0.5">
             {group.tools.map((tool) => (
               <button
                 key={tool.label}
                 onClick={() => sendMessage(tool.prompt)}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-text-secondary transition-all duration-200 hover:bg-bg-hover hover:text-text-primary hover:translate-x-0.5 text-left"
+                className="flex w-full items-center gap-2 rounded-card px-3 py-1.5 text-xs text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-bg-hover hover:text-text-primary hover:translate-x-0.5 text-left active:scale-[0.97]"
               >
                 {tool.label}
               </button>

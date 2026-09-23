@@ -1,5 +1,12 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useStore } from '@renderer/store/useStore'
+import {
+  applyAccentTokens,
+  clearAccentTokens,
+  deriveAccentTokens,
+  type AccentTokens,
+  type ThemeMode,
+} from '@renderer/lib/accent'
 
 /** 应用全局副作用 — 键盘快捷键、主题、窗口状态 */
 export function useAppEffects(loaded: boolean): void {
@@ -29,6 +36,12 @@ export function useAppEffects(loaded: boolean): void {
         st.setShowSettings(true)
         return
       }
+      // Ctrl+B — 收起/展开右侧栏（内嵌浏览器开启时右栏锁定为展开，此时忽略）
+      if (ctrl && e.key === 'b') {
+        e.preventDefault()
+        if (!st.browserOpen) st.toggleRightPanel()
+        return
+      }
       if (ctrl && e.shiftKey && e.key === 'R') {
         e.preventDefault()
         if (!st.isStreaming) void st.regenerate()
@@ -39,6 +52,8 @@ export function useAppEffects(loaded: boolean): void {
         st.setShowAgentPanel(false)
         st.setShowMemoryPanel(false)
         st.setShowKnowledgePanel(false)
+        st.setShowMcpPanel(false)
+        st.setShowSkillPanel(false)
         return
       }
     }
@@ -55,14 +70,8 @@ export function useAppEffects(loaded: boolean): void {
     return window.api.window.onMaximizeChange(applyMaximized)
   }, [])
 
-  // ---- 应用主题色 + 明暗主题 ----
+  // ---- 应用明暗主题 ----
   const settings = useStore((s) => s.settings)
-
-  useEffect(() => {
-    if (settings?.themeColor) {
-      document.documentElement.style.setProperty('--theme-color', settings.themeColor)
-    }
-  }, [settings?.themeColor])
 
   useEffect(() => {
     const root = document.documentElement
@@ -72,6 +81,28 @@ export function useAppEffects(loaded: boolean): void {
       root.classList.add('dark')
     }
   }, [settings?.theme])
+
+  // ---- 应用主题色 + 派生强调色令牌（双支派生） ----
+  const accentTokensRef = useRef<AccentTokens>({})
+
+  useEffect(() => {
+    const root = document.documentElement
+    clearAccentTokens(root, accentTokensRef.current)
+    accentTokensRef.current = {}
+
+    const themeColor = settings?.themeColor
+    if (!themeColor) return
+
+    // 身份色照原样写入（窗口边框、选区、主题包都以它为基准）
+    root.style.setProperty('--theme-color', themeColor)
+
+    // 再派生 fill / ink / glow 三支 —— 写在内联样式上，
+    // 位置在"主题包变量"与"可视化编辑器变量"之前，保证用户自定义仍可覆盖。
+    const mode: ThemeMode = settings?.theme === 'light' ? 'light' : 'dark'
+    const tokens = deriveAccentTokens(themeColor, mode)
+    applyAccentTokens(root, tokens)
+    accentTokensRef.current = tokens
+  }, [settings?.themeColor, settings?.theme])
 
   // ---- 应用自定义主题包 CSS 变量 ----
   const appliedPackVarsRef = useRef<string[]>([])
@@ -208,11 +239,17 @@ export function useConfirmDialog() {
   const [confirmState, setConfirmState] = useState<{ toolName: string; message: string } | null>(null)
 
   useEffect(() => {
+    /*
+     * 这里刻意**不再**读 sessionStorage['ximo-yolo']。
+     *
+     * 那个「本次会话不再提示」的勾选会把后续**所有**确认静默批准，
+     * 于是和输入框的自动化等级形成了第二套真相 —— 后果是用户在下来里选「手动审批」，
+     * 确认弹窗照样不弹（选项看着生效、实际不生效）。
+     *
+     * 现在「不再提示」直接切换自动化等级（见 ConfirmDialog 的 onRemember），
+     * 全应用只剩等级这一个判据。
+     */
     const cleanup = window.api.confirm.onRequest((data) => {
-      if (sessionStorage.getItem('ximo-yolo') === 'true') {
-        window.api.confirm.respond(true)
-        return
-      }
       setConfirmState(data)
     })
     return cleanup

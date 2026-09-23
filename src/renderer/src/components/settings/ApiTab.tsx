@@ -60,11 +60,11 @@ export function ApiTab({
               value={local.apiKey}
               onChange={(e) => update({ apiKey: e.target.value })}
               placeholder="sk-..."
-              className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+              className="w-full rounded-card border border-border bg-bg-elevated px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus-ring"
             />
             <button
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-primary"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-primary active:scale-[0.97]"
             >
               {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -82,16 +82,16 @@ export function ApiTab({
       </div>
 
       {/* 连接测试 */}
-      <div className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+      <div className="rounded-card border border-border-subtle bg-bg-elevated p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles size={15} className="text-accent" />
+            <Sparkles size={16} className="text-accent" />
             <span className="text-sm font-medium text-text-primary">连接测试</span>
           </div>
           <button
             onClick={onTest}
             disabled={testState === 'testing' || !keyConfigured}
-            className="flex items-center gap-1.5 rounded-lg bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-card bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {testState === 'testing' ? (
               <>
@@ -119,16 +119,16 @@ export function ApiTab({
 
         {(testState === 'success' || testState === 'error') && testResult && (
           <div
-            className={`flex items-start gap-2 rounded-xl p-3 text-xs ${
+            className={`flex items-start gap-2 rounded-panel p-3 text-xs ${
               testResult.success
                 ? 'bg-emerald-500/10 text-emerald-400'
                 : 'bg-red-500/10 text-red-400'
             }`}
           >
             {testResult.success ? (
-              <CheckCircle2 size={15} className="mt-0.5 flex-shrink-0" />
+              <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" />
             ) : (
-              <XCircle size={15} className="mt-0.5 flex-shrink-0" />
+              <XCircle size={16} className="mt-0.5 flex-shrink-0" />
             )}
             <div className="flex-1">
               <p className="font-medium">{testResult.message}</p>
@@ -150,7 +150,7 @@ export function ApiTab({
           type="text"
           value={local.baseUrl}
           onChange={(e) => update({ baseUrl: e.target.value })}
-          className="w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
+          className="w-full rounded-card border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus-ring"
         />
         <p className="mt-1.5 text-xs text-text-muted">
           DeepSeek API 基础地址，兼容 OpenAI 格式，一般无需修改

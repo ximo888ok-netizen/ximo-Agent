@@ -12,8 +12,8 @@ export function FileMentionMenu({ files, selectedIndex, onSelect, onHover }: Fil
   if (files.length === 0) return null
 
   return (
-    <div className="mx-4 mb-1 max-h-48 overflow-y-auto rounded-xl border border-border-subtle bg-bg-elevated/95 backdrop-blur-xl shadow-glass animate-scale-in">
-      <div className="px-3 py-1.5 text-[10px] text-text-muted border-b border-border-subtle">
+    <div className="mx-4 mb-1 max-h-48 overflow-y-auto rounded-panel border border-border-subtle bg-bg-elevated-soft backdrop-blur-xl shadow-glass animate-scale-in">
+      <div className="px-3 py-1.5 text-caption text-text-muted border-b border-border-subtle">
         文件引用 — ↑↓ 导航，Enter/Tab 确认，Esc 取消
       </div>
       {files.map((file, i) => {
@@ -31,9 +31,9 @@ export function FileMentionMenu({ files, selectedIndex, onSelect, onHover }: Fil
               i === selectedIndex ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-bg-hover'
             }`}
           >
-            <FileText size={12} className="shrink-0 opacity-60" />
+            <FileText size={13} className="shrink-0 opacity-60" />
             <span className="font-mono truncate">{fileName}</span>
-            {dir && <span className="text-text-muted/50 text-[10px] truncate">{dir}</span>}
+            {dir && <span className="text-text-tertiary text-caption truncate">{dir}</span>}
           </button>
         )
       })}

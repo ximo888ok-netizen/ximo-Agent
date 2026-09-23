@@ -31,18 +31,19 @@ export function SkillImportDialog({
       onClick={handleClose}
     >
       <div
-        className="mx-4 w-full max-w-lg rounded-2xl border border-border-subtle bg-bg-base p-5 shadow-2xl"
+        className="mx-4 w-full max-w-lg rounded-panel border border-border-subtle bg-bg-base p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 弹窗头部 */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold text-text-primary">导入技能</h3>
-            <p className="mt-0.5 text-[11px] text-text-muted">支持 SKILL.md 格式（YAML frontmatter + Markdown 正文）</p>
+            <p className="mt-0.5 text-caption text-text-muted">支持 SKILL.md 格式（YAML frontmatter + Markdown 正文）</p>
           </div>
           <button
             onClick={handleClose}
-            className="icon-btn rounded-lg p-1.5 text-text-muted hover:text-text-primary"
+            aria-label="关闭"
+            className="icon-btn rounded-card p-1.5 text-text-muted hover:text-text-primary"
             disabled={importing}
           >
             <X size={16} />
@@ -50,9 +51,9 @@ export function SkillImportDialog({
         </div>
 
         {/* 格式示例 */}
-        <div className="mb-3 rounded-lg bg-bg-elevated/50 border border-border-subtle p-2.5">
-          <p className="text-[10px] text-text-muted mb-1">SKILL.md 格式示例：</p>
-          <pre className="text-[10px] leading-relaxed text-text-secondary font-mono">{`---
+        <div className="mb-3 rounded-card bg-bg-elevated-soft border border-border-subtle p-2.5">
+          <p className="text-caption text-text-muted mb-1">SKILL.md 格式示例：</p>
+          <pre className="text-caption leading-relaxed text-text-secondary font-mono">{`---
 name: "my-skill"
 description: "技能描述"
 triggers:
@@ -68,7 +69,7 @@ AI 指令内容...`}</pre>
         <button
           onClick={() => void onImportFromFile()}
           disabled={importing}
-          className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-text-secondary transition-all hover:border-accent/40 hover:text-accent disabled:opacity-50"
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-border px-3 py-2 text-xs text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:border-accent/40 hover:text-accent disabled:opacity-50 active:scale-[0.97]"
         >
           <Upload size={13} />
           选择 .md / .txt 文件
@@ -77,7 +78,7 @@ AI 指令内容...`}</pre>
         {/* 分隔线 */}
         <div className="my-3 flex items-center gap-2">
           <div className="h-px flex-1 bg-border-subtle" />
-          <span className="text-[10px] text-text-muted">或粘贴内容</span>
+          <span className="text-caption text-text-muted">或粘贴内容</span>
           <div className="h-px flex-1 bg-border-subtle" />
         </div>
 
@@ -88,12 +89,12 @@ AI 指令内容...`}</pre>
           placeholder="粘贴 SKILL.md 内容..."
           rows={6}
           disabled={importing}
-          className="w-full resize-none rounded-lg border border-border bg-bg-input px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none transition-colors font-mono"
+          className="w-full resize-none rounded-card border border-border bg-bg-input px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus-ring transition-colors font-mono"
         />
 
         {/* 错误提示 */}
         {importError && (
-          <p className="mt-2 text-[11px] text-red-400">{importError}</p>
+          <p className="mt-2 text-caption text-red-400">{importError}</p>
         )}
 
         {/* 操作按钮 */}
@@ -101,14 +102,14 @@ AI 指令内容...`}</pre>
           <button
             onClick={handleClose}
             disabled={importing}
-            className="rounded-lg px-3 py-1.5 text-xs text-text-secondary transition-all hover:bg-bg-hover disabled:opacity-50"
+            className="rounded-card px-3 py-1.5 text-xs text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-bg-hover disabled:opacity-50 active:scale-[0.97]"
           >
             取消
           </button>
           <button
             onClick={() => void onImportFromText(importText)}
             disabled={importing || !importText.trim()}
-            className="btn-liquid rounded-lg px-4 py-1.5 text-xs font-medium disabled:opacity-50"
+            className="btn-liquid rounded-card px-4 py-1.5 text-xs font-medium disabled:opacity-50"
           >
             {importing ? '导入中...' : '导入'}
           </button>

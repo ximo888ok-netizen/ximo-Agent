@@ -38,8 +38,8 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
       prunedKeep: settings.contextPrunedKeep ?? 80,
     },
     // 必须传 effectiveThinkingMode 而非 settings.thinkingMode —
-    // 长任务模式会强制开启 thinking，若此处传 settings.thinkingMode=false，
-    // 历史消息不带 reasoning_content: ''，而 agentLoop 新增的消息带 → 前缀字节不一致 → 缓存 miss
+    // 长任务模式会强制开启 thinking；buildApiMessages 依据它决定历史 assistant 轮
+    // 是否回传 reasoning_content（官方约束：带 tools 时缺了就是 400）
     effectiveReasoningEffort, settings.memoryEnabled, effectiveThinkingMode,
   )
   const request = {
@@ -122,25 +122,30 @@ export async function runStream(get: () => StoreState, set: SetState, conversati
 
         const resultId = chunk.toolResult.toolCallId
         const seg = currentSeg()
-        let matched = false
+        // 记下**实际匹配到的** toolCallId（两条匹配路径都要记），
+        // 否则下面的事件状态更新会被跳过 —— 事件永远停在 calling，
+        // 按事件流渲染时那件工具就会永久显示成"执行中"。
+        let matchedId: string | null = null
         for (let i = 0; i < seg.toolCalls.length; i++) {
           if (resultId && seg.toolCalls[i].toolCallId === resultId) {
-            seg.toolCalls[i] = { ...seg.toolCalls[i], status: 'done' as const, result: chunk.toolResult.content }; matched = true; break
+            seg.toolCalls[i] = { ...seg.toolCalls[i], status: 'done' as const, result: chunk.toolResult.content }
+            matchedId = seg.toolCalls[i].toolCallId ?? null
+            break
           }
         }
-        if (!matched) {
+        if (!matchedId) {
           for (let i = seg.toolCalls.length - 1; i >= 0; i--) {
             if (seg.toolCalls[i].name === chunk.toolResult.toolName && seg.toolCalls[i].status === 'calling') {
-              seg.toolCalls[i] = { ...seg.toolCalls[i], status: 'done' as const, result: chunk.toolResult.content }; break
+              seg.toolCalls[i] = { ...seg.toolCalls[i], status: 'done' as const, result: chunk.toolResult.content }
+              matchedId = seg.toolCalls[i].toolCallId ?? null
+              break
             }
           }
         }
-        if (matched) {
-          if (seg.events) {
-            for (let i = seg.events.length - 1; i >= 0; i--) {
-              if (seg.events[i].type === 'tool' && seg.events[i].toolCallId === resultId && seg.events[i].status === 'calling') {
-                seg.events[i] = { ...seg.events[i], status: 'done', result: chunk.toolResult.content }; break
-              }
+        if (matchedId && seg.events) {
+          for (let i = seg.events.length - 1; i >= 0; i--) {
+            if (seg.events[i].type === 'tool' && seg.events[i].toolCallId === matchedId && seg.events[i].status === 'calling') {
+              seg.events[i] = { ...seg.events[i], status: 'done', result: chunk.toolResult.content }; break
             }
           }
         }

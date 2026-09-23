@@ -174,7 +174,7 @@ export function SettingsModal(): React.ReactElement | null {
       onClick={() => setShowSettings(false)}
     >
       <div
-        className="glass-panel flex h-[620px] max-h-[88vh] w-[760px] max-w-[94vw] flex-col overflow-hidden animate-fade-scale"
+        className="glass-panel flex h-[620px] max-h-[85vh] w-[900px] max-w-[94vw] flex-col overflow-hidden animate-fade-scale"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 标题栏 */}
@@ -182,9 +182,9 @@ export function SettingsModal(): React.ReactElement | null {
           <h2 className="text-base font-semibold text-text-primary">设置</h2>
           <button
             onClick={() => setShowSettings(false)}
-            className="icon-btn rounded-lg p-1.5"
+            className="icon-btn rounded-card p-1.5"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -197,13 +197,13 @@ export function SettingsModal(): React.ReactElement | null {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  className={`mb-0.5 flex w-full items-center gap-2 rounded-card px-3 py-2 text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'bg-accent/15 text-accent'
                       : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
                   }`}
                 >
-                  <Icon size={15} />
+                  <Icon size={16} />
                   {tab.label}
                 </button>
               )
@@ -249,7 +249,7 @@ export function SettingsModal(): React.ReactElement | null {
         <div className="flex items-center justify-between border-t border-border-subtle px-5 py-3">
           <button
             onClick={handleReset}
-            className="text-xs text-text-muted transition-colors hover:text-text-primary"
+            className="text-xs text-text-muted transition-colors hover:text-text-primary active:scale-[0.97]"
           >
             恢复默认
           </button>
@@ -259,13 +259,13 @@ export function SettingsModal(): React.ReactElement | null {
             )}
             <button
               onClick={() => setShowSettings(false)}
-              className="btn-ghost rounded-xl px-4 py-2 text-sm"
+              className="btn-ghost rounded-panel px-4 py-2 text-sm"
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className="btn-liquid rounded-xl px-5 py-2 text-sm font-medium"
+              className="btn-liquid rounded-panel px-5 py-2 text-sm font-medium"
             >
               保存设置
             </button>

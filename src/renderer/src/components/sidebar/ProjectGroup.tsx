@@ -38,35 +38,35 @@ export const ProjectGroup = memo(function ProjectGroup({
   return (
     <div className="mb-1">
       {/* 项目头部 */}
-      <div className="group flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-bg-hover transition-colors">
+      <div className="group flex items-center gap-1 rounded-card px-2 py-1.5 hover:bg-bg-hover transition-colors">
         <button
           onClick={() => onToggle(projectPath)}
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
         >
-          {isCollapsed ? <ChevronRight size={12} className="text-text-muted shrink-0" /> : <ChevronDown size={12} className="text-text-muted shrink-0" />}
+          {isCollapsed ? <ChevronRight size={13} className="text-text-muted shrink-0" /> : <ChevronDown size={13} className="text-text-muted shrink-0" />}
           <Folder size={13} className="text-accent shrink-0" />
           <span className="truncate text-xs font-medium text-text-primary">{folderName}</span>
-          <span className="shrink-0 text-[10px] text-text-muted">({conversations.length})</span>
+          <span className="shrink-0 text-caption text-text-muted">({conversations.length})</span>
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation()
             onNewConversation()
           }}
-          className="shrink-0 text-text-muted hover:text-accent rounded p-0.5 hover:bg-bg-hover transition-colors"
+          className="shrink-0 text-text-muted hover:text-accent rounded-control p-0.5 hover:bg-bg-hover transition-colors active:scale-[0.97]"
           title="在此项目下新建会话"
         >
-          <Plus size={12} />
+          <Plus size={13} />
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation()
             onRemove()
           }}
-          className="shrink-0 text-text-muted hover:text-red-400 rounded p-0.5 hover:bg-bg-hover transition-colors"
+          className="shrink-0 text-text-muted hover:text-red-400 rounded-control p-0.5 hover:bg-bg-hover transition-colors active:scale-[0.97]"
           title="从列表中移除项目"
         >
-          <X size={12} />
+          <X size={13} />
         </button>
       </div>
       {/* 会话列表 */}

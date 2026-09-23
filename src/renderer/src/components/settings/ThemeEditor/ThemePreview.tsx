@@ -27,7 +27,7 @@ export function ThemePreview({
 
   return (
     <div
-      className="rounded-xl border border-border overflow-hidden"
+      className="rounded-panel border border-border overflow-hidden"
       style={{ ...cssVars, backgroundColor: 'var(--bg-base)' } as React.CSSProperties}
     >
       {/* 标题栏 */}
@@ -40,23 +40,23 @@ export function ThemePreview({
           <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--text-muted)' }} />
           <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--text-muted)' }} />
         </div>
-        <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+        <span className="text-caption font-medium" style={{ color: 'var(--text-secondary)' }}>
           {mode === 'light' ? '浅色预览' : '深色预览'}
         </span>
       </div>
 
       {/* 内容区 */}
-      <div className="space-y-2.5 p-3" style={{ minHeight: '180px' }}>
+      <div className="space-y-2 p-3" style={{ minHeight: '180px' }}>
         {/* AI 消息 */}
         <div className="flex gap-2">
           <div
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: 'var(--accent-DEFAULT)' }}
+            style={{ backgroundColor: 'var(--accent-fill, var(--theme-color))' }}
           >
-            <Sparkles size={12} className="text-white" />
+            <Sparkles size={13} style={{ color: 'var(--accent-on-fill, #fff)' }} />
           </div>
           <div
-            className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]"
+            className="rounded-panel rounded-tl-control px-3 py-2 max-w-[80%]"
             style={{
               backgroundColor: 'var(--glass-bg)',
               border: '1px solid var(--glass-border)',
@@ -64,26 +64,26 @@ export function ThemePreview({
               boxShadow: 'var(--glass-shadow)',
             }}
           >
-            <p className="text-[11px] leading-relaxed">你好！主题修改会实时反映在这里。</p>
+            <p className="text-caption leading-relaxed">你好！主题修改会实时反映在这里。</p>
           </div>
         </div>
 
         {/* 用户消息 */}
         <div className="flex justify-end">
           <div
-            className="rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]"
+            className="rounded-panel rounded-tr-control px-3 py-2 max-w-[80%]"
             style={{
               backgroundColor: 'var(--accent-DEFAULT)',
               color: '#fff',
             }}
           >
-            <p className="text-[11px] leading-relaxed">收到，看起来不错！</p>
+            <p className="text-caption leading-relaxed">收到，看起来不错！</p>
           </div>
         </div>
 
         {/* 卡片 + 按钮 */}
         <div
-          className="rounded-lg p-2.5"
+          className="rounded-card p-2.5"
           style={{
             backgroundColor: 'var(--bg-elevated)',
             border: '1px solid var(--border-DEFAULT)',
@@ -91,15 +91,15 @@ export function ThemePreview({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-medium" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-caption font-medium" style={{ color: 'var(--text-primary)' }}>
                 设置卡片
               </p>
-              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-caption" style={{ color: 'var(--text-muted)' }}>
                 描述文字
               </p>
             </div>
             <button
-              className="rounded-md px-2.5 py-1 text-[10px] font-medium text-white transition-colors"
+              className="rounded-control px-3 py-1 text-caption font-medium text-white transition-colors"
               style={{
                 backgroundColor: 'var(--accent-DEFAULT)',
                 boxShadow: '0 0 12px -2px var(--glow-color)',
@@ -112,7 +112,7 @@ export function ThemePreview({
 
         {/* 输入框 */}
         <div
-          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5"
+          className="flex items-center gap-2 rounded-card px-3 py-1.5"
           style={{
             backgroundColor: 'var(--bg-input)',
             border: '1px solid var(--border-DEFAULT)',
@@ -121,14 +121,14 @@ export function ThemePreview({
           <input
             readOnly
             placeholder="输入消息..."
-            className="flex-1 bg-transparent text-[11px] focus:outline-none"
+            className="flex-1 bg-transparent text-caption focus-ring"
             style={{ color: 'var(--text-primary)' }}
           />
           <div
-            className="flex h-5 w-5 items-center justify-center rounded"
-            style={{ backgroundColor: 'var(--accent-DEFAULT)' }}
+            className="flex h-5 w-5 items-center justify-center rounded-control"
+            style={{ backgroundColor: 'var(--accent-fill, var(--theme-color))' }}
           >
-            <Send size={10} className="text-white" />
+            <Send size={11} style={{ color: 'var(--accent-on-fill, #fff)' }} />
           </div>
         </div>
       </div>

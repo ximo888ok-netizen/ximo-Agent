@@ -40,10 +40,10 @@ export const THEME_SCHEMA: ThemeCategory[] = [
     label: '主题色',
     icon: '🎨',
     vars: [
-      { key: '--theme-color', label: '主题色', lightDefault: '#3b82f6', darkDefault: '#3b82f6', type: 'color', desc: '核心色，所有强调色的源头' },
-      { key: '--theme-accent-hover', label: '悬停强调色', lightDefault: 'color-mix(in srgb, var(--theme-color) 85%, black)', darkDefault: 'color-mix(in srgb, var(--theme-color) 88%, white)', type: 'color-mix', desc: '鼠标悬停时的强调色' },
-      { key: '--theme-accent-muted', label: '弱化强调色', lightDefault: 'color-mix(in srgb, var(--theme-color) 70%, white)', darkDefault: 'color-mix(in srgb, var(--theme-color) 70%, black)', type: 'color-mix', desc: '弱化态的强调色' },
-      { key: '--accent-light', label: '亮色强调', lightDefault: 'color-mix(in srgb, var(--theme-color) 70%, white)', darkDefault: '#60a5fa', type: 'color-mix', desc: '亮色态强调色' },
+      { key: '--theme-color', label: '主题色', lightDefault: '#3b82f6', darkDefault: '#3b82f6', type: 'color', desc: '核心色，所有强调色的源头（填充/墨色/发光三支由它自动派生）' },
+      { key: '--theme-accent-hover', label: '悬停强调色', lightDefault: 'color-mix(in srgb, var(--theme-color) 85%, black)', darkDefault: 'color-mix(in srgb, var(--theme-color) 88%, white)', type: 'color-mix', desc: '鼠标悬停时的强调色（留空则跟随自动派生）' },
+      { key: '--theme-accent-muted', label: '弱化强调色', lightDefault: 'color-mix(in srgb, var(--theme-color) 70%, white)', darkDefault: 'color-mix(in srgb, var(--theme-color) 70%, black)', type: 'color-mix', desc: '弱化态的强调色（留空则跟随自动派生）' },
+      { key: '--accent-light', label: '亮色强调', lightDefault: 'color-mix(in srgb, var(--theme-color) 70%, white)', darkDefault: 'color-mix(in srgb, var(--theme-color) 70%, white)', type: 'color-mix', desc: '亮色态强调色（原深色默认值硬编码 #60a5fa，换主色不跟随，已修正）' },
     ],
   },
   {
@@ -88,7 +88,7 @@ export const THEME_SCHEMA: ThemeCategory[] = [
     vars: [
       { key: '--text-primary', label: '主文字', lightDefault: '#141c2b', darkDefault: '#f2f4f8', type: 'color', desc: '标题、正文' },
       { key: '--text-secondary', label: '次要文字', lightDefault: '#5a6472', darkDefault: '#a3aab8', type: 'color', desc: '描述文字' },
-      { key: '--text-muted', label: '弱化文字', lightDefault: '#9aa3af', darkDefault: '#646b78', type: 'color', desc: '占位、提示文字' },
+      { key: '--text-muted', label: '弱化文字', lightDefault: '#6b7280', darkDefault: '#8b93a1', type: 'color', desc: '占位、提示文字（对背景 4.8:1 / 5.9:1，达 WCAG AA）' },
     ],
   },
   {

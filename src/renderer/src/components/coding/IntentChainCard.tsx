@@ -70,7 +70,7 @@ export function IntentChainCard({
         {allDone && <span className="intent-chain__badge intent-chain__badge--green">已完成</span>}
         {anyRunning && <span className="intent-chain__badge intent-chain__badge--accent">进行中</span>}
         {!open && intent && <span className="intent-chain__meta">{intent}</span>}
-        <ChevronDown size={12} className={`intent-chain__chevron${open ? ' intent-chain__chevron--open' : ''}`} />
+        <ChevronDown size={13} className={`intent-chain__chevron${open ? ' intent-chain__chevron--open' : ''}`} />
       </button>
 
       {open && (

@@ -61,12 +61,12 @@ export function TokenStatsModal(): React.ReactElement | null {
         {/* 标题栏 */}
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
+            <div className="flex h-8 w-8 items-center justify-center rounded-card bg-accent/15 text-accent">
               <BarChart3 size={16} />
             </div>
             <h3 className="text-sm font-semibold text-text-primary">Token 用量统计</h3>
           </div>
-          <button onClick={() => setShow(false)} className="icon-btn rounded-lg p-1">
+          <button onClick={() => setShow(false)} className="icon-btn rounded-card p-1">
             <X size={16} />
           </button>
         </div>
@@ -76,23 +76,23 @@ export function TokenStatsModal(): React.ReactElement | null {
           <div className="ios-card p-3 text-center">
             <Coins size={16} className="mx-auto mb-1 text-accent" />
             <div className="text-lg font-bold text-text-primary">{stats.totalTokens.toLocaleString()}</div>
-            <div className="text-[10px] text-text-muted">总 Tokens</div>
+            <div className="text-caption text-text-muted">总 Tokens</div>
           </div>
           <div className="ios-card p-3 text-center">
             <MessageSquare size={16} className="mx-auto mb-1 text-blue-400" />
             <div className="text-lg font-bold text-text-primary">{stats.totalMessages}</div>
-            <div className="text-[10px] text-text-muted">总消息数</div>
+            <div className="text-caption text-text-muted">总消息数</div>
           </div>
           <div className="ios-card p-3 text-center">
             <TrendingUp size={16} className="mx-auto mb-1 text-emerald-400" />
             <div className="text-lg font-bold text-text-primary">{stats.totalAssistant}</div>
-            <div className="text-[10px] text-text-muted">AI 回复</div>
+            <div className="text-caption text-text-muted">AI 回复</div>
           </div>
         </div>
 
         {/* 按模式分布 */}
         <div className="mb-5">
-          <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">按模式分布</h4>
+          <h4 className="mb-2 text-caption font-semibold uppercase tracking-wider text-text-muted">按模式分布</h4>
           <div className="space-y-2">
             {(['office', 'coding', 'design'] as Mode[]).map((mode) => {
               const tokens = stats.byMode[mode] ?? 0
@@ -100,12 +100,12 @@ export function TokenStatsModal(): React.ReactElement | null {
               return (
                 <div key={mode} className="flex items-center gap-2">
                   <span className={`w-10 text-xs font-medium ${MODE_COLORS[mode]}`}>{MODE_LABELS[mode]}</span>
-                  <div className="relative h-6 flex-1 overflow-hidden rounded-lg bg-bg-surface border border-border-subtle">
+                  <div className="relative h-6 flex-1 overflow-hidden rounded-card bg-bg-surface border border-border-subtle">
                     <div
-                      className="absolute inset-y-0 left-0 rounded-lg bg-accent/20 transition-all duration-500"
+                      className="absolute inset-y-0 left-0 rounded-card bg-accent/20 transition-[width] duration-slow"
                       style={{ width: `${percent}%` }}
                     />
-                    <span className="absolute inset-y-0 left-2 flex items-center text-[10px] text-text-secondary">
+                    <span className="absolute inset-y-0 left-2 flex items-center text-caption text-text-secondary">
                       {tokens.toLocaleString()} ({percent.toFixed(1)}%)
                     </span>
                   </div>
@@ -118,18 +118,18 @@ export function TokenStatsModal(): React.ReactElement | null {
         {/* 按天分布 */}
         {stats.sortedDays.length > 0 && (
           <div>
-            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">近 7 天用量</h4>
+            <h4 className="mb-2 text-caption font-semibold uppercase tracking-wider text-text-muted">近 7 天用量</h4>
             <div className="space-y-1.5">
               {stats.sortedDays.map(([day, tokens]) => (
                 <div key={day} className="flex items-center gap-2">
-                  <span className="w-20 text-[11px] text-text-muted">{day}</span>
-                  <div className="relative h-4 flex-1 overflow-hidden rounded bg-bg-surface border border-border-subtle">
+                  <span className="w-20 text-caption text-text-muted">{day}</span>
+                  <div className="relative h-4 flex-1 overflow-hidden rounded-control bg-bg-surface border border-border-subtle">
                     <div
-                      className="absolute inset-y-0 left-0 rounded bg-accent/15 transition-all duration-500"
+                      className="absolute inset-y-0 left-0 rounded-control bg-accent/15 transition-[width] duration-slow"
                       style={{ width: `${(tokens / stats.maxDayTokens) * 100}%` }}
                     />
                   </div>
-                  <span className="w-16 text-right text-[10px] text-text-secondary">{tokens.toLocaleString()}</span>
+                  <span className="w-16 text-right text-caption text-text-secondary">{tokens.toLocaleString()}</span>
                 </div>
               ))}
             </div>

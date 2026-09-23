@@ -109,9 +109,9 @@ function defaultDeepSeekProviders(): ProviderEntry[] {
       name: "deepseek-flash",
       kind: "openai",
       baseURL: "https://api.deepseek.com",
-      model: "deepseek-v4-flash",
-      models: ["deepseek-v4-flash"],
-      defaultModel: "deepseek-v4-flash",
+      model: "deepseek-flash",
+      models: ["deepseek-flash"],
+      defaultModel: "deepseek-flash",
       apiKeyEnv: "DEEPSEEK_API_KEY",
       contextWindow: 1_000_000,
       price: deepSeekV4FlashPrice(),
@@ -407,7 +407,7 @@ function main() {
     {
       ...providers[0],
       modelOverrides: {
-        "deepseek-v4-flash": { contextWindow: 500_000 }, // 缩小窗口
+        "deepseek-flash": { contextWindow: 500_000 }, // 缩小窗口
       },
     },
   ];

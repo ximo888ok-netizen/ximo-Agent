@@ -1,4 +1,4 @@
-import type { StreamChunk, ToolCall } from '@shared/types'
+import type { StreamChunk, ToolCall, AutoModeLevel } from '@shared/types'
 import type { NormalizedUsage } from '@shared/cache'
 
 // ---------- 类型 ----------
@@ -10,10 +10,14 @@ export interface StreamHandlers {
   requestConfirmation?: (toolName: string, message: string) => Promise<boolean>
   /** 请求用户输入（弹窗）— Plan 提问和 Spec 审核使用 */
   requestUserInput?: (type: 'ask' | 'review', title: string, content: string) => Promise<{ confirmed: boolean; response?: string }>
-  /** YOLO 模式：跳过所有确认 */
+  /**
+   * YOLO 模式：跳过所有确认。
+   * 历史遗留的布尔字段 —— 现由 `autoModeLevel === 'yolo'` 派生，不再单独存储/读取，
+   * 保留字段是为了不影响既有调用点，请勿写入。
+   */
   yoloMode?: boolean
-  /** Auto Mode 等级：off=手动确认, safe=读操作自动, yolo=全部自动 */
-  autoModeLevel?: 'off' | 'safe' | 'yolo'
+  /** Auto Mode 等级 —— 语义见 AutoModeLevel。这是权限判定的**唯一权威** */
+  autoModeLevel?: AutoModeLevel
 }
 
 /** 单次 API 调用的结果 */

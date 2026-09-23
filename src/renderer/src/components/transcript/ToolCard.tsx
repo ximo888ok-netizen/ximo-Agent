@@ -2,7 +2,7 @@
 // 参考 DeepSeek-Reasonix 的 ToolCard.tsx
 
 import { memo, useState } from 'react'
-import { ChevronRight, Loader2, CheckCircle, XCircle, Terminal, FileText, Search, Edit3, GitBranch, Cpu } from 'lucide-react'
+import { ChevronRight, Loader2, Check, CheckCircle, XCircle, Terminal, FileText, Search, Edit3, GitBranch, Cpu } from 'lucide-react'
 import type { ToolItem, ToolGroupKind } from '@renderer/lib/transcriptTypes'
 import { toolLabel } from '@renderer/lib/transcriptAdapter'
 import { isCreationGroupableTool, toolGroupKind } from '@renderer/lib/transcriptTypes'
@@ -73,7 +73,7 @@ export const ToolCard = memo(function ToolCard({ item }: { item: ToolItem }): Re
         </span>
         <span className="turn-tool__label">{toolLabel(item.name)}</span>
         {query && <span className="turn-tool__query">{query}</span>}
-        <span className="turn-tool__status">
+        <span className={`turn-tool__status${isRunning ? ' turn-tool__status--running' : isError ? ' turn-tool__status--error' : ''}`}>
           {isRunning ? '执行中…' : isError ? '失败' : '完成'}
           {(item.args || item.output || item.error) && (
             <ChevronRight size={11} className={`turn-tool__chevron${expanded ? ' turn-tool__chevron--open' : ''}`} />
@@ -148,11 +148,11 @@ export const ToolGroup = memo(function ToolGroup({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        {runningCount > 0 ? (
-          <Loader2 size={12} className="animate-spin text-accent" />
-        ) : (
-          <CheckCircle size={12} className="text-green-500/70" />
-        )}
+        {/* 完成态用中性勾 —— 「完成」是默认结果，给它高饱和的绿色等于把颜色的
+            信息量用在了"一切正常"上；颜色要留给"正在进行"与"失败" */}
+        <span className={`tool-group__icon${runningCount > 0 ? ' tool-group__icon--running' : ''}`}>
+          {runningCount > 0 ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+        </span>
         <span className="tool-group__label">{groupTitle(kind)}</span>
         <span className="tool-group__count">{items.length}</span>
         {summaryText && <span className="tool-group__summary">{summaryText}</span>}
@@ -196,7 +196,7 @@ export const ReadOnlyBatch = memo(function ReadOnlyBatch({ items }: { items: Too
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <ChevronRight size={12} className={`readonly-batch__chevron${open ? ' readonly-batch__chevron--open' : ''}`} />
+        <ChevronRight size={13} className={`readonly-batch__chevron${open ? ' readonly-batch__chevron--open' : ''}`} />
         <span className="readonly-batch__label">{label}</span>
       </button>
       {open && (

@@ -20,7 +20,7 @@ import { extractKnowledgeFromConversation } from './knowledge-extract'
  *
  * 缓存优化集成（参考 Reasonix）：
  * - A1 字节稳定前缀：消息只追加不重排
- * - A2 reasoning_content 本地保留请求剥离（空字符串 key）
+ * - A2' reasoning_content 原样回传（思考模式 + 带 tools 时是硬要求，否则 400）
  * - B1/B2 四档 compaction + stuck 暂停
  * - D2 PrefixShape 哈希诊断
  */
@@ -52,12 +52,17 @@ export async function agentLoop(
   let tools = request.tools && request.tools.length > 0 ? request.tools : undefined
 
   // A1 字节稳定前缀 — 消息列表只追加，不重排序、不重写字段
+  // A2' reasoning_content 只做透传：渲染层已经按"是否需要回传"决策过一遍，
+  //   Loop 内不再二次判断，避免两条构造路径（渲染层重建 / Loop 内追加）出现分歧。
+  //   官方约束：请求带 tools 参数时，历史里**所有** assistant 轮的 reasoning_content
+  //   都必须原样回传（含没有发生工具调用的轮次），漏传直接 400。
   const messages: MutableMessage[] = [
     ...request.messages.map((m) => ({
       role: m.role,
       content: m.content,
       ...(m.tool_calls ? { tool_calls: m.tool_calls } : {}),
-      ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {})
+      ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
+      ...(m.reasoning_content !== undefined ? { reasoning_content: m.reasoning_content } : {})
     }))
   ]
 

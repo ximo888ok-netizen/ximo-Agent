@@ -71,9 +71,9 @@ export const MessageItem = memo(function MessageItem({
   if (message.role === 'user') {
     return (
       <div className="group/msg flex justify-end animate-fade-scale">
-        <div className="max-w-[80%] rounded-[22px] rounded-br-md bg-gradient-to-br from-accent to-accent-hover px-4 py-3 text-white shadow-lg shadow-accent/20 edge-light">
+        <div className="accent-bubble max-w-[80%] rounded-[22px] rounded-br-control px-4 py-3 shadow-lg shadow-accent/20 edge-light">
           {message.slashCommand && (
-            <span className="mb-1.5 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm" title={message.slashCommand.systemHint}>
+            <span className="mb-1.5 inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-caption font-medium backdrop-blur-sm" title={message.slashCommand.systemHint}>
               {message.slashCommand.cmd.replace(/^\//, '')}
             </span>
           )}
@@ -84,7 +84,7 @@ export const MessageItem = memo(function MessageItem({
         {onEditMessage && (
           <button
             onClick={() => onEditMessage(message.id)}
-            className="ml-1 self-center opacity-0 group-hover/msg:opacity-100 icon-btn rounded-lg p-1 text-text-muted hover:text-accent transition-all"
+            className="ml-1 self-center opacity-0 group-hover/msg:opacity-100 icon-btn rounded-card p-1 text-text-muted hover:text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
             title="编辑消息"
           >
             <Pencil size={13} />
@@ -141,7 +141,7 @@ export const MessageItem = memo(function MessageItem({
 
   return (
     <div className="flex gap-3 animate-fade-in">
-      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-muted shadow-md shadow-accent/25 edge-light">
+      <div className="accent-tile flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-card shadow-md shadow-accent/25 edge-light">
         <Cpu size={16} className="text-white" />
       </div>
 
@@ -149,7 +149,7 @@ export const MessageItem = memo(function MessageItem({
         <div className="mb-1 flex items-center gap-2">
           <span className="text-xs font-medium text-text-secondary">XimoAgent</span>
           {message.model && !isStreaming && (
-            <span className="chip px-1.5 py-0.5 text-[10px] text-text-muted">{message.model}</span>
+            <span className="chip px-1.5 py-0.5 text-caption text-text-muted">{message.model}</span>
           )}
         </div>
 
@@ -166,10 +166,10 @@ export const MessageItem = memo(function MessageItem({
         ) : (
           <>
             {reasoning && (
-              <div className="mb-2 overflow-hidden rounded-xl border border-border-subtle bg-bg-surface/60 backdrop-blur-sm">
+              <div className="mb-2 overflow-hidden rounded-panel border border-border-subtle bg-bg-surface-soft backdrop-blur-sm">
                 <button
                   onClick={() => setShowReasoning(!showReasoning)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary transition-colors hover:text-text-primary"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary transition-colors hover:text-text-primary active:scale-[0.97]"
                 >
                   <Brain size={13} className="text-accent" />
                   <span>思考过程</span>
@@ -216,7 +216,7 @@ export const MessageItem = memo(function MessageItem({
               <button
                 key={i}
                 onClick={() => setScreenshotUrl(dataUrl)}
-                className="overflow-hidden rounded-lg border border-border hover:border-accent/40 transition-colors"
+                className="overflow-hidden rounded-card border border-border hover:border-accent/40 transition-colors active:scale-[0.97]"
               >
                 <img src={dataUrl} alt={`截图 ${i + 1}`} className="h-24 w-auto object-cover" />
               </button>
@@ -246,18 +246,18 @@ export const MessageItem = memo(function MessageItem({
         {/* 操作栏 */}
         {!isStreaming && content && (
           <div className="mt-2 flex items-center gap-1">
-            <button onClick={handleCopy} className="icon-btn flex items-center gap-1 rounded-lg px-2 py-1 text-xs">
+            <button onClick={handleCopy} className="icon-btn flex items-center gap-1 rounded-card px-2 py-1 text-xs">
               {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
               {copied ? '已复制' : '复制'}
             </button>
             {canRegenerate && onRegenerate && (
-              <button onClick={onRegenerate} className="icon-btn flex items-center gap-1 rounded-lg px-2 py-1 text-xs">
+              <button onClick={onRegenerate} className="icon-btn flex items-center gap-1 rounded-card px-2 py-1 text-xs">
                 <RotateCcw size={13} />
                 重新生成
               </button>
             )}
             {message.tokens && (
-              <span className="chip ml-1 px-1.5 py-0.5 text-[10px] text-text-muted">{message.tokens} tokens</span>
+              <span className="chip ml-1 px-1.5 py-0.5 text-caption text-text-muted">{message.tokens} tokens</span>
             )}
           </div>
         )}

@@ -14,7 +14,7 @@ interface ToolResultCardProps {
 export function ToolResultCard({ result }: ToolResultCardProps): React.ReactElement {
   if (!result.success) {
     return (
-      <div className="my-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400 backdrop-blur-sm">
+      <div className="my-2 rounded-panel border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400 backdrop-blur-sm">
         ⚠ {result.error || result.content}
       </div>
     )
@@ -22,10 +22,10 @@ export function ToolResultCard({ result }: ToolResultCardProps): React.ReactElem
 
   if (result.screenshot) {
     return (
-    <div className="my-2 overflow-hidden rounded-xl border border-border-subtle ios-card">
-      <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface/40 px-3 py-1.5">
-          <span className="text-[11px] text-text-muted">{result.toolName} — 截图</span>
-          <span className="text-[11px] text-green-500">✓ 完成</span>
+    <div className="my-2 overflow-hidden rounded-panel border border-border-subtle ios-card">
+      <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface-soft px-3 py-1.5">
+          <span className="text-caption text-text-muted">{result.toolName} — 截图</span>
+          <span className="text-caption text-green-500">✓ 完成</span>
         </div>
         <img src={result.screenshot} alt="工具执行截图" className="w-full" />
       </div>
@@ -60,10 +60,10 @@ export function ToolResultCard({ result }: ToolResultCardProps): React.ReactElem
   switch (result.displayType) {
     case 'code':
       return (
-        <div className="my-2 overflow-hidden rounded-xl border border-border-subtle ios-card">
-          <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface/40 px-3 py-1.5">
-            <span className="text-[11px] text-text-muted">{result.toolName}</span>
-            <span className="text-[11px] text-green-500">✓ 完成</span>
+        <div className="my-2 overflow-hidden rounded-panel border border-border-subtle ios-card">
+          <div className="flex items-center justify-between border-b border-border-subtle bg-bg-surface-soft px-3 py-1.5">
+            <span className="text-caption text-text-muted">{result.toolName}</span>
+            <span className="text-caption text-green-500">✓ 完成</span>
           </div>
           <CodeBlock language={(result.metadata?.language as string) || 'text'} value={result.content} />
         </div>
@@ -73,21 +73,21 @@ export function ToolResultCard({ result }: ToolResultCardProps): React.ReactElem
         <div className="my-2 ios-card border-accent/20 p-3">
           <div className="mb-2 flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <span className="text-[11px] font-medium text-text-secondary">搜索结果</span>
-            <span className="ml-auto text-[10px] text-green-500">✓</span>
+            <span className="text-caption font-medium text-text-secondary">搜索结果</span>
+            <span className="ml-auto text-caption text-green-500">✓</span>
           </div>
           {/* 尝试解析结构化搜索结果 */}
           {result.metadata?.results && Array.isArray(result.metadata.results) ? (
             <div className="space-y-2">
               {(result.metadata.results as Array<{ title?: string; url?: string; snippet?: string }>).slice(0, 5).map((r, i) => (
-                <div key={i} className="rounded-xl border border-border/50 p-2 hover:border-accent/30 hover:bg-accent/3 transition-all duration-200">
+                <div key={i} className="rounded-panel border border-border-soft p-2 hover:border-accent/30 hover:bg-accent/3 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast">
                   {r.title && (
                     <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-accent hover:underline">
                       {r.title}
                     </a>
                   )}
-                  {r.snippet && <p className="mt-0.5 text-[11px] text-text-muted leading-tight">{r.snippet}</p>}
-                  {r.url && <p className="mt-0.5 text-[10px] text-text-muted/60 truncate">{r.url}</p>}
+                  {r.snippet && <p className="mt-0.5 text-caption text-text-muted leading-tight">{r.snippet}</p>}
+                  {r.url && <p className="mt-0.5 text-caption text-text-tertiary truncate">{r.url}</p>}
                 </div>
               ))}
             </div>

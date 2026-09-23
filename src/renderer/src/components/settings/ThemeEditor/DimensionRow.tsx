@@ -48,7 +48,7 @@ export function DimensionRow({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-text-primary">{label}</p>
-          {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+          {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
         </div>
         {/* 数值输入框 — 支持精确输入 */}
         <input
@@ -61,7 +61,7 @@ export function DimensionRow({
             const v = parseFloat(e.target.value)
             if (!Number.isNaN(v)) handleChange(v)
           }}
-          className="w-14 shrink-0 rounded border border-border bg-bg-input px-1.5 py-0.5 text-right text-[10px] font-mono text-text-secondary focus:border-accent focus:outline-none"
+          className="w-14 shrink-0 rounded-control border border-border bg-bg-input px-1.5 py-0.5 text-right text-caption font-mono text-text-secondary focus:border-accent focus-ring"
         />
       </div>
       <div className="mt-1.5 flex items-center gap-2">
@@ -74,7 +74,7 @@ export function DimensionRow({
           onChange={(e) => handleChange(parseFloat(e.target.value))}
           className="flex-1 accent-[var(--accent-DEFAULT)]"
         />
-        <span className="w-12 shrink-0 text-right text-[10px] font-mono text-text-secondary">
+        <span className="w-12 shrink-0 text-right text-caption font-mono text-text-secondary">
           {displayValue}
         </span>
       </div>

@@ -88,7 +88,7 @@ export const ConversationItem = memo(function ConversationItem({
             }
           }}
           onBlur={commitRename}
-          className="w-full rounded-lg border border-accent/40 bg-bg-elevated px-2 py-1 text-sm text-text-primary focus:border-accent focus:outline-none"
+          className="w-full rounded-card border border-accent/40 bg-bg-elevated px-2 py-1 text-sm text-text-primary focus:border-accent focus-ring"
         />
       </div>
     )
@@ -102,7 +102,7 @@ export const ConversationItem = memo(function ConversationItem({
           e.preventDefault()
           onContextMenu(contextMenuId === conv.id ? null : conv.id)
         }}
-        className={`group flex w-full items-center gap-2 rounded-xl py-2 text-left text-sm transition-all duration-200 ease-out-quart ${
+        className={`group flex w-full items-center gap-2 rounded-panel py-2 text-left text-sm transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ease-out-quart ${
           isActive
             ? 'bg-accent/10 text-accent shadow-[inset_0_1px_0_var(--glass-highlight)] border border-accent/25'
             : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary border border-transparent'
@@ -120,7 +120,7 @@ export const ConversationItem = memo(function ConversationItem({
             title={`上下文占用 ${ctxPct.toFixed(1)}% (${ctxTokens.toLocaleString()} / ${CONTEXT_WINDOW.toLocaleString()})`}
           >
             <span
-              className="h-full rounded-full transition-all duration-300"
+              className="h-full rounded-full transition-[width] duration-base"
               style={{ width: `${Math.min(ctxPct, 100)}%`, backgroundColor: ctxColor }}
             />
           </span>
@@ -130,20 +130,20 @@ export const ConversationItem = memo(function ConversationItem({
             e.stopPropagation()
             onContextMenu(contextMenuId === conv.id ? null : conv.id)
           }}
-          className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary shrink-0 rounded p-0.5 hover:bg-bg-hover transition-opacity"
+          className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary shrink-0 rounded-control p-0.5 hover:bg-bg-hover transition-opacity active:scale-[0.97]"
         >
-          <MoreHorizontal size={12} />
+          <MoreHorizontal size={13} />
         </button>
       </button>
       {/* 右键菜单 */}
       {contextMenuId === conv.id && (
         <div
-          className="glass-strong absolute left-0 top-full z-50 mt-1 w-full rounded-xl border border-border py-1 shadow-glass animate-scale-in"
+          className="glass-strong absolute left-0 top-full z-50 mt-1 w-full rounded-panel border border-border py-1 shadow-glass animate-scale-in"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={startEditing}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors active:scale-[0.97]"
           >
             <Pencil size={11} /> 重命名
           </button>
@@ -152,7 +152,7 @@ export const ConversationItem = memo(function ConversationItem({
               onDelete(conv.id)
               onContextMenu(null)
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors active:scale-[0.97]"
           >
             <Trash2 size={11} /> 删除
           </button>

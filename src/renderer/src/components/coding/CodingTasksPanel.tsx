@@ -35,22 +35,22 @@ export function CodingTasksPanel(): React.ReactElement {
   return (
     <div className="flex h-full w-full flex-col">
       {/* 头部 — 进度统计 */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-3 py-2.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-3 py-2">
         <ListTodo size={13} className="shrink-0 text-accent" />
         <span className="text-xs font-medium text-text-secondary">任务规划</span>
         <div className="relative h-1.5 w-20 overflow-hidden rounded-full bg-border">
           <div
-            className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-accent/60 to-accent transition-all duration-500 ease-out-quart"
+            className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-accent/60 to-accent transition-[width] duration-slow ease-out-quart"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <span className="text-[11px] text-text-muted tabular-nums">
+        <span className="text-caption text-text-muted tabular-nums">
           {total > 0 ? `${done}/${total}` : '—'}
         </span>
         {inProgress > 0 && <Loader2 size={11} className="shrink-0 animate-spin text-accent" />}
         {hasAssignee && (
-          <span className="ml-auto flex shrink-0 items-center gap-0.5 text-[10px] text-accent/70">
-            <Users size={10} />
+          <span className="ml-auto flex shrink-0 items-center gap-0.5 text-caption text-accent/70">
+            <Users size={11} />
             子Agent
           </span>
         )}
@@ -60,9 +60,9 @@ export function CodingTasksPanel(): React.ReactElement {
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 pb-4">
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <ListTodo size={22} className="text-text-muted/40" />
-            <p className="text-[11px] text-text-muted">暂无任务规划</p>
-            <p className="max-w-[180px] text-[10px] leading-relaxed text-text-muted/60">
+            <ListTodo size={20} className="text-text-quaternary" />
+            <p className="text-caption text-text-muted">暂无任务规划</p>
+            <p className="max-w-[180px] text-caption leading-relaxed text-text-tertiary">
               长任务进行中，Agent 会通过 todo_write 规划阶段与子步骤，并在此实时展示进度
             </p>
           </div>

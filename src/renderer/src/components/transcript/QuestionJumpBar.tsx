@@ -131,7 +131,7 @@ export function JumpToBottom({ onClick }: { onClick: () => void }): React.ReactE
       aria-label="回到底部"
       title="回到底部"
     >
-      <ArrowDown size={18} strokeWidth={2.2} aria-hidden="true" />
+      <ArrowDown size={16} strokeWidth={2} aria-hidden="true" />
     </button>
   )
 }

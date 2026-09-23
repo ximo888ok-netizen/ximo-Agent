@@ -12,7 +12,7 @@ import { ModeToolbars } from './chat-input/ModeToolbars'
 import { useChatActions, type SlashCommandEntry } from './chat-input/useChatActions'
 import { useEnhancePrompt } from './chat-input/useEnhancePrompt'
 
-export function GlobalChatInput(): React.ReactElement {
+export function GlobalChatInput({ emptyState = false }: { emptyState?: boolean }): React.ReactElement {
   const sendMessage = useStore((s) => s.sendMessage)
   const cancelStream = useStore((s) => s.cancelStream)
   const isStreaming = useStore((s) => s.isStreaming)
@@ -39,12 +39,6 @@ export function GlobalChatInput(): React.ReactElement {
   const toggleComponent = useStore((s) => s.toggleComponent)
   const clearSelectedComponents = useStore((s) => s.clearSelectedComponents)
   const conversation = useStore((s) => s.conversations.find((c) => c.id === s.currentConversationId) ?? null)
-  const browserOpen = useStore((s) => s.browserOpen)
-  const toggleBrowser = useStore((s) => s.toggleBrowser)
-  const isBrowserRecording = useStore((s) => s.isBrowserRecording)
-  const toggleBrowserRecording = useStore((s) => s.toggleBrowserRecording)
-  const computerUseRunning = useStore((s) => s.computerUseRunning)
-  const toggleComputerUse = useStore((s) => s.toggleComputerUse)
   const refreshComputerUseStatus = useStore((s) => s.refreshComputerUseStatus)
 
   // 办公模式：初始化操控电脑状态
@@ -94,8 +88,9 @@ export function GlobalChatInput(): React.ReactElement {
   const placeholder = MODE_PLACEHOLDERS[currentMode]
 
   return (
-    <div className="relative z-10 px-4 pb-3 pt-2">
-      <div className="mx-auto max-w-4xl">
+    <div className={`relative z-10 px-4 ${emptyState ? 'pb-0 pt-4' : 'pb-3 pt-2'}`}>
+      {/* 空态下输入框与会话区英雄块同宽（max-w-2xl），否则 896px 的宽条会显得又长又扁 */}
+      <div className={`mx-auto ${emptyState ? 'max-w-2xl' : 'max-w-4xl'}`}>
         <ChatChips
           attachedFiles={attachedFiles}
           onRemoveFile={removeAttachedFile}
@@ -112,15 +107,24 @@ export function GlobalChatInput(): React.ReactElement {
         />
 
         <div
-          className={`rounded-2xl border bg-bg-elevated/60 backdrop-blur-md transition-all duration-300 ease-out-quart ${
+          className={`rounded-panel border bg-bg-elevated-soft backdrop-blur-md transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-base ease-out-quart ${
             isStreaming ? 'beam-border border-accent/20'
               : isDragOver ? 'border-accent border-2'
-                : 'border-border-subtle hover:border-border focus-within:border-accent/40'
+                // 聚焦态刻意**不用强调色**，只做中性边框的深浅变化。
+                // 之前这里写 focus-within:border-accent/40，textarea 上又挂了 .focus-ring
+                // （2px 描边 + 2px 偏移，正好压在面板边缘上），两者叠加成了一圈很显眼的
+                // 蓝色光框 —— 而这个容器本来就很大，光框的视觉重量远超它提供的信息量。
+                // 大输入框的焦点指示由光标承担，这里只留一层克制的边框响应。
+                : 'border-border-subtle hover:border-border focus-within:border-border'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* 不加 .focus-ring —— 焦点指示由外层容器的边框变化 + 光标承担。
+              textarea 上必须显式压掉 base.css 的全局 :focus-visible 兜底，
+              否则它仍会在四周画一圈 2px 描边（那正是要去掉的"光框"）。
+              这是"有替代的抑制"，不是把焦点可见性整个关掉。 */}
           <textarea
             ref={textareaRef}
             value={text}
@@ -128,12 +132,12 @@ export function GlobalChatInput(): React.ReactElement {
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
-            className="no-drag w-full resize-none bg-transparent px-4 pt-3 pb-1 text-[15px] text-text-primary placeholder:text-text-muted focus:outline-none"
+            className="no-drag w-full resize-none bg-transparent px-4 pt-3 pb-1 text-body text-text-primary placeholder:text-text-muted focus:outline-none"
             style={{ maxHeight: '180px' }}
           />
 
           {enhanceError && (
-            <div className="flex items-center gap-1.5 px-4 py-1 text-[11px] text-red-400">
+            <div className="flex items-center gap-1.5 px-4 py-1 text-caption text-red-400">
               <span>⚠</span>
               <span>增强失败：{enhanceError}</span>
             </div>
@@ -156,7 +160,7 @@ export function GlobalChatInput(): React.ReactElement {
             networkSearchOn={networkSearchOn}
             onToggleNetwork={() => setNetworkSearchOn(!networkSearchOn)}
             autoModeLevel={autoModeLevel}
-            onCycleAutoMode={() => { const next = autoModeLevel === 'off' ? 'safe' : autoModeLevel === 'safe' ? 'yolo' : 'off'; setAutoModeLevel(next) }}
+            onAutoModeChange={setAutoModeLevel}
             isStreaming={isStreaming}
             streamingTokens={streamingTokens}
             text={text}
@@ -175,13 +179,13 @@ export function GlobalChatInput(): React.ReactElement {
         <SessionTokenStats conversation={conversation} />
 
         {showSlashMenu && (
-          <div className="glass-strong mt-2 rounded-2xl border border-border p-1.5 shadow-glass animate-scale-in">
+          <div className="glass-strong mt-2 rounded-panel border border-border p-1.5 shadow-glass animate-scale-in">
             {/* 内置命令 */}
             {slashCommands.filter((c) => !c.skillId).map(({ cmd, label, systemHint }) => (
               <button
                 key={cmd}
                 onClick={() => handleSlashCommand(cmd, systemHint)}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                className="flex w-full items-center gap-2 rounded-panel px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors active:scale-[0.97]"
               >
                 <span className="font-mono text-accent">{cmd}</span>
                 <span className="text-text-muted">{label}</span>
@@ -190,14 +194,14 @@ export function GlobalChatInput(): React.ReactElement {
             {/* 导入技能命令分区 */}
             {hasSkillCommands && (
               <>
-                <div className="mt-1.5 mb-0.5 border-t border-border-subtle pt-1.5 text-[10px] font-medium text-text-muted/70 px-3">
+                <div className="mt-1.5 mb-0.5 border-t border-border-subtle pt-1.5 text-caption font-medium text-text-muted px-3">
                   导入技能
                 </div>
                 {slashCommands.filter((c): c is SlashCommandEntry & { skillId: string } => Boolean(c.skillId)).map(({ cmd, label, description, systemHint }) => (
                   <button
                     key={cmd}
                     onClick={() => handleSlashCommand(cmd, systemHint)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+                    className="flex w-full items-center gap-2 rounded-panel px-3 py-1.5 text-left text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors active:scale-[0.97]"
                     title={description}
                   >
                     <span className="font-mono text-accent">{cmd}</span>
@@ -215,18 +219,6 @@ export function GlobalChatInput(): React.ReactElement {
             projectPath={projectPath}
             onOpenProject={openProject}
             onClearProject={() => setProjectPath('')}
-            browserOpen={browserOpen}
-            onToggleBrowser={() => {
-              if (browserOpen && isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
-              else toggleBrowser()
-            }}
-            isBrowserRecording={isBrowserRecording}
-            onToggleRecording={() => {
-              if (isBrowserRecording) window.dispatchEvent(new CustomEvent('ximo:stop-recording'))
-              else toggleBrowserRecording()
-            }}
-            computerUseRunning={computerUseRunning}
-            onToggleComputerUse={toggleComputerUse}
             onSlashCommand={handleSlashCommand}
           />
         </div>

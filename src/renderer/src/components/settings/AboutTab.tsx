@@ -117,9 +117,9 @@ export function AboutTab(): React.ReactElement {
   return (
     <div className="space-y-5">
       {/* 应用信息 */}
-      <div className="flex items-center gap-4 rounded-xl border border-border bg-bg-elevated p-5">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-accent-muted shadow-lg shadow-accent/20">
-          <Cpu size={28} className="text-white" />
+      <div className="flex items-center gap-4 rounded-panel border border-border bg-bg-elevated p-5">
+        <div className="accent-tile flex h-14 w-14 items-center justify-center rounded-panel shadow-lg shadow-accent/20">
+          <Cpu size={32} className="text-white" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-text-primary">XimoAgent</h3>
@@ -134,21 +134,21 @@ export function AboutTab(): React.ReactElement {
         <button
           onClick={handleCheckUpdate}
           disabled={updateState === 'checking' || updateState === 'downloading'}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-bg-elevated px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2 rounded-card border border-border bg-bg-elevated px-4 py-2 text-sm font-medium text-text-primary transition-colors hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RefreshCw size={15} className={updateState === 'checking' ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={updateState === 'checking' ? 'animate-spin' : ''} />
           {updateState === 'checking' ? '正在检查...' : '检查更新'}
         </button>
 
         {updateState === 'up-to-date' && (
-          <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2.5 text-sm text-green-400">
-            <CheckCircle size={15} />
+          <div className="flex items-center gap-2 rounded-card border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm text-green-400">
+            <CheckCircle size={16} />
             已是最新版本 v{updateInfo.currentVersion}
           </div>
         )}
 
         {updateState === 'downloading' && (
-          <div className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
+          <div className="rounded-card border border-accent/30 bg-accent/10 px-4 py-3">
             <div className="flex items-center gap-2 mb-1.5">
               <RefreshCw size={13} className="animate-spin text-accent" />
               <span className="text-sm font-medium text-accent">
@@ -160,7 +160,7 @@ export function AboutTab(): React.ReactElement {
             )}
             <div className="h-2 w-full rounded-full bg-bg-base overflow-hidden mb-1.5">
               <div
-                className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
+                className="h-full rounded-full bg-accent transition-[width] duration-base ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -175,9 +175,9 @@ export function AboutTab(): React.ReactElement {
         )}
 
         {updateState === 'downloaded' && (
-          <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+          <div className="rounded-card border border-green-500/30 bg-green-500/10 px-4 py-3">
             <div className="flex items-center gap-2">
-              <CheckCircle size={15} className="text-green-400" />
+              <CheckCircle size={16} className="text-green-400" />
               <span className="text-sm font-medium text-green-400">
                 下载完成，正在启动安装程序...
               </span>
@@ -186,8 +186,8 @@ export function AboutTab(): React.ReactElement {
         )}
 
         {updateState === 'error' && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
-            <AlertCircle size={15} />
+          <div className="flex items-center gap-2 rounded-card border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+            <AlertCircle size={16} />
             {updateInfo.error ?? '检查更新失败'}
           </div>
         )}
@@ -196,11 +196,11 @@ export function AboutTab(): React.ReactElement {
       <Divider />
       <SectionTitle title="DeepSeek-V4 模型" desc="由深度求索于 2026 年 4 月发布的新一代旗舰大模型" />
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2">
         <InfoCard label="上下文窗口" value="1M tokens" />
         <InfoCard label="架构" value="MoE 稀疏注意力" />
-        <InfoCard label="V4-Pro 参数" value="1.6T / 49B 激活" />
-        <InfoCard label="V4-Flash 参数" value="284B / 13B 激活" />
+        <InfoCard label="V4 Pro 参数" value="1.6T / 49B 激活" />
+        <InfoCard label="Flash 参数" value="284B / 13B 激活" />
       </div>
 
       <Divider />
@@ -222,7 +222,7 @@ export function AboutTab(): React.ReactElement {
           (tech) => (
             <span
               key={tech}
-              className="rounded-md border border-border bg-bg-elevated px-2.5 py-1 text-xs text-text-secondary"
+              className="rounded-control border border-border bg-bg-elevated px-3 py-1 text-xs text-text-secondary"
             >
               {tech}
             </span>

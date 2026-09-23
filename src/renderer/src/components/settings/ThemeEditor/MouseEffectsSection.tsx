@@ -49,12 +49,12 @@ function StyleGrid<T extends string>({
   onSelect: (v: T) => void
 }): React.ReactElement {
   return (
-    <div className={`grid grid-cols-5 gap-1.5 transition-opacity duration-200 ${on ? '' : 'opacity-40'}`}>
+    <div className={`grid grid-cols-5 gap-1.5 transition-opacity duration-fast ${on ? '' : 'opacity-40'}`}>
       {styles.map((s) => (
         <button
           key={s.value}
           onClick={() => onSelect(s.value)}
-          className={`rounded-lg border p-1.5 text-center transition-all duration-200 ${
+          className={`rounded-card border p-1.5 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
             on && current === s.value
               ? 'border-accent bg-accent/10'
               : 'border-border bg-bg-elevated hover:border-border-hover'
@@ -64,7 +64,7 @@ function StyleGrid<T extends string>({
             <MiniPreview def={s} />
           </div>
           <p
-            className={`mt-0.5 truncate text-[10px] font-medium ${
+            className={`mt-0.5 truncate text-caption font-medium ${
               on && current === s.value ? 'text-accent' : 'text-text-primary'
             }`}
           >
@@ -100,7 +100,7 @@ export function MouseEffectsSection({
     >
       {/* 总开关 */}
       <ToggleRow
-        icon={<Sparkles size={15} />}
+        icon={<Sparkles size={16} />}
         label="启用鼠标特效"
         desc="移动鼠标时产生跟随粒子，点击时产生反馈动画"
         active={enabled}
@@ -114,7 +114,7 @@ export function MouseEffectsSection({
           {/* ── 跟随特效 ── */}
           <div className="space-y-2 pt-3">
             <ToggleRow
-              icon={<Wand2 size={15} />}
+              icon={<Wand2 size={16} />}
               label="跟随特效"
               desc={`${TRAIL_STYLES.length} 种样式 · 鼠标移动时持续生成`}
               active={trailOn}
@@ -134,7 +134,7 @@ export function MouseEffectsSection({
           {/* ── 点击特效 ── */}
           <div className="space-y-2 pt-3">
             <ToggleRow
-              icon={<Zap size={15} />}
+              icon={<Zap size={16} />}
               label="点击特效"
               desc={`${CLICK_STYLES.length} 种样式 · 鼠标按下时爆发`}
               active={clickOn}
@@ -154,7 +154,7 @@ export function MouseEffectsSection({
           {/* ── 颜色 ── */}
           <div className="pt-3">
             <div className="mb-1.5 flex items-center gap-2">
-              <Palette size={15} className="text-accent" />
+              <Palette size={16} className="text-accent" />
               <p className="text-sm font-medium text-text-primary">特效颜色</p>
             </div>
             <div className="flex items-center gap-2">
@@ -162,21 +162,21 @@ export function MouseEffectsSection({
                 type="color"
                 value={settings.cursorEffectColor || '#6366f1'}
                 onChange={(e) => update({ cursorEffectColor: e.target.value })}
-                className="h-8 w-10 cursor-pointer rounded-md border border-border bg-bg-elevated"
+                className="h-8 w-10 cursor-pointer rounded-control border border-border bg-bg-elevated"
               />
               <button
                 onClick={() => update({ cursorEffectColor: '' })}
-                className={`rounded-md px-2 py-1 text-[11px] transition-colors ${
+                className={`rounded-control px-2 py-1 text-caption transition-colors ${
                   !settings.cursorEffectColor ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
                 跟随主题色
               </button>
               {settings.cursorEffectColor && (
-                <span className="font-mono text-[10px] text-text-muted">{settings.cursorEffectColor}</span>
+                <span className="font-mono text-caption text-text-muted">{settings.cursorEffectColor}</span>
               )}
             </div>
-            <p className="mt-1 text-[10px] text-text-muted">默认跟随主题色；彩虹 / 像素 / 彩带等样式会自动忽略此颜色使用多彩粒子</p>
+            <p className="mt-1 text-caption text-text-muted">默认跟随主题色；彩虹 / 像素 / 彩带等样式会自动忽略此颜色使用多彩粒子</p>
           </div>
 
           {/* ── 滑块参数 ── */}
@@ -185,10 +185,10 @@ export function MouseEffectsSection({
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Maximize2 size={14} className="text-text-muted" />
+                  <Maximize2 size={13} className="text-text-muted" />
                   <span className="text-xs font-medium text-text-primary">尺寸缩放</span>
                 </div>
-                <span className="font-mono text-[11px] text-text-secondary">{(settings.cursorEffectScale ?? 1).toFixed(1)}x</span>
+                <span className="font-mono text-caption text-text-secondary">{(settings.cursorEffectScale ?? 1).toFixed(1)}x</span>
               </div>
               <input
                 type="range"
@@ -205,10 +205,10 @@ export function MouseEffectsSection({
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Zap size={14} className="text-text-muted" />
+                  <Zap size={13} className="text-text-muted" />
                   <span className="text-xs font-medium text-text-primary">特效强度</span>
                 </div>
-                <span className="font-mono text-[11px] text-text-secondary">{(settings.cursorEffectIntensity ?? 1).toFixed(1)}</span>
+                <span className="font-mono text-caption text-text-secondary">{(settings.cursorEffectIntensity ?? 1).toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -219,17 +219,17 @@ export function MouseEffectsSection({
                 onChange={(e) => update({ cursorEffectIntensity: parseFloat(e.target.value) })}
                 className="ce-range"
               />
-              <p className="mt-0.5 text-[10px] text-text-muted">越高粒子越多、飞散越远</p>
+              <p className="mt-0.5 text-caption text-text-muted">越高粒子越多、飞散越远</p>
             </div>
 
             {/* 时长 */}
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-text-muted" />
+                  <Clock size={13} className="text-text-muted" />
                   <span className="text-xs font-medium text-text-primary">特效时长</span>
                 </div>
-                <span className="font-mono text-[11px] text-text-secondary">{settings.cursorEffectDuration ?? 900}ms</span>
+                <span className="font-mono text-caption text-text-secondary">{settings.cursorEffectDuration ?? 900}ms</span>
               </div>
               <input
                 type="range"
@@ -244,8 +244,8 @@ export function MouseEffectsSection({
           </div>
 
           {/* 提示 */}
-          <div className="mt-3 rounded-md border border-border-subtle bg-bg-elevated/50 px-3 py-2">
-            <p className="text-[11px] leading-relaxed text-text-muted">
+          <div className="mt-3 rounded-control border border-border-subtle bg-bg-elevated-soft px-3 py-2">
+            <p className="text-caption leading-relaxed text-text-muted">
               <span className="text-text-secondary">💡 提示：</span>
               保存后立即全局生效，无需重启。特效层不拦截鼠标事件，不影响任何操作。若系统开启「减弱动态效果」，特效会自动关闭。
             </p>

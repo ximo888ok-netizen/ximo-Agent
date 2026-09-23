@@ -1,4 +1,22 @@
-/* ── 推理面板 ── */
+/* ═══════════════════════════════════════════════════════════════════
+   思考过程 / 执行时间线
+   ═══════════════════════════════════════════════════════════════════
+   设计主张：**颜色只用来表达状态**。
+   中性是默认（完成、正常），强调色只给「正在进行」，红色只给「失败」。
+   原先每个完成的工具都挂一个绿色对勾 —— 那是用高饱和色标注"一切正常"，
+   把颜色的信息量提前用光了，真正需要注意的状态反而不突出。
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes tlNodePulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-color) 12%, transparent); }
+  50%      { box-shadow: 0 0 0 5px color-mix(in srgb, var(--theme-color) 22%, transparent); }
+}
+@keyframes tlTailBreath {
+  0%, 100% { border-left-color: color-mix(in srgb, var(--theme-color) 42%, transparent); }
+  50%      { border-left-color: var(--theme-color); }
+}
+
+/* ── 推理面板（独立形态，用于非折叠场景）── */
 .reasoning {
   margin-bottom: 8px;
 }
@@ -13,14 +31,14 @@
   font-size: 13px;
   cursor: pointer;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart);
 }
 .reasoning__head:hover {
   background: var(--bg-hover);
   color: var(--text-secondary);
 }
 .reasoning__head[data-running] {
-  color: var(--theme-color);
+  color: var(--accent-fill, var(--theme-color));
 }
 .reasoning__head span {
   font-weight: 500;
@@ -29,6 +47,7 @@
   font-size: 11px;
   color: var(--text-muted);
   margin-left: 2px;
+  font-variant-numeric: tabular-nums;
 }
 .reasoning__chevron {
   transition: transform 0.25s var(--ease-out-quart);
@@ -36,17 +55,104 @@
 .reasoning__chevron--open {
   transform: rotate(90deg);
 }
-.reasoning__body {
-  padding: 8px 14px;
-  margin: 2px 0 8px;
+
+/* ── 推理正文容器 ──
+   对比度从 --text-muted 提到 --text-secondary（浅色下 4.83:1 → 7.56:1）：
+   推理过程是**需要读**的内容，不是装饰性灰字。
+
+   ⚠️ **左边缘必须与工具行、最终回答完全对齐**（同在 .transcript-row 的栏宽上）。
+   引文轨（border-left）用负 margin 挪进左侧留白，
+   负 margin 比 padding 多出 border 的宽度（-14 = -12 padding + 2 border），
+   于是正文文字正好落在栏宽左边缘上。
+
+   两条渲染路径（独立推理面板 / 过程区内联推理）**共用这一条规则** ——
+   原先它们各写一份 padding，同一段推理在两种形态下左边缘会差开。 */
+.reasoning-body {
+  margin-left: -14px;
+  padding: 8px 0 8px 12px;
   border-left: 2px solid color-mix(in srgb, var(--theme-color) 20%, transparent);
   font-size: 13px;
-  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ── 思考链限高 ──
+   默认限高，超出部分只作"还有内容"的信号，要看全点展开。
+
+   两个刻意的选择：
+   · **渐隐用 mask 而不是背景色渐变** —— 会话区底下是玻璃/渐变背景，
+     用某个具体色值做渐隐会在不同主题、不同背景图下露馅；mask 直接把内容淡出，与背景无关。
+     （渐隐只作用于正文，引文轨在 mask 之外，所以底色条保持完整。）
+   · **不用 `overflow-y: auto`** —— 外层会话区本身已在滚动，
+     内部再套一个滚动条会形成嵌套滚动，滚轮该滚哪一层不可预期。
+     所以这里用 `overflow: hidden`；流式期间靠程序化设 `scrollTop` 贴住最新内容。 */
+.reasoning-clamp {
+  max-height: 320px;
+  overflow: hidden;
+}
+.reasoning-clamp:not(.reasoning-clamp--open) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+}
+.reasoning-clamp--open {
+  max-height: none;
+}
+
+/* 展开 / 收起 */
+.reasoning-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0 -8px;
+  padding: 3px 8px;
+  border: none;
+  background: transparent;
   color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart);
+}
+.reasoning-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.reasoning-toggle__chevron {
+  transition: transform 0.25s var(--ease-out-quart);
+}
+.reasoning-toggle__chevron--open {
+  transform: rotate(180deg);
+}
+
+.reasoning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reasoning-text__p {
+  margin: 0;
+  line-height: 1.75;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 400px;
-  overflow-y: auto;
+}
+
+/* 正在写的那一段 —— 左侧强调色细条 + 向右渐隐的底色 + 轻微呼吸。
+   流式长文本最大的问题是"看不出进展落在哪"，这一段标记解决的就是它。
+
+   ⚠️ 缩进必须与同块其他段落**完全一致**：负 margin 与 padding 要等量抵消
+   （-12px / +12px ⇒ 净位移 0）。否则这一行会比上面几行多缩进，
+   同一个推理块里段落左边缘参差，读起来就是"对不齐"。 */
+.reasoning-text__p--tail {
+  margin-left: -12px;
+  padding: 5px 10px 5px 12px;
+  border-left: 2px solid color-mix(in srgb, var(--theme-color) 42%, transparent);
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--theme-color) 9%, transparent),
+    transparent 78%
+  );
+  animation: tlTailBreath 1.8s ease-in-out infinite;
 }
 
 /* ── TurnCollapse ── */
@@ -56,7 +162,7 @@
 .turn-collapse__head {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 5px 12px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface);
@@ -64,7 +170,7 @@
   font-size: 12px;
   cursor: pointer;
   border-radius: 999px;
-  transition: all 0.2s ease;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart);
 }
 .turn-collapse__head:hover {
   background: var(--bg-hover);
@@ -73,30 +179,80 @@
 }
 .turn-collapse__label {
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
+.turn-collapse__chevron {
+  transition: transform 0.25s var(--ease-out-quart);
+}
+.turn-collapse__chevron--open {
+  transform: rotate(90deg);
+}
+/* 折叠头里的活动点 —— 收起时也能看出"还在跑" */
+.turn-collapse__live {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--accent-fill, var(--theme-color));
+  animation: tlNodePulse 1.6s ease-in-out infinite;
+}
+
+/* ── 过程区：纯平铺 ──
+   这里刻意**没有**轨道、节点、缩进。
+   曾做过一版"执行时间线"（贯穿轨道 + 每步一个状态节点），退掉了 ——
+   时间线是「**回顾**」的隐喻，而这里要表达的是「**正在流出**」：
+   轨道与缩进会让内容像是被装进一个容器，装饰比内容本身还抢眼。
+   参考的成熟实现也都是纯平铺：内容一条一条往下追加，
+   没有任何东西固定在某处原地更新。
+   状态则跟着内容走 —— 哪一步在跑，那一步自己带状态（行内文字 + 左侧强调条）。 */
 .turn-collapse__body {
-  margin-top: 8px;
-  padding-left: 16px;
-  border-left: 2px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
-.turn-collapse__inline-reasoning {
-  margin: 4px 0;
+.turn-collapse__head + .turn-collapse__body {
+  margin-top: 9px;
 }
-.turn-collapse__reasoning-head {
+/* 收起时**真正**隐藏过程。
+   这条规则原先缺失 —— "折叠"只转了箭头，内容始终全量铺开，
+   于是整卷会话看起来全是过程，这也是"乱"的一个主要来源。 */
+.turn-collapse:not(.turn-collapse--open) .turn-collapse__body {
+  display: none;
+}
+
+/* 注：内联推理的几何与限高统一由 `.reasoning-body` / `.reasoning-clamp` 承担（见上方），
+   这里不再单独定义 —— 两条渲染路径共用同一套，才不会有左边缘差。 */
+
+/* ── 「正在思考」指示器 ──
+   只在当前唯一的活跃流上出现一次。原先每条空流式消息各渲染一份三点弹跳图，
+   几条并发就在会话里散出一排无意义的点。 */
+.msg-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--theme-color) 16%, var(--border-subtle));
+  background: color-mix(in srgb, var(--theme-color) 7%, var(--bg-elevated));
+}
+.msg-waiting__pulse {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--accent-fill, var(--theme-color));
+  animation: tlNodePulse 1.5s ease-in-out infinite;
+}
+.msg-waiting__text {
   font-size: 12px;
+  color: var(--text-secondary);
 }
-.turn-collapse__inline-body {
-  padding: 6px 12px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-muted);
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 300px;
-  overflow-y: auto;
-  border-left: 2px solid color-mix(in srgb, var(--theme-color) 15%, transparent);
-  margin-left: 4px;
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-row__node,
+  .turn-collapse__live,
+  .msg-waiting__pulse,
+  .reasoning-text__p--tail {
+    animation: none;
+  }
 }

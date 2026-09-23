@@ -35,7 +35,7 @@ export function LongTaskPicker(): React.ReactElement {
       {/* 触发按钮 */}
       <button
         onClick={() => setOpen(!open)}
-        className={`chip flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium transition-all duration-200 active:scale-95 ${
+        className={`chip flex items-center gap-1 px-2 py-0.5 text-caption font-medium transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-95 ${
           longTask
             ? 'border-accent/40 text-accent bg-accent/15 shadow-[0_0_10px_color-mix(in_srgb,var(--theme-color)_30%,transparent)]'
             : 'text-text-muted hover:text-text-secondary'
@@ -44,13 +44,13 @@ export function LongTaskPicker(): React.ReactElement {
       >
         {longTask ? <InfinityIcon size={11} className="text-accent" /> : <InfinityIcon size={11} />}
         <span>{longTask ? '长任务' : '标准'}</span>
-        <ChevronUp size={10} className={`text-text-muted transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronUp size={11} className={`text-text-muted transition-transform duration-fast ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {/* 向上展开的下拉面板 — 输入框位于底部，向下展开会超出可视区 */}
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-1.5 w-44 rounded-b-xl rounded-t-md border border-border-subtle bg-bg-elevated shadow-glass animate-fade-scale">
-          <div className="px-3 py-1.5 text-[10px] text-text-muted border-b border-border-subtle">
+        <div className="absolute bottom-full left-0 z-50 mb-1.5 w-44 rounded-b-panel rounded-t-control border border-border-subtle bg-bg-elevated shadow-glass animate-fade-scale">
+          <div className="px-3 py-1.5 text-caption text-text-muted border-b border-border-subtle">
             任务模式
           </div>
           {LONG_TASK_OPTIONS.map((opt) => (
@@ -66,7 +66,7 @@ export function LongTaskPicker(): React.ReactElement {
             >
               <span className="flex flex-col">
                 <span className="text-xs font-medium">{opt.label}</span>
-                <span className="text-[10px] text-text-muted">{opt.desc}</span>
+                <span className="text-caption text-text-muted">{opt.desc}</span>
               </span>
               {longTask === opt.value && (
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />

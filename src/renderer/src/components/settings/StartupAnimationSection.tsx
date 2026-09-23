@@ -37,7 +37,7 @@ export function StartupAnimationSection({
   return (
     <CollapsibleSection icon={<Sparkles size={16} />} title="开屏动画" desc="启动动画文字、转场样式与配色">
       <ToggleRow
-        icon={<Zap size={15} />}
+        icon={<Zap size={16} />}
         label="开屏动画"
         desc="启动时显示草书逐字描边动画"
         active={local.startupAnimationEnabled ?? true}
@@ -50,7 +50,7 @@ export function StartupAnimationSection({
         <>
           <div className="py-2">
             <div className="mb-2 flex items-center gap-2">
-              <Type size={15} className="text-text-muted" />
+              <Type size={16} className="text-text-muted" />
               <label className="text-sm font-medium text-text-primary">开屏文字</label>
             </div>
             <input
@@ -59,13 +59,13 @@ export function StartupAnimationSection({
               onChange={(e) => update({ startupText: e.target.value })}
               placeholder="ximo-Agent"
               maxLength={30}
-              className="w-full rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+              className="w-full rounded-control border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus-ring"
             />
             <p className="mt-1 text-xs text-text-muted">启动时逐字描边的文字，建议 3~15 个字符</p>
           </div>
 
           <NumberInputRow
-            icon={<Type size={15} />}
+            icon={<Type size={16} />}
             label="文字大小"
             desc="SVG 渲染的 fontSize"
             value={local.startupTextSize ?? 76}
@@ -74,7 +74,7 @@ export function StartupAnimationSection({
           />
 
           <NumberInputRow
-            icon={<Clock size={15} />}
+            icon={<Clock size={16} />}
             label="描边时长"
             desc="每个字的描边动画时长"
             value={local.startupStrokeDuration ?? 460}
@@ -84,13 +84,13 @@ export function StartupAnimationSection({
 
           <div className="py-2">
             <div className="mb-2 flex items-center gap-2">
-              <Type size={15} className="text-text-muted" />
+              <Type size={16} className="text-text-muted" />
               <label className="text-sm font-medium text-text-primary">开屏字体</label>
             </div>
             <select
               value={local.startupFontFamily ?? "'Dancing Script', cursive"}
               onChange={(e) => update({ startupFontFamily: e.target.value })}
-              className="w-full rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+              className="w-full rounded-control border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus-ring"
             >
               <option value="'Dancing Script', cursive">Dancing Script（默认草书）</option>
               {systemFonts.map(f => <option key={f} value={f}>{f}</option>)}
@@ -102,7 +102,7 @@ export function StartupAnimationSection({
           <Divider />
 
           <ToggleRow
-            icon={<Sparkles size={15} />}
+            icon={<Sparkles size={16} />}
             label="转场效果"
             desc="描边完成后是否播放转场效果"
             active={local.burstTransitionEnabled ?? true}
@@ -113,10 +113,10 @@ export function StartupAnimationSection({
 
           {(local.burstTransitionEnabled ?? true) && (
             <>
-              <div className="ios-card p-3.5 space-y-3 my-2">
+              <div className="ios-card p-3 space-y-3 my-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sparkles size={15} className="text-accent" />
+                    <Sparkles size={16} className="text-accent" />
                     <div>
                       <p className="text-sm font-medium text-text-primary">转场样式</p>
                       <p className="text-xs text-text-muted">描边完成后的粒子效果类型</p>
@@ -125,17 +125,17 @@ export function StartupAnimationSection({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => transitionFileRef.current?.click()}
-                      className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                      className="flex items-center gap-1 rounded-control border border-border bg-bg-elevated px-2 py-1 text-caption text-text-secondary transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
                       title="从 JSON 文件导入转场动画"
                     >
-                      <Upload size={12} />
+                      <Upload size={13} />
                       导入动画
                     </button>
                   </div>
                 </div>
                 <input ref={transitionFileRef} type="file" accept=".json,application/json" onChange={onImportTransition} className="hidden" />
                 {transitionMsg && (
-                  <p className={`text-[11px] ${transitionMsg.ok ? 'text-emerald-500' : 'text-red-500'}`}>{transitionMsg.text}</p>
+                  <p className={`text-caption ${transitionMsg.ok ? 'text-emerald-500' : 'text-red-500'}`}>{transitionMsg.text}</p>
                 )}
                 <div className="grid grid-cols-3 gap-2">
                   {([
@@ -150,21 +150,21 @@ export function StartupAnimationSection({
                     <button
                       key={style.value}
                       onClick={() => update({ burstTransitionStyle: style.value as 'rose' | 'fireworks' | 'confetti' | 'fade' | 'aura' | 'lightfall' | 'custom' })}
-                      className={`rounded-lg border p-2.5 text-center transition-all duration-200 ${
+                      className={`rounded-card border p-2.5 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
                         (local.burstTransitionStyle ?? 'rose') === style.value
                           ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
                       }`}
                     >
                       <p className={`text-xs font-semibold ${(local.burstTransitionStyle ?? 'rose') === style.value ? 'text-accent' : 'text-text-primary'}`}>{style.label}</p>
-                      <p className="text-[10px] text-text-muted mt-0.5">{style.desc}</p>
+                      <p className="text-caption text-text-muted mt-0.5">{style.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="ios-card p-3.5 space-y-3 my-2">
+              <div className="ios-card p-3 space-y-3 my-2">
                 <div className="flex items-center gap-2">
-                  <Sun size={15} className="text-accent" />
+                  <Sun size={16} className="text-accent" />
                   <div>
                     <p className="text-sm font-medium text-text-primary">转场配色</p>
                     <p className="text-xs text-text-muted">粒子的颜色色系</p>
@@ -180,20 +180,20 @@ export function StartupAnimationSection({
                     <button
                       key={theme.value}
                       onClick={() => update({ burstColorTheme: theme.value as 'rose' | 'ocean' | 'gold' | 'aurora' })}
-                      className={`rounded-lg border p-2 text-center transition-all duration-200 ${
+                      className={`rounded-card border p-2 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
                         (local.burstColorTheme ?? 'rose') === theme.value
                           ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
                       }`}
                     >
                       <div className="mx-auto mb-1 h-4 w-4 rounded-full" style={{ background: theme.color }} />
-                      <p className={`text-[10px] font-medium ${(local.burstColorTheme ?? 'rose') === theme.value ? 'text-accent' : 'text-text-primary'}`}>{theme.label}</p>
+                      <p className={`text-caption font-medium ${(local.burstColorTheme ?? 'rose') === theme.value ? 'text-accent' : 'text-text-primary'}`}>{theme.label}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               <NumberInputRow
-                icon={<Layers size={15} />}
+                icon={<Layers size={16} />}
                 label="粒子数量"
                 desc={local.burstTransitionStyle === 'fade' ? '淡入模式不使用粒子' : '转场粒子的数量'}
                 value={local.burstParticleCount ?? 120}
@@ -202,7 +202,7 @@ export function StartupAnimationSection({
               />
 
               <NumberInputRow
-                icon={<Clock size={15} />}
+                icon={<Clock size={16} />}
                 label="转场时长"
                 desc="转场效果的总持续时间"
                 value={local.burstDuration ?? 2500}

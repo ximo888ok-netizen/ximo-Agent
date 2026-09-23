@@ -111,23 +111,23 @@ function CollapsedInlineResults({ results }: { results: ToolResult[] }): React.R
   const summaryText = summaries.slice(0, 2).join(', ') + (summaries.length > 2 ? ` 等${summaries.length}项` : '')
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-bg-surface/40 overflow-hidden">
+    <div className="rounded-panel border border-border-subtle bg-bg-surface-soft overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
       >
         <CheckCircle size={13} className="text-green-500/70 shrink-0" />
         <span className="text-text-secondary shrink-0">文件变更</span>
         <span className="text-text-muted">{rendered.length}</span>
         {summaryText && (
-          <span className="text-text-muted/70 truncate">· {summaryText}</span>
+          <span className="text-text-muted truncate">· {summaryText}</span>
         )}
         <span className="ml-auto flex items-center gap-1 text-text-muted shrink-0">
           <ChevronDown size={11} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-border-subtle/50 px-2 py-1.5 space-y-1">
+        <div className="border-t border-border-subtle-soft px-2 py-1.5 space-y-1">
           {rendered}
         </div>
       )}

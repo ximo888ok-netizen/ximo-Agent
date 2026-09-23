@@ -40,11 +40,11 @@ export function ShadowRow({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-text-primary">{label}</p>
-          {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+          {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
         </div>
-        <button
+        <button aria-label="添加阴影层"
           onClick={addLayer}
-          className="flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-[10px] text-text-muted transition-colors hover:border-accent hover:text-accent"
+          className="flex items-center gap-1 rounded-control border border-border px-1.5 py-0.5 text-caption text-text-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
           title="添加阴影层"
         >
           <Plus size={11} /> 添加层
@@ -63,7 +63,7 @@ export function ShadowRow({
           />
         ))}
         {layers.length === 0 && (
-          <p className="text-[10px] text-text-muted py-1">无阴影层，点击"添加层"创建</p>
+          <p className="text-caption text-text-muted py-1">无阴影层，点击"添加层"创建</p>
         )}
       </div>
     </div>
@@ -95,15 +95,15 @@ function ShadowLayerEditor({
   ]
 
   return (
-    <div className="rounded-md border border-border-subtle bg-bg-elevated/50 p-2">
+    <div className="rounded-control border border-border-subtle bg-bg-elevated-soft p-2">
       {/* 层标题 + 删除 */}
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="flex items-center gap-1 text-[10px] font-medium text-text-muted">
-          <Layers size={10} /> 第 {index + 1} 层
+        <span className="flex items-center gap-1 text-caption font-medium text-text-muted">
+          <Layers size={11} /> 第 {index + 1} 层
         </span>
-        <button
+        <button aria-label="删除此层"
           onClick={onRemove}
-          className="rounded p-0.5 text-text-muted transition-colors hover:text-red-400"
+          className="rounded-control p-0.5 text-text-muted transition-colors hover:text-red-400 active:scale-[0.97]"
           title="删除此层"
         >
           <Trash2 size={11} />
@@ -114,7 +114,7 @@ function ShadowLayerEditor({
       <div className="flex items-center gap-2 mb-1.5">
         <button
           onClick={() => colorInputRef.current?.click()}
-          className="relative h-6 w-6 shrink-0 rounded-md border border-border overflow-hidden transition-transform hover:scale-105"
+          className="relative h-6 w-6 shrink-0 rounded-control border border-border overflow-hidden transition-transform hover:scale-105 active:scale-[0.97]"
           style={{ backgroundColor: hexWithOpacity(layer.color, layer.opacity) }}
           title="阴影颜色"
         >
@@ -126,7 +126,7 @@ function ShadowLayerEditor({
             className="absolute inset-0 cursor-pointer opacity-0"
           />
         </button>
-        <span className="text-[10px] text-text-muted">透明度</span>
+        <span className="text-caption text-text-muted">透明度</span>
         <input
           type="range"
           min={0}
@@ -136,7 +136,7 @@ function ShadowLayerEditor({
           onChange={(e) => onChange({ opacity: parseFloat(e.target.value) })}
           className="flex-1 accent-[var(--accent-DEFAULT)]"
         />
-        <span className="w-8 text-right text-[10px] font-mono text-text-secondary">
+        <span className="w-8 text-right text-caption font-mono text-text-secondary">
           {Math.round(layer.opacity * 100)}%
         </span>
       </div>
@@ -145,7 +145,7 @@ function ShadowLayerEditor({
       <div className="space-y-1">
         {sliders.map((s) => (
           <div key={s.key} className="flex items-center gap-2">
-            <span className="w-12 text-[10px] text-text-muted">{s.label}</span>
+            <span className="w-12 text-caption text-text-muted">{s.label}</span>
             <input
               type="range"
               min={s.min}
@@ -155,7 +155,7 @@ function ShadowLayerEditor({
               onChange={(e) => onChange({ [s.key]: parseFloat(e.target.value) } as Partial<ShadowLayer>)}
               className="flex-1 accent-[var(--accent-DEFAULT)]"
             />
-            <span className="w-10 text-right text-[10px] font-mono text-text-secondary">
+            <span className="w-10 text-right text-caption font-mono text-text-secondary">
               {layer[s.key] as number}{s.unit}
             </span>
           </div>

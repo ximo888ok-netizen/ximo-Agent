@@ -1,7 +1,7 @@
 // 主进程与渲染进程共享的类型定义
 // 按域拆分子文件，此文件作为统一入口 barrel re-export
 
-export type { Mode, ModelId, ReasoningEffort, FontSize } from './core'
+export type { Mode, ModelId, ReasoningEffort, FontSize, AutoModeLevel } from './core'
 
 export type {
   ToolParamProperty, ToolDefinition, ToolCall, ToolResult,

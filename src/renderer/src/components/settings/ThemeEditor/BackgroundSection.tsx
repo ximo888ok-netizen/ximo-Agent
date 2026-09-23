@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Image, Film, Upload, Trash2, X, AlertCircle } from 'lucide-react'
 import { CollapsibleSection } from '@renderer/components/settings/shared-components'
+import { SpinnerBlock } from '@renderer/components/shared/Spinner'
 import type { BackgroundImageConfig } from '@shared/types'
 import { formatBytes } from '@shared/utils'
 
@@ -82,13 +83,13 @@ export function BackgroundSection({
       {/* 当前状态 */}
       <div className="py-1.5">
         {config.type !== 'none' && config.path ? (
-          <div className="rounded-lg border border-accent/30 bg-accent/5 p-2.5">
+          <div className="rounded-card border border-accent/30 bg-accent/5 p-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 {config.type === 'dynamic' ? (
-                  <Film size={14} className="text-accent shrink-0" />
+                  <Film size={13} className="text-accent shrink-0" />
                 ) : (
-                  <Image size={14} className="text-accent shrink-0" />
+                  <Image size={13} className="text-accent shrink-0" />
                 )}
                 <span className="text-xs font-medium text-text-primary truncate">
                   {config.path.replace(/^.*[\\/]/, '')}
@@ -96,15 +97,15 @@ export function BackgroundSection({
               </div>
               <button
                 onClick={() => onChange({ ...config, type: 'none', path: undefined })}
-                className="rounded p-0.5 text-text-muted transition-colors hover:text-red-400"
+                className="rounded-control p-0.5 text-text-muted transition-colors hover:text-red-400 active:scale-[0.97]"
                 title="移除背景"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             </div>
 
             {/* 预览缩略图 */}
-            <div className="mt-2 h-20 overflow-hidden rounded-md border border-border" style={{ backgroundColor: 'var(--bg-base)' }}>
+            <div className="mt-2 h-20 overflow-hidden rounded-control border border-border" style={{ backgroundColor: 'var(--bg-base)' }}>
               {config.type === 'dynamic' ? (
                 <video
                   src={toFileUrl(config.path)}
@@ -124,10 +125,10 @@ export function BackgroundSection({
             </div>
 
             {/* 调节滑块 */}
-            <div className="mt-2.5 space-y-2">
+            <div className="mt-2 space-y-2">
               {/* 不透明度 */}
               <div className="flex items-center gap-2">
-                <span className="w-12 text-[10px] text-text-muted">透明度</span>
+                <span className="w-12 text-caption text-text-muted">透明度</span>
                 <input
                   type="range"
                   min={0}
@@ -137,14 +138,14 @@ export function BackgroundSection({
                   onChange={(e) => onChange({ ...config, opacity: parseFloat(e.target.value) })}
                   className="flex-1 accent-[var(--accent-DEFAULT)]"
                 />
-                <span className="w-8 text-right text-[10px] font-mono text-text-secondary">
+                <span className="w-8 text-right text-caption font-mono text-text-secondary">
                   {Math.round((config.opacity ?? 0.15) * 100)}%
                 </span>
               </div>
 
               {/* 模糊度 */}
               <div className="flex items-center gap-2">
-                <span className="w-12 text-[10px] text-text-muted">模糊</span>
+                <span className="w-12 text-caption text-text-muted">模糊</span>
                 <input
                   type="range"
                   min={0}
@@ -154,20 +155,20 @@ export function BackgroundSection({
                   onChange={(e) => onChange({ ...config, blur: parseInt(e.target.value) })}
                   className="flex-1 accent-[var(--accent-DEFAULT)]"
                 />
-                <span className="w-8 text-right text-[10px] font-mono text-text-secondary">
+                <span className="w-8 text-right text-caption font-mono text-text-secondary">
                   {config.blur ?? 0}px
                 </span>
               </div>
 
               {/* 缩放模式 */}
               <div className="flex items-center gap-2">
-                <span className="w-12 text-[10px] text-text-muted">缩放</span>
+                <span className="w-12 text-caption text-text-muted">缩放</span>
                 <div className="flex flex-1 gap-1">
                   {(['cover', 'contain', 'center', 'tile'] as const).map((fit) => (
                     <button
                       key={fit}
                       onClick={() => onChange({ ...config, fit })}
-                      className={`flex-1 rounded px-1 py-0.5 text-[10px] transition-colors ${
+                      className={`flex-1 rounded-control px-1 py-0.5 text-caption transition-colors ${
                         (config.fit ?? 'cover') === fit
                           ? 'bg-accent/15 text-accent'
                           : 'text-text-muted hover:text-text-secondary'
@@ -192,41 +193,39 @@ export function BackgroundSection({
         </p>
         <button
           onClick={() => void handleSelectFile()}
-          className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+          className="flex items-center gap-1 rounded-control border border-border bg-bg-elevated px-3 py-1 text-caption text-text-secondary transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
         >
-          <Upload size={12} /> 选择文件
+          <Upload size={13} /> 选择文件
         </button>
       </div>
 
       {error && (
-        <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-red-500/10 p-2 text-[11px] text-red-400">
+        <div className="mt-1.5 flex items-center gap-2 rounded-card bg-red-500/10 p-2 text-caption text-red-400">
           <AlertCircle size={13} /> {error}
         </div>
       )}
 
       {/* 已导入文件列表 */}
       {loading ? (
-        <div className="flex items-center justify-center py-3">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </div>
+        <SpinnerBlock size="sm" className="py-3" />
       ) : files.length > 0 ? (
         <div className="mt-1.5 space-y-1 max-h-40 overflow-y-auto">
           {files.map((f) => (
             <div
               key={f.path}
-              className="group flex items-center justify-between rounded-md border border-border bg-bg-elevated px-2 py-1.5"
+              className="group flex items-center justify-between rounded-control border border-border bg-bg-elevated px-2 py-1.5"
             >
               <div className="flex items-center gap-2 min-w-0">
                 {f.type === 'dynamic' ? (
-                  <Film size={12} className="text-accent shrink-0" />
+                  <Film size={13} className="text-accent shrink-0" />
                 ) : (
-                  <Image size={12} className="text-accent shrink-0" />
+                  <Image size={13} className="text-accent shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-[11px] font-medium text-text-primary truncate">
+                  <p className="text-caption font-medium text-text-primary truncate">
                     {f.fileName.replace(/^\d+_/, '')}
                   </p>
-                  <p className="text-[9px] text-text-muted">
+                  <p className="text-caption text-text-muted">
                     {f.type === 'dynamic' ? '动态' : '静态'} · {formatBytes(f.size)}
                   </p>
                 </div>
@@ -234,7 +233,7 @@ export function BackgroundSection({
               <div className="flex shrink-0 items-center gap-1">
                 <button
                   onClick={() => onChange({ ...config, type: f.type, path: f.path })}
-                  className={`rounded px-1.5 py-0.5 text-[10px] transition-colors ${
+                  className={`rounded-control px-1.5 py-0.5 text-caption transition-colors ${
                     config.path === f.path
                       ? 'bg-accent/15 text-accent'
                       : 'text-text-muted hover:text-accent'
@@ -244,7 +243,7 @@ export function BackgroundSection({
                 </button>
                 <button
                   onClick={() => void handleDelete(f.path)}
-                  className="rounded p-0.5 text-text-muted opacity-0 transition-all hover:text-red-400 group-hover:opacity-100"
+                  className="rounded-control p-0.5 text-text-muted opacity-0 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:text-red-400 group-hover:opacity-100 active:scale-[0.97]"
                   title="删除"
                 >
                   <Trash2 size={11} />
@@ -257,10 +256,10 @@ export function BackgroundSection({
 
       {/* 格式说明 */}
       <details className="mt-1.5">
-        <summary className="cursor-pointer text-[10px] text-text-muted hover:text-text-secondary">
+        <summary className="cursor-pointer text-caption text-text-muted hover:text-text-secondary">
           支持的文件格式
         </summary>
-        <p className="mt-0.5 text-[10px] text-text-muted">
+        <p className="mt-0.5 text-caption text-text-muted">
           静态图片：JPG / PNG / WebP / BMP<br />
           动态背景：GIF / MP4 / WebM / MOV / AVI / MKV<br />
           文件导入后复制到应用数据目录，原始文件可删除。

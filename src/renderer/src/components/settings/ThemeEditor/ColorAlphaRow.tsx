@@ -40,11 +40,11 @@ export function ColorAlphaRow({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-text-primary">{label}</p>
-          {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+          {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
         </div>
         <button
           onClick={() => colorInputRef.current?.click()}
-          className="relative h-7 w-7 shrink-0 rounded-md border border-border overflow-hidden transition-transform hover:scale-105"
+          className="relative h-7 w-7 shrink-0 rounded-control border border-border overflow-hidden transition-transform hover:scale-105 active:scale-[0.97]"
           style={{ backgroundColor: value }}
           title="点击选色"
         >
@@ -60,7 +60,7 @@ export function ColorAlphaRow({
 
       {/* 透明度滑块 */}
       <div className="mt-1.5 flex items-center gap-2">
-        <span className="w-10 text-[10px] text-text-muted">透明度</span>
+        <span className="w-10 text-caption text-text-muted">透明度</span>
         <input
           type="range"
           min={0}
@@ -70,7 +70,7 @@ export function ColorAlphaRow({
           onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
           className="flex-1 accent-[var(--accent-DEFAULT)]"
         />
-        <span className="w-10 text-right text-[10px] font-mono text-text-secondary">
+        <span className="w-10 text-right text-caption font-mono text-text-secondary">
           {Math.round(parts.a * 100)}%
         </span>
       </div>

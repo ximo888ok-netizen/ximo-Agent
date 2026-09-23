@@ -31,11 +31,28 @@
   justify-content: center;
 }
 
-/* ── 消息通用 ── */
-.msg {
+/* ── 会话栏宽 ──
+   消息与过程块（TurnCollapse / TurnActions / NoticeCard / WarmZone）
+   **必须共用同一条居中栏宽**。
+   这些块曾作为 .transcript 的直接子元素满宽铺开，而消息在 .msg 里居中 820px，
+   二者在宽窗口下左边缘天然差出一大截 —— 表现为"工具行 / 操作按钮比正文更靠左、
+   回答又比推理更靠右"，整块内容左边缘参差。 */
+.msg,
+.transcript-row {
   max-width: 820px;
   margin: 0 auto;
   padding: 4px 0;
+}
+/* 兜底：任何直接挂在 .transcript 下的块都自动约束到会话栏宽。
+   这样"新增一个直接子块却忘了包 .transcript-row"不再会造成错位
+   （TurnCollapse / TurnActions / NoticeCard 已经各漏过一次）。
+   只改**左右**外边距 —— 用 margin-inline 而不是 margin，
+   以免覆盖 .msg--user 的 margin-top 段间距。 */
+.transcript > * {
+  max-width: 820px;
+  margin-inline: auto;
+}
+.msg {
   content-visibility: auto;
   contain-intrinsic-size: auto 80px;
 }

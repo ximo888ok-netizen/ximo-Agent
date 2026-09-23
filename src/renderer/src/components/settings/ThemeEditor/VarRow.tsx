@@ -34,9 +34,9 @@ export function VarRow({
 
       {/* 重置按钮 — 悬浮显示 */}
       {isModified && (
-        <button
+        <button aria-label="恢复默认"
           onClick={onReset}
-          className="absolute right-0 top-0 rounded p-0.5 text-text-muted opacity-0 transition-all hover:text-accent group-hover:opacity-100"
+          className="absolute right-0 top-0 rounded-control p-0.5 text-text-muted opacity-0 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:text-accent group-hover:opacity-100 active:scale-[0.97]"
           title="恢复默认"
         >
           <RotateCcw size={11} />
@@ -95,12 +95,12 @@ function ColorOnlyRow({
     <div className="flex items-center justify-between gap-2 py-1.5">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-text-primary">{label}</p>
-        {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+        {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={() => colorInputRef.current?.click()}
-          className="relative h-7 w-7 rounded-md border border-border overflow-hidden transition-transform hover:scale-105"
+          className="relative h-7 w-7 rounded-control border border-border overflow-hidden transition-transform hover:scale-105 active:scale-[0.97]"
           style={{ backgroundColor: value }}
           title="点击选色"
         >

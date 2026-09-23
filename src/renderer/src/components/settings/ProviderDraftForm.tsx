@@ -19,7 +19,7 @@ export function ProviderDraftForm({
   onDraftChange, onCancel, onSave, onFetchModels,
 }: ProviderDraftFormProps): React.ReactElement {
   return (
-    <div className="mt-2 space-y-3 rounded-xl border border-border bg-bg-elevated p-4">
+    <div className="mt-2 space-y-3 rounded-panel border border-border bg-bg-elevated p-4">
       <p className="text-sm font-medium text-text-primary">{draft.isNew ? '添加服务商' : '编辑服务商'}</p>
 
       <div className="grid grid-cols-2 gap-2">
@@ -55,15 +55,15 @@ export function ProviderDraftForm({
 
       {/* 模型获取状态 */}
       <div className="-mt-1 flex items-center justify-between">
-        <p className={`text-[10px] ${fetchMsg ? 'text-text-muted' : 'text-transparent'}`}>
+        <p className={`text-caption ${fetchMsg ? 'text-text-muted' : 'text-transparent'}`}>
           {fetchMsg || '.'}
         </p>
         <button
           onClick={onFetchModels}
           disabled={fetching}
-          className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1 rounded-control px-2 py-1 text-caption text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {fetching ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
+          {fetching ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
           {fetching ? '获取中...' : '自动获取模型'}
         </button>
       </div>
@@ -103,13 +103,13 @@ export function ProviderDraftForm({
       <div className="flex justify-end gap-2">
         <button
           onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-primary"
+          className="rounded-card px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text-primary active:scale-[0.97]"
         >
           取消
         </button>
         <button
           onClick={onSave}
-          className="rounded-lg bg-accent/15 px-4 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/25"
+          className="rounded-card bg-accent/15 px-4 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/25 active:scale-[0.97]"
         >
           保存
         </button>

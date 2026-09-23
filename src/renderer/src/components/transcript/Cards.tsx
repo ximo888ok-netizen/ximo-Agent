@@ -11,7 +11,7 @@ export function NoticeCard({ item }: { item: NoticeItem }): React.ReactElement {
   const Icon = item.level === 'warn' ? TriangleAlert : Info
   return (
     <div className={`notice-line notice-line--${item.level}`}>
-      <Icon size={14} className="notice-line__icon" />
+      <Icon size={13} className="notice-line__icon" />
       <div className="notice-line__text">
         {item.title && <div className="notice-line__title">{item.title}</div>}
         <div className="notice-line__body">{item.text}</div>

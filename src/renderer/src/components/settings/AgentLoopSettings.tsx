@@ -10,12 +10,12 @@ interface AgentLoopSettingsProps {
 export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): React.ReactElement {
   return (
     <CollapsibleSection
-      icon={<Layers size={15} />}
+      icon={<Layers size={16} />}
       title="Agent 循环与上下文"
       desc="工具调用循环次数、上下文压缩策略"
     >
       <NumberInputRow
-        icon={<Layers size={15} />}
+        icon={<Layers size={16} />}
         label="最大工具调用轮次"
         desc="防止死循环的安全上限"
         value={local.maxToolRounds ?? 30}
@@ -26,7 +26,7 @@ export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): Re
         onChange={(v) => update({ maxToolRounds: v })}
       />
       <NumberInputRow
-        icon={<Gauge size={15} />}
+        icon={<Gauge size={16} />}
         label="上下文窗口上限"
         desc="超限自动压缩旧消息"
         value={local.maxContextChars ?? 300000}
@@ -37,7 +37,7 @@ export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): Re
         onChange={(v) => update({ maxContextChars: v })}
       />
       <NumberInputRow
-        icon={<Type size={15} />}
+        icon={<Type size={16} />}
         label="工具结果截断长度"
         desc="单个工具返回结果的最大字符数"
         value={local.maxToolResultChars ?? 16000}
@@ -48,7 +48,7 @@ export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): Re
         onChange={(v) => update({ maxToolResultChars: v })}
       />
       <NumberInputRow
-        icon={<Shield size={15} />}
+        icon={<Shield size={16} />}
         label="上下文保护窗口"
         desc="最近 N 条消息不会被压缩"
         value={local.contextRecentKeep ?? 8}
@@ -59,7 +59,7 @@ export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): Re
         onChange={(v) => update({ contextRecentKeep: v })}
       />
       <NumberInputRow
-        icon={<Sparkles size={15} />}
+        icon={<Sparkles size={16} />}
         label="Snip 保留字符数"
         desc="软阈值：旧工具结果截断为前 N 字符"
         value={local.contextSnippedKeep ?? 200}
@@ -70,7 +70,7 @@ export function AgentLoopSettings({ local, update }: AgentLoopSettingsProps): Re
         onChange={(v) => update({ contextSnippedKeep: v })}
       />
       <NumberInputRow
-        icon={<Sparkles size={15} />}
+        icon={<Sparkles size={16} />}
         label="Prune 保留字符数"
         desc="硬阈值：进一步缩短到前 N 字符"
         value={local.contextPrunedKeep ?? 80}

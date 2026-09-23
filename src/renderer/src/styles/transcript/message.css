@@ -42,20 +42,20 @@
   color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s var(--ease-out-quart);
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .msg-edit__btn:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
 .msg-edit__btn--primary {
-  background: var(--theme-color);
-  color: #fff;
-  border-color: var(--theme-color);
+  background: var(--accent-fill, var(--theme-color));
+  color: var(--accent-on-fill, #fff);
+  border-color: var(--accent-fill, var(--theme-color));
 }
 .msg-edit__btn--primary:hover {
-  background: var(--theme-accent-hover);
-  color: #fff;
+  background: var(--accent-fill-hover, var(--accent-fill, var(--theme-color)));
+  color: var(--accent-on-fill, #fff);
 }
 .msg-edit__btn:disabled {
   opacity: 0.5;
@@ -89,7 +89,7 @@
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .msg-meta__btn:hover {
   background: var(--bg-hover);

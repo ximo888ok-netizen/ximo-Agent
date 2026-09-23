@@ -17,7 +17,7 @@ interface Props {
  * 上下文占用为最近一轮 API 调用的 promptTokens（当前上下文窗口实际使用量）。
  * 缓存命中率 = Σhit / Σ(hit+miss)，比单轮更稳定。
  */
-export function SessionTokenStats({ conversation }: Props): React.ReactElement {
+export function SessionTokenStats({ conversation }: Props): React.ReactElement | null {
   const isStreaming = useStore((s) => s.isStreaming)
   // 上下文窗口大小随活跃服务商变化 — 选中原始数值避免无关设置变更触发重渲染
   const contextWindow = useStore((s) => getActiveContextWindow(s.settings))
@@ -69,8 +69,11 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
   // 对话轮数 = 用户消息数（每轮以一次用户提问计）
   const turns = conversation?.messages.filter((m) => m.role === 'user').length ?? 0
 
+  // 空会话 / 全新对话：四项全为 0 时整行只会显示「—」，没有信息量，直接不渲染
+  if (turns === 0 && totalTokens === 0 && cacheHitTokens === 0 && contextTokens === 0) return null
+
   return (
-    <div className="flex items-center justify-end gap-2.5 px-1 pt-1 text-[11px] shrink-0">
+    <div className="flex items-center justify-end gap-2 px-1 pt-1 text-caption shrink-0">
       {/* 上下文窗口占用 */}
       {contextTokens > 0 && (
         <>
@@ -79,7 +82,7 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
             <span className="text-text-muted">上下文</span>
             <div className="relative h-1.5 w-16 rounded-full bg-border overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+                className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-base"
                 style={{ width: `${Math.min(contextPct, 100)}%`, backgroundColor: contextColor }}
               />
             </div>
@@ -87,7 +90,7 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
               {contextPct.toFixed(1)}%
             </span>
           </div>
-          <span className="text-text-muted/20">|</span>
+          <span className="text-text-quaternary">|</span>
         </>
       )}
       {/* 对话轮数 */}
@@ -96,21 +99,21 @@ export function SessionTokenStats({ conversation }: Props): React.ReactElement {
         <span className="text-text-muted">轮数</span>
         <span className="font-mono text-text-secondary">{turns > 0 ? turns : '—'}</span>
       </div>
-      <span className="text-text-muted/20">|</span>
+      <span className="text-text-quaternary">|</span>
       {/* 总消耗 */}
       <div className="flex items-center gap-1">
         <Activity size={11} className="text-text-muted" />
         <span className="text-text-muted">总消耗</span>
         <span className="font-mono text-text-secondary">{totalTokens > 0 ? totalTokens.toLocaleString() : '—'}</span>
       </div>
-      <span className="text-text-muted/20">|</span>
+      <span className="text-text-quaternary">|</span>
       {/* 缓存命中 */}
       <div className="flex items-center gap-1">
         <Database size={11} className="text-emerald-500/70" />
         <span className="text-text-muted">缓存命中</span>
         <span className="font-mono text-emerald-500/80">{cacheHitTokens > 0 ? cacheHitTokens.toLocaleString() : '—'}</span>
       </div>
-      <span className="text-text-muted/20">|</span>
+      <span className="text-text-quaternary">|</span>
       {/* 命中率 — D1 聚合公式 */}
       <div className="flex items-center gap-1" title={totalCacheDenom > 0 ? '聚合命中率 = Σhit / Σ(hit+miss)，不随压缩重置' : undefined}>
         <TrendingUp size={11} className={hitRate > 50 ? 'text-emerald-500/70' : 'text-amber-500/70'} />

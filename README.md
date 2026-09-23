@@ -46,7 +46,7 @@
 ## 快速开始
 
 1. 启动应用后，进入**设置**（`Ctrl+,`）配置 API Key
-2. 默认连接 DeepSeek API，支持 `deepseek-v4-pro` 和 `deepseek-v4-flash` 两种模型
+2. 默认连接 DeepSeek API，支持 `deepseek-v4-pro` 和 `deepseek-flash` 两种模型（后者为原生多模态）
 3. 使用 `Ctrl+1`（办公）、`Ctrl+2`（编程）、`Ctrl+3`（设计）切换模式
 4. 在底部输入框输入需求，Agent 自动调用工具完成任务
 

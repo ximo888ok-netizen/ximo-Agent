@@ -1,6 +1,6 @@
 // ====== 消息与会话类型 ======
 
-import type { Mode, ModelId, ReasoningEffort } from './core'
+import type { Mode, ModelId, ReasoningEffort, AutoModeLevel } from './core'
 import type { ToolCall, ToolResult, ToolDefinition } from './tools'
 import type { CacheDiagnostics } from '../cache/types'
 
@@ -84,8 +84,10 @@ export interface ApiMessage {
   content: string
   tool_calls?: { id: string; type: 'function'; function: { name: string; arguments: string } }[]
   tool_call_id?: string
-  /** A2 reasoning_content 空 key — DeepSeek thinking 模式下 tool_calls turn 必须带此 key。
-   *  与主进程 agent-loop（tool-execution.ts）保持一致，避免重建消息时前缀字节漂移导致缓存全部 miss */
+  /** reasoning_content — DeepSeek 思考模式下必须原样回传。
+   *  官方约束：请求带 tools 参数时，历史里所有 assistant 轮（含无工具调用的轮次）
+   *  的 reasoning_content 都要回传，缺失或置空会被以 400 拒绝。
+   *  非思考会话不带此字段。 */
   reasoning_content?: string
 }
 
@@ -102,8 +104,8 @@ export interface ChatRequest {
   tools?: ToolDefinition[]
   /** 会话 ID（用于 Checkpoint 系统，可选） */
   sessionId?: string
-  /** Auto Mode 等级：off=手动确认, safe=读操作自动, yolo=全部自动 */
-  autoModeLevel?: 'off' | 'safe' | 'yolo'
+  /** Auto Mode 等级 —— 语义见 AutoModeLevel */
+  autoModeLevel?: AutoModeLevel
   /** 服务商 ID：'deepseek'=内置，其余对应 settings.providers 中的自定义服务商（缺省 deepseek） */
   providerId?: string
   /** 长任务模式 — 开启后注入长任务执行协议，持续工作直到满足用户需求 */

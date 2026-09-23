@@ -85,29 +85,29 @@ export function FileEditorPanel({ filePath, onBack, onSaved }: FileEditorPanelPr
   return (
     <aside className="flex h-full w-full flex-col border-l border-border-subtle bg-bg-base">
       {/* 头部 — 返回按钮 + 文件名 + 保存 */}
-      <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2.5 shrink-0">
+      <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2 shrink-0">
         <div className="flex min-w-0 items-center gap-2">
-          <button
+          <button aria-label="返回文件树"
             onClick={onBack}
-            className="icon-btn flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+            className="icon-btn flex h-7 w-7 shrink-0 items-center justify-center rounded-card"
             title="返回文件树"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={13} />
           </button>
-          <FileText size={14} className="shrink-0 text-accent" />
+          <FileText size={13} className="shrink-0 text-accent" />
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-text-primary">{fileName}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {hasChanges && (
-            <span className="text-[10px] text-amber-400">未保存</span>
+            <span className="text-caption text-amber-400">未保存</span>
           )}
           {!isBinary && (
-            <button
+            <button aria-label="保存 (Ctrl+S)"
               onClick={handleSave}
               disabled={!hasChanges || saving}
-              className="flex items-center gap-1 rounded-lg bg-accent/10 px-2.5 py-1.5 text-[11px] font-medium text-accent transition-all hover:bg-accent/20 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 rounded-card bg-accent/10 px-3 py-1.5 text-caption font-medium text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:bg-accent/20 disabled:opacity-30 disabled:cursor-not-allowed"
               title="保存 (Ctrl+S)"
             >
               {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
@@ -118,21 +118,21 @@ export function FileEditorPanel({ filePath, onBack, onSaved }: FileEditorPanelPr
       </div>
 
       {/* 文件路径 */}
-      <div className="px-3 py-1 border-b border-border-subtle/50 shrink-0">
-        <p className="truncate text-[10px] text-text-muted" title={filePath}>{filePath}</p>
+      <div className="px-3 py-1 border-b border-border-subtle-soft shrink-0">
+        <p className="truncate text-caption text-text-muted" title={filePath}>{filePath}</p>
       </div>
 
       {/* 内容区 */}
       <div className="relative flex-1 overflow-hidden">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <Loader2 size={24} className="animate-spin text-text-muted" />
+            <Loader2 size={20} className="animate-spin text-text-muted" />
           </div>
         ) : error ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <p className="text-sm text-red-400">{error}</p>
-              <button onClick={loadFile} className="btn-ghost mt-3 rounded-lg px-3 py-1.5 text-xs">重试</button>
+              <button onClick={loadFile} className="btn-ghost mt-3 rounded-card px-3 py-1.5 text-xs">重试</button>
             </div>
           </div>
         ) : readOnly ? (
@@ -143,7 +143,7 @@ export function FileEditorPanel({ filePath, onBack, onSaved }: FileEditorPanelPr
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="h-full w-full resize-none bg-bg-base p-3 font-mono text-[12px] leading-relaxed text-text-primary outline-none placeholder:text-text-muted"
+            className="h-full w-full resize-none bg-bg-base p-3 font-mono text-xs leading-relaxed text-text-primary outline-none placeholder:text-text-muted"
             spellCheck={false}
             autoFocus
           />
@@ -152,12 +152,12 @@ export function FileEditorPanel({ filePath, onBack, onSaved }: FileEditorPanelPr
 
       {/* 底部状态栏 */}
       <div className="flex items-center justify-between border-t border-border-subtle px-3 py-1.5 shrink-0">
-        <div className="flex items-center gap-3 text-[10px] text-text-muted">
+        <div className="flex items-center gap-3 text-caption text-text-muted">
           <span>{lineCount} 行</span>
           <span>{charCount} 字符</span>
           <span className="uppercase">{ext || 'plain'}</span>
         </div>
-        <div className="text-[10px] text-text-muted">
+        <div className="text-caption text-text-muted">
           {hasChanges ? 'Ctrl+S 保存' : ''}
         </div>
       </div>

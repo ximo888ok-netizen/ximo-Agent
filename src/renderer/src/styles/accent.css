@@ -1,0 +1,36 @@
+@layer components {
+  /* ═══ 强调色填充面 ═══
+     所有"白字/白图标压在强调色上"的地方都走这三个类，不要手写 bg-accent + text-white。
+     颜色由 src/renderer/src/lib/accent.ts 的填充支派生 —— 无论用户选什么主色
+     （包括纯白、亮黄这类根本承载不了白字的），白字都保证 ≥4.5:1。
+     括号里是 JS 未执行时的 CSS 兜底。 */
+
+  /* 纯色填充面：实心按钮、选中态标签 */
+  .accent-fill {
+    background-color: var(--accent-fill, var(--theme-color));
+    color: var(--accent-on-fill, #fff);
+  }
+  .accent-fill:hover {
+    background-color: var(--accent-fill-hover, var(--accent-fill, var(--theme-color)));
+  }
+
+  /* 瓷片：面板头图、空态大图标 —— 主色渐变，亮端朝右下 */
+  .accent-tile {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--accent-fill, var(--theme-color)),
+      var(--accent-fill-top, var(--theme-color))
+    );
+    color: var(--accent-on-fill, #fff);
+  }
+
+  /* 气泡：用户消息 —— 深端朝右下，做出"液态"体积感 */
+  .accent-bubble {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--accent-fill, var(--theme-color)),
+      var(--accent-fill-deep, var(--theme-color))
+    );
+    color: var(--accent-on-fill, #fff);
+  }
+}

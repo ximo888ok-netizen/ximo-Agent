@@ -97,16 +97,16 @@ export function ProvidersSection({
       {/* 内置 DeepSeek 行 */}
       <button
         onClick={() => setActive(DEEPSEEK_PROVIDER_ID)}
-        className={`mb-2 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+        className={`mb-2 flex w-full items-center gap-3 rounded-panel border p-3 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
           activeId === DEEPSEEK_PROVIDER_ID
             ? 'border-accent bg-accent/10'
             : 'border-border-subtle bg-bg-elevated hover:border-border-hover'
         }`}
       >
-        <Server size={15} className={activeId === DEEPSEEK_PROVIDER_ID ? 'text-accent' : 'text-text-muted'} />
+        <Server size={16} className={activeId === DEEPSEEK_PROVIDER_ID ? 'text-accent' : 'text-text-muted'} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-text-primary">DeepSeek（内置）</p>
-          <p className="text-[10px] text-text-muted">deepseek-v4-pro / deepseek-v4-flash · 1M 上下文 · 密钥在上方配置</p>
+          <p className="text-caption text-text-muted">deepseek-v4-pro / deepseek-flash · 1M 上下文 · 密钥在上方配置</p>
         </div>
         {activeId === DEEPSEEK_PROVIDER_ID && <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-glow" />}
       </button>
@@ -118,15 +118,15 @@ export function ProvidersSection({
         return (
           <div
             key={p.id}
-            className={`mb-2 rounded-xl border p-3 transition-all ${
+            className={`mb-2 rounded-panel border p-3 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
               isActive ? 'border-accent bg-accent/10' : 'border-border-subtle bg-bg-elevated'
             }`}
           >
             <div className="flex items-center gap-3">
-              <Server size={15} className={isActive ? 'text-accent' : 'text-text-muted'} />
+              <Server size={16} className={isActive ? 'text-accent' : 'text-text-muted'} />
               <div className="flex-1 min-w-0">
                 <p className="truncate text-sm font-medium text-text-primary">{p.name}</p>
-                <p className="truncate text-[10px] text-text-muted">
+                <p className="truncate text-caption text-text-muted">
                   {p.baseUrl} · {p.models.length} 个模型
                   {p.contextWindowTokens ? ` · ${(p.contextWindowTokens / 1000).toFixed(0)}K 上下文` : ''}
                 </p>
@@ -135,28 +135,28 @@ export function ProvidersSection({
                 {!isActive && (
                   <button
                     onClick={() => setActive(p.id)}
-                    className="rounded-md px-2 py-1 text-[10px] text-accent transition-colors hover:bg-accent/10"
+                    className="rounded-control px-2 py-1 text-caption text-accent transition-colors hover:bg-accent/10 active:scale-[0.97]"
                   >
                     设为活跃
                   </button>
                 )}
                 <button
                   onClick={() => void testProvider(p)}
-                  className="rounded-md p-1.5 text-text-muted transition-colors hover:text-accent"
+                  className="rounded-control p-1.5 text-text-muted transition-colors hover:text-accent active:scale-[0.97]"
                   title="测试连接"
                 >
                   <Zap size={13} />
                 </button>
                 <button
                   onClick={() => { setDraft(toDraft(p)); setDraftError(''); setFetchMsg('') }}
-                  className="rounded-md p-1.5 text-text-muted transition-colors hover:text-text-primary"
+                  className="rounded-control p-1.5 text-text-muted transition-colors hover:text-text-primary active:scale-[0.97]"
                   title="编辑"
                 >
                   <Pencil size={13} />
                 </button>
                 <button
                   onClick={() => removeProvider(p.id)}
-                  className="rounded-md p-1.5 text-text-muted transition-colors hover:text-red-400"
+                  className="rounded-control p-1.5 text-text-muted transition-colors hover:text-red-400 active:scale-[0.97]"
                   title="删除"
                 >
                   <Trash2 size={13} />
@@ -168,11 +168,11 @@ export function ProvidersSection({
             {t && (
               <div className="mt-2">
                 {!t.result ? (
-                  <p className="flex items-center gap-1.5 text-[11px] text-text-muted">
+                  <p className="flex items-center gap-1.5 text-caption text-text-muted">
                     <Loader2 size={11} className="animate-spin" /> 测试中...
                   </p>
                 ) : (
-                  <p className={`flex items-center gap-1.5 text-[11px] ${t.result.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <p className={`flex items-center gap-1.5 text-caption ${t.result.success ? 'text-emerald-400' : 'text-red-400'}`}>
                     {t.result.success ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
                     {t.result.message}
                     {t.result.latency !== undefined ? ` · ${t.result.latency}ms` : ''}
@@ -188,7 +188,7 @@ export function ProvidersSection({
       {!draft && (
         <button
           onClick={() => { setDraft(toDraft()); setDraftError(''); setFetchMsg('') }}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-xs text-text-muted transition-colors hover:border-accent hover:text-accent"
+          className="flex w-full items-center justify-center gap-1.5 rounded-panel border border-dashed border-border py-2 text-xs text-text-muted transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
         >
           <Plus size={13} />
           添加自定义服务商
@@ -208,7 +208,7 @@ export function ProvidersSection({
         />
       )}
 
-      <p className="mt-2 text-[10px] text-text-muted">
+      <p className="mt-2 text-caption text-text-muted">
         仅支持 OpenAI 兼容协议。切换活跃服务商后，新消息将通过该服务商发送；思考模式在不支持 reasoning 参数的服务商下自动关闭。
       </p>
     </div>

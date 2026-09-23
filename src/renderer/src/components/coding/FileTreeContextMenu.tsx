@@ -212,11 +212,11 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
   return (
     <div
       ref={menuRef}
-      className="fixed z-[300] min-w-[180px] rounded-xl border border-border-subtle bg-bg-elevated py-1 shadow-2xl"
+      className="fixed z-[300] min-w-[180px] rounded-panel border border-border-subtle bg-bg-elevated py-1 shadow-2xl"
       style={{ left: pos.x, top: pos.y }}
     >
       {/* 文件名标题 */}
-      <div className="truncate px-3 py-1.5 text-[10px] text-text-muted border-b border-border-subtle mb-1">
+      <div className="truncate px-3 py-1.5 text-caption text-text-muted border-b border-border-subtle mb-1">
         {fileName}
       </div>
 
@@ -241,7 +241,7 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
                   if (e.key === 'Escape') { setCreateMode(null); onClose() }
                 }}
                 onBlur={confirmCreate}
-                className="w-full rounded border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
+                className="w-full rounded-control border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
               />
             </div>
           ) : (
@@ -260,7 +260,7 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
                   if (e.key === 'Escape') { setCreateMode(null); onClose() }
                 }}
                 onBlur={confirmCreate}
-                className="w-full rounded border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
+                className="w-full rounded-control border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
               />
             </div>
           ) : (
@@ -289,7 +289,7 @@ export function FileTreeContextMenu({ state, onClose, onRefresh, onEdit }: FileT
               if (e.key === 'Escape') { setRenameMode(false); onClose() }
             }}
             onBlur={confirmRename}
-            className="w-full rounded border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
+            className="w-full rounded-control border border-accent/40 bg-bg-base px-2 py-1 text-xs text-text-primary outline-none"
           />
         </div>
       ) : (
@@ -320,7 +320,7 @@ function MenuItem({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed ${
+      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed ${
         danger ? 'text-red-400 hover:bg-red-500/10' : 'text-text-primary'
       }`}
     >

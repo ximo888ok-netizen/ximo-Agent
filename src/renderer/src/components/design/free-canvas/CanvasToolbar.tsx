@@ -38,12 +38,12 @@ export function CanvasToolbar({
   const ScenarioIcon = currentScenario ? (SCENARIO_ICONS[currentScenario.icon] || Globe) : null
 
   return (
-    <div className="flex items-center gap-1.5 border-b border-border-subtle px-2.5 py-1.5 shrink-0">
+    <div className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-1.5 shrink-0">
       {/* 场景选择器 */}
       <div className="relative">
         <button
           onClick={onToggleScenarioPicker}
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors"
+          className="flex items-center gap-1 rounded-card px-2 py-1 text-caption font-medium transition-colors"
           style={currentScenario ? {
             backgroundColor: 'rgba(99,102,241,0.12)',
             color: '#818cf8',
@@ -53,7 +53,7 @@ export function CanvasToolbar({
           <span className={currentScenario ? '' : 'text-text-muted'}>
             {currentScenario ? currentScenario.name : '场景'}
           </span>
-          <ChevronDown size={10} className="opacity-50" />
+          <ChevronDown size={11} className="opacity-50" />
         </button>
         {showScenarioPicker && (
           <ScenarioPicker
@@ -69,7 +69,7 @@ export function CanvasToolbar({
       <div className="relative">
         <button
           onClick={onToggleStylePicker}
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors"
+          className="flex items-center gap-1 rounded-card px-2 py-1 text-caption font-medium transition-colors"
           style={appliedStyle ? {
             backgroundColor: `${appliedStyle.tokens.accent}15`,
             color: appliedStyle.tokens.accent,
@@ -85,7 +85,7 @@ export function CanvasToolbar({
               style={{ backgroundColor: appliedStyle.tokens.accent }}
             />
           )}
-          <ChevronDown size={10} className="opacity-50" />
+          <ChevronDown size={11} className="opacity-50" />
         </button>
         {showStylePicker && (
           <StylePicker
@@ -101,20 +101,20 @@ export function CanvasToolbar({
 
       {/* 已放置数量 */}
       {canvasItems.length > 0 && (
-        <span className="flex items-center gap-1 rounded-md bg-bg-elevated px-1.5 py-0.5 text-[10px] text-text-muted">
-          <Layers size={9} />
+        <span className="flex items-center gap-1 rounded-control bg-bg-elevated px-1.5 py-0.5 text-caption text-text-muted">
+          <Layers size={11} />
           {canvasItems.length}
         </span>
       )}
 
       {/* 清空 */}
       {canvasItems.length > 0 && (
-        <button
+        <button aria-label="清空画布"
           onClick={onClearCanvas}
-          className="icon-btn rounded-lg p-1 text-text-muted hover:text-red-400"
+          className="icon-btn rounded-card p-1 text-text-muted hover:text-red-400"
           title="清空画布"
         >
-          <Trash2 size={12} />
+          <Trash2 size={13} />
         </button>
       )}
 
@@ -122,9 +122,9 @@ export function CanvasToolbar({
       <button
         onClick={onSendToAgent}
         disabled={canvasItems.length === 0 || isStreaming}
-        className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all ${
+        className={`flex items-center gap-1 rounded-card px-3 py-1 text-caption font-medium transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
           canvasItems.length > 0 && !isStreaming
-            ? 'bg-accent text-white hover:scale-105 active:scale-95'
+            ? 'accent-fill hover:scale-105 active:scale-95'
             : 'bg-bg-elevated text-text-muted cursor-not-allowed'
         }`}
         title="发送给 Agent 开发"

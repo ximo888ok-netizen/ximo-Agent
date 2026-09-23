@@ -86,13 +86,13 @@ export const CodeBlock = memo(function CodeBlock({ language, value }: CodeBlockP
   }
 
   return (
-    <div className="group relative my-3 overflow-hidden rounded-xl border border-border-subtle bg-[#0d1117] shadow-glass transition-all hover:border-border-hover">
+    <div className="group relative my-3 overflow-hidden rounded-panel border border-border-subtle bg-[#0d1117] shadow-glass transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:border-border-hover">
       {/* 语言标签 + 复制按钮 */}
-      <div className="flex items-center justify-between border-b border-border-subtle bg-bg-elevated/60 backdrop-blur-sm px-3 py-1.5">
+      <div className="flex items-center justify-between border-b border-border-subtle bg-bg-elevated-soft backdrop-blur-sm px-3 py-1.5">
         <span className="text-xs font-mono text-text-secondary">{language || 'text'}</span>
         <button
           onClick={handleCopy}
-          className="icon-btn flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
+          className="icon-btn flex items-center gap-1 rounded-control px-2 py-0.5 text-xs"
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           {copied ? '已复制' : '复制'}

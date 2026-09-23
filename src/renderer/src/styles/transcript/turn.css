@@ -21,7 +21,7 @@
   color: var(--text-secondary);
 }
 .notice-line--warn {
-  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  background: color-mix(in srgb, var(--state-warning) 8%, transparent);
   color: #b45309;
 }
 .dark .notice-line--warn {
@@ -73,7 +73,7 @@
   font-size: 11px;
   cursor: pointer;
   border-radius: 6px;
-  transition: all 0.2s ease;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .turn-actions__btn:hover {
   background: var(--bg-hover);
@@ -94,7 +94,7 @@
   font-size: 13px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .warm-collapse:hover {
   background: var(--bg-hover);

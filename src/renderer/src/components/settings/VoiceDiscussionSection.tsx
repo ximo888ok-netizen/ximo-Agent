@@ -35,7 +35,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
       {/* 样式选择 */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <Palette size={15} className="text-accent" />
+          <Palette size={16} className="text-accent" />
           <label className="text-sm font-medium text-text-primary">面板样式</label>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -43,7 +43,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
             <button
               key={opt.value}
               onClick={() => update({ voiceDiscussionStyle: opt.value })}
-              className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-all ${
+              className={`flex items-start gap-2 rounded-card border p-3 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
                 style === opt.value
                   ? 'border-accent bg-accent/10'
                   : 'border-border bg-bg-elevated hover:border-border-hover'
@@ -54,7 +54,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
                 <p className={`text-sm font-medium ${style === opt.value ? 'text-accent' : 'text-text-primary'}`}>
                   {opt.label}
                 </p>
-                <p className="mt-0.5 text-[10px] text-text-muted leading-tight">{opt.desc}</p>
+                <p className="mt-0.5 text-caption text-text-muted leading-tight">{opt.desc}</p>
               </div>
             </button>
           ))}
@@ -64,19 +64,19 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
       {/* 高级设置开关 */}
       <button
         onClick={() => setShowAdvanced((v) => !v)}
-        className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors active:scale-[0.97]"
       >
-        <Sliders size={14} />
+        <Sliders size={13} />
         <span>{showAdvanced ? '收起高级设置' : '展开高级设置'}</span>
       </button>
 
       {/* 高级设置 */}
       {showAdvanced && (
-        <div className="space-y-4 rounded-lg border border-border bg-bg-elevated/50 p-4">
+        <div className="space-y-4 rounded-card border border-border bg-bg-elevated-soft p-4">
           {/* 粒子颜色 */}
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-text-primary">
-              <Sparkles size={14} className="text-accent" />
+              <Sparkles size={13} className="text-accent" />
               粒子圆环颜色
             </label>
             <div className="flex items-center gap-3">
@@ -84,30 +84,30 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
                 type="color"
                 value={particleColor || local.themeColor}
                 onChange={(e) => update({ voiceDiscussionParticleColor: e.target.value })}
-                className="h-9 w-14 rounded-lg border border-border bg-bg-base cursor-pointer"
+                className="h-9 w-14 rounded-card border border-border bg-bg-base cursor-pointer"
               />
               <input
                 type="text"
                 value={particleColor}
                 onChange={(e) => update({ voiceDiscussionParticleColor: e.target.value })}
                 placeholder={local.themeColor}
-                className="flex-1 rounded-lg border border-border bg-bg-base px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                className="flex-1 rounded-card border border-border bg-bg-base px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus-ring"
               />
               <button
                 onClick={() => update({ voiceDiscussionParticleColor: '' })}
-                className="rounded-lg border border-border px-3 py-2 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors"
+                className="rounded-card border border-border px-3 py-2 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors active:scale-[0.97]"
               >
                 重置
               </button>
             </div>
-            <p className="mt-1 text-[10px] text-text-muted">留空则跟随主题色</p>
+            <p className="mt-1 text-caption text-text-muted">留空则跟随主题色</p>
           </div>
 
           {/* 粒子大小 */}
           <div>
             <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-text-primary">
               <span className="flex items-center gap-2">
-                <Layers size={14} className="text-accent" />
+                <Layers size={13} className="text-accent" />
                 粒子大小
               </span>
               <span className="text-xs text-text-muted">{particleScale.toFixed(1)}x</span>
@@ -127,7 +127,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
           <div>
             <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-text-primary">
               <span className="flex items-center gap-2">
-                <Zap size={14} className="text-accent" />
+                <Zap size={13} className="text-accent" />
                 旋转速度
               </span>
               <span className="text-xs text-text-muted">{particleSpeed.toFixed(1)}x</span>
@@ -147,7 +147,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
           <div>
             <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-text-primary">
               <span className="flex items-center gap-2">
-                <Droplets size={14} className="text-accent" />
+                <Droplets size={13} className="text-accent" />
                 背景透明度
               </span>
               <span className="text-xs text-text-muted">{Math.round(bgOpacity * 100)}%</span>
@@ -167,7 +167,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
           <div>
             <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-text-primary">
               <span className="flex items-center gap-2">
-                <Layers size={14} className="text-accent" />
+                <Layers size={13} className="text-accent" />
                 圆角大小
               </span>
               <span className="text-xs text-text-muted">{borderRadius}px</span>
@@ -187,7 +187,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
           <div>
             <label className="mb-1.5 flex items-center justify-between text-sm font-medium text-text-primary">
               <span className="flex items-center gap-2">
-                <Droplets size={14} className="text-accent" />
+                <Droplets size={13} className="text-accent" />
                 模糊程度
               </span>
               <span className="text-xs text-text-muted">{blur}px</span>
@@ -206,7 +206,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
           {/* 自定义CSS */}
           <div>
             <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-text-primary">
-              <Code size={14} className="text-accent" />
+              <Code size={13} className="text-accent" />
               自定义 CSS
             </label>
             <textarea
@@ -214,9 +214,9 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
               onChange={(e) => update({ voiceDiscussionCustomCss: e.target.value })}
               placeholder="/* 例如：.voice-panel { box-shadow: 0 0 50px rgba(99,102,241,0.5); } */"
               rows={4}
-              className="w-full rounded-lg border border-border bg-bg-base px-3 py-2 text-xs font-mono text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none resize-y"
+              className="w-full rounded-card border border-border bg-bg-base px-3 py-2 text-xs font-mono text-text-primary placeholder:text-text-muted focus:border-accent focus-ring resize-y"
             />
-            <p className="mt-1 text-[10px] text-text-muted">追加到面板样式末尾，可覆盖默认样式</p>
+            <p className="mt-1 text-caption text-text-muted">追加到面板样式末尾，可覆盖默认样式</p>
           </div>
 
           {/* 重置所有 */}
@@ -233,7 +233,7 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
                 voiceDiscussionCustomCss: '',
               })
             }
-            className="w-full rounded-lg border border-border py-2 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors"
+            className="w-full rounded-card border border-border py-2 text-xs text-text-secondary hover:border-accent hover:text-accent transition-colors active:scale-[0.97]"
           >
             重置所有高级设置
           </button>
@@ -241,8 +241,8 @@ export function VoiceDiscussionSection({ local, update }: VoiceDiscussionSection
       )}
 
       {/* 预览提示 */}
-      <div className="flex items-center gap-2 rounded-lg bg-accent/5 px-3 py-2 text-xs text-text-secondary">
-        <Mic size={14} className="text-accent" />
+      <div className="flex items-center gap-2 rounded-card bg-accent/5 px-3 py-2 text-xs text-text-secondary">
+        <Mic size={13} className="text-accent" />
         <span>点击主界面语音球即可预览当前设置效果</span>
       </div>
     </div>

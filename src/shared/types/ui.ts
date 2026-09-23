@@ -9,8 +9,7 @@ export interface ModeConfig {
   icon: string
   description: string
   systemPrompt: string
-  quickActions: QuickAction[]
-  /** 快捷操作分组（替代扁平 quickActions 展示） */
+  /** 快捷操作分组 — 组件必须消费此字段，禁止在组件内硬编码 prompt 数组 */
   actionGroups?: ActionGroup[]
   /** 该模式默认启用的工具名称列表 */
   tools?: string[]

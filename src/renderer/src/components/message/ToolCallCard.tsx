@@ -20,17 +20,17 @@ export function ToolCallCard({ tc }: { tc: { name: string; status: string; args?
   return (
     <div>
       <div
-        className={`flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-xs cursor-pointer transition-all duration-200 ${
+        className={`flex items-center gap-2 rounded-panel border px-3 py-1.5 text-xs cursor-pointer transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
           isDone ? 'border-green-500/30 bg-green-500/10 text-green-400'
             : isCalling ? 'border-accent/30 bg-accent/10 text-accent halo-pulse'
-              : 'border-border-subtle bg-bg-surface/60 text-text-muted'
+              : 'border-border-subtle bg-bg-surface-soft text-text-muted'
         }`}
         onClick={() => setExpanded(!expanded)}
       >
         {isCalling ? (
           <Loader2 size={13} className="animate-spin text-accent" />
         ) : (
-          <span className="text-text-muted">{TOOL_ICONS[tc.name] || <Cpu size={14} />}</span>
+          <span className="text-text-muted">{TOOL_ICONS[tc.name] || <Cpu size={13} />}</span>
         )}
         <span>{TOOL_LABELS[tc.name] || tc.name}</span>
         {queryLabel && (
@@ -44,7 +44,7 @@ export function ToolCallCard({ tc }: { tc: { name: string; status: string; args?
         </span>
       </div>
       {expanded && (tc.args || tc.result) && (
-        <div className="mt-1 rounded-xl border border-border-subtle bg-bg-surface/40 backdrop-blur-sm px-3 py-2 text-xs text-text-muted">
+        <div className="mt-1 rounded-panel border border-border-subtle bg-bg-surface-soft backdrop-blur-sm px-3 py-2 text-xs text-text-muted">
           {tc.args && (
             <div className="mb-1">
               <span className="font-medium text-text-secondary">参数：</span>
@@ -60,7 +60,7 @@ export function ToolCallCard({ tc }: { tc: { name: string; status: string; args?
               {tc.result.length > 500 && (
                 <button
                   onClick={() => setResultExpanded(!resultExpanded)}
-                  className="text-accent cursor-pointer hover:text-accent-hover text-[11px]"
+                  className="text-accent cursor-pointer hover:text-accent-hover text-caption active:scale-[0.97]"
                 >
                   {resultExpanded ? '收起' : '…展开更多'}
                 </button>

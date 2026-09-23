@@ -2,7 +2,7 @@
 // 把我们的嵌套 ChatMessage[] (toolCalls/toolResults 挂在消息上)
 // 转成 DeepSeek-Reasonix 风格的扁平 Item[] (每个工具/通知是独立条目)
 
-import type { ChatMessage, ToolResult } from '@shared/types'
+import type { ChatMessage, ToolResult, StreamingSegment } from '@shared/types'
 import type { TranscriptItem, ToolItem, AssistantItem, LiveStream } from './transcriptTypes'
 
 // 工具名 → 中文标签
@@ -48,6 +48,27 @@ function isShellTool(name: string): boolean {
 }
 
 /** 从 ToolResult 提取摘要 */
+/**
+ * 无参数可提取的工具 → 用固定标签。
+ * 这些工具（项目扫描类）的入参里没有 path/query/command，
+ * 之前会回退到"拿输出的首行当标题"，于是 markdown 标题原样漏进了行内摘要，
+ * 例如 `## 📁 项目上下文：\`D:\...\`` —— 又长又脏，还把真正的信息淹掉了。
+ */
+const STATIC_TOOL_LABELS: Record<string, string> = {
+  project_context: '项目上下文',
+  project_index: '项目语义索引',
+  file_list: '目录列表'
+}
+
+/** 输出的首行是否"像一个标签" —— 拒绝 markdown 结构行与「标题：长内容」这类句子 */
+function isLabelLike(line: string): boolean {
+  const t = line.trim()
+  if (!t || t.length > 40) return false
+  if (/^[#>*\-+`|\d]/.test(t)) return false // markdown 结构行 / 有序列表
+  if (/[：:]\s*\S{10,}/.test(t)) return false // 「标题：一长串内容」
+  return true
+}
+
 function summarizeToolResult(name: string, args: string, output?: string): string {
   try {
     const parsed = JSON.parse(args)
@@ -59,11 +80,142 @@ function summarizeToolResult(name: string, args: string, output?: string): strin
     if (parsed.command) return `$ ${parsed.command}`
     if (parsed.url) return parsed.url
   } catch { /* ignore */ }
+  const fixed = STATIC_TOOL_LABELS[name]
+  if (fixed) return fixed
   if (output) {
-    const firstLine = output.split('\n')[0]?.slice(0, 80)
-    if (firstLine) return firstLine
+    const firstLine = output.split('\n')[0]?.slice(0, 80) ?? ''
+    if (isLabelLike(firstLine)) return firstLine
   }
   return ''
+}
+
+/**
+ * 把「有序事件流」转成按真实发生顺序排列的过程项。
+ *
+ * 为什么需要它：流式和持久化的**扁平数据都是同类型堆叠**的 ——
+ * `streamingReasoning` 是所有轮次推理拼成的一个大字符串、`streamingToolCalls`
+ * 是全部工具调用一个数组；持久化侧的 `reasoningContent` + `toolCalls` 同理。
+ * 按这两份数据渲染，只能得到「先一大段推理，再把所有工具框堆在最后」。
+ *
+ * 而 `StreamingSegment.events` 恰好记录了**真实发生顺序**
+ * （类型注释原话：「按实际发生顺序记录，渲染时按序输出而非同类型堆叠」），
+ * **流式与持久化两侧都有**，所以两侧都改用它 —— 这样一轮任务在
+ * 「进行中」和「结束后」看到的顺序完全一致，不会跑完就跳回底部。
+ *
+ * 没有 events 的老数据退回同类型堆叠，保证不丢内容。
+ *
+ * @param flat 扁平侧的工具数据 —— **状态与结果的权威来源**。
+ *   事件流里的 `status` 可能滞后（例如按工具名兜底匹配时漏更新事件），
+ *   而扁平数组（streamingToolCalls / msg.toolCalls+toolResults）是同步维护的。
+ *   两者按 toolCallId 对齐，事件负责**顺序**，扁平侧负责**状态与结果**。
+ */
+function processItemsFromSegments(
+  segments: StreamingSegment[],
+  assistantId: string,
+  flat?: {
+    calls: { id: string; name: string; args: string; status: string; result?: string }[]
+    results: ToolResult[]
+  },
+): TranscriptItem[] {
+  const out: TranscriptItem[] = []
+  /** 最后一个 reasoning 项 —— 若事件流的末尾仍是 reasoning，它就是"正在写"的那一段 */
+  let lastReasoningId: string | null = null
+  let lastEventType: string | null = null
+
+  const flatById = new Map<string, { id: string; name: string; args: string; status: string; result?: string }>()
+  for (const c of flat?.calls ?? []) if (c.id) flatById.set(c.id, c)
+  const resultById = new Map<string, ToolResult>()
+  for (const r of flat?.results ?? []) resultById.set(r.toolCallId, r)
+
+  /** 用事件（定顺序）+ 扁平数据（定状态与结果）合成一条工具项 */
+  const buildToolItem = (
+    id: string,
+    evName: string,
+    evArgs: string,
+    evResult: string | undefined,
+    evCalling: boolean,
+  ): ToolItem => {
+    const info = flatById.get(id)
+    const res = resultById.get(id)
+    const name = info?.name || evName
+    const args = info?.args || evArgs
+    const output = res?.content ?? info?.result ?? evResult
+    // 扁平侧有状态就以它为准（它是同步维护的），否则退回事件里的 calling/done
+    const calling = info ? info.status === 'calling' || info.status === 'thinking' : evCalling
+    const isErr = Boolean(res && !res.success)
+    return {
+      kind: 'tool',
+      id,
+      name,
+      args,
+      readOnly: isReadOnlyTool(name),
+      status: calling ? 'running' : isErr ? 'error' : 'done',
+      output,
+      error: res?.error,
+      summary: summarizeToolResult(name, args, output),
+      isShell: isShellTool(name),
+    } as ToolItem
+  }
+
+  for (let si = 0; si < segments.length; si++) {
+    const seg = segments[si]
+    const events = seg.events
+    // 防御：segment 来自持久化数据时字段可能缺失，缺字段不该让整块过程渲染不出来
+    const segTools = seg.toolCalls ?? []
+
+    if (!events || events.length === 0) {
+      if (seg.reasoning?.trim()) {
+        const id = `${assistantId}-r${si}`
+        out.push({
+          kind: 'assistant', id, text: '', reasoning: seg.reasoning,
+          streaming: false, reasoningComplete: true,
+        } as AssistantItem)
+        lastReasoningId = id
+      }
+      for (let ti = 0; ti < segTools.length; ti++) {
+        const tc = segTools[ti]
+        const id = tc.toolCallId ?? `${assistantId}-t${si}-${ti}`
+        out.push(buildToolItem(id, tc.name, tc.args ?? '', tc.result, tc.status === 'calling' || tc.status === 'thinking'))
+      }
+      if (segTools.length > 0) lastEventType = 'tool'
+      continue
+    }
+
+    for (let ei = 0; ei < events.length; ei++) {
+      const ev = events[ei]
+      if (ev.type === 'reasoning') {
+        if (!ev.text?.trim()) continue
+        const id = `${assistantId}-r${si}-${ei}`
+        out.push({
+          kind: 'assistant', id, text: '', reasoning: ev.text,
+          streaming: false, reasoningComplete: true,
+        } as AssistantItem)
+        lastReasoningId = id
+        lastEventType = 'reasoning'
+      } else if (ev.type === 'tool') {
+        out.push(buildToolItem(
+          ev.toolCallId ?? `${assistantId}-t${si}-${ei}`,
+          ev.toolName ?? '',
+          ev.args ?? '',
+          ev.result,
+          ev.status === 'calling',
+        ))
+        lastEventType = 'tool'
+      }
+      // content 事件是最终回答，不属于过程区，跳过
+    }
+  }
+
+  // 事件流末尾仍是 reasoning ⇒ 模型此刻正在写思考，给它挂上"进行中"标记
+  if (lastEventType === 'reasoning' && lastReasoningId) {
+    const target = out.find((it) => it.id === lastReasoningId)
+    if (target && target.kind === 'assistant') {
+      target.streaming = true
+      target.reasoningComplete = false
+    }
+  }
+
+  return out
 }
 
 /**
@@ -75,13 +227,15 @@ function summarizeToolResult(name: string, args: string, output?: string): strin
  *                    如果有 text，再输出一个 answer assistant item
  * - toolCalls → 每个变成独立的 tool item (status=done)
  * - toolResults → 匹配到对应 tool item 并补充 output
- * - 流式工具调用状态 → 从 streamingToolCalls 构建 running tool items
+ * - 流式：优先用 streamingSegments[].events 的**真实顺序**交错输出；
+ *        没有 events 时退回"reasoning 一段 + 工具追加在末尾"
  * - 流式占位消息 → 即使 content/reasoning 都为空，也输出一个 streaming assistant item
  */
 export function adaptMessages(
   messages: ChatMessage[],
   streamingToolCalls?: { name: string; status: 'thinking' | 'calling' | 'done'; args?: string; result?: string; toolCallId?: string }[],
   streamingAssistantId?: string | null,
+  streamingSegments?: StreamingSegment[],
 ): TranscriptItem[] {
   const items: TranscriptItem[] = []
   let seq = 0
@@ -103,7 +257,37 @@ export function adaptMessages(
       const hasText = Boolean(msg.content?.trim())
       const isStreamingPlaceholder = streamingAssistantId === msg.id
 
-      if (hasReasoning) {
+      // 优先走「有序事件流」—— 让推理与工具按真实发生顺序交错，
+      // 而不是"推理一大段 + 工具全堆在末尾"。
+      //
+      // **流式与持久化两侧都要走**：只修流式的话，任务一结束就切回持久化路径，
+      // 工具会整体跳回底部 —— 表现成"跑完又跑回底部了"。
+      //
+      // ⚠️ 必须**只有在它真能产出内容时**才采信：events 里可能只有 content 事件
+      //（没有 reasoning / tool），此时有序路径产出 0 项。若无条件采信，就会
+      // 同时跳过下面的 reasoning 兜底与末尾的工具追加 —— 结果是整块过程**全部不可见**，
+      // 表现为"一直正在思考、不出内容"。
+      const orderedSource = isStreamingPlaceholder
+        ? (streamingSegments?.some((s) => s.events?.length) ? streamingSegments : null)
+        : (msg.segments?.some((s) => s.events?.length) ? msg.segments : null)
+      const orderedProcess = orderedSource
+        ? processItemsFromSegments(orderedSource, msg.id, {
+            // 流式侧用 streamingToolCalls 的实时状态，持久化侧用 msg 上的记录 ——
+            // 两者都是同步维护的，作为状态与结果的权威
+            calls: isStreamingPlaceholder
+              ? (streamingToolCalls ?? []).map((tc) => ({
+                  id: tc.toolCallId ?? '', name: tc.name, args: tc.args ?? '', status: tc.status, result: tc.result,
+                }))
+              : (msg.toolCalls ?? []).map((tc) => ({
+                  id: tc.id, name: tc.name, args: JSON.stringify(tc.arguments), status: 'done',
+                })),
+            results: msg.toolResults ?? [],
+          })
+        : null
+      const useOrdered = Boolean(orderedProcess && orderedProcess.length > 0)
+      if (useOrdered && orderedProcess) {
+        for (const it of orderedProcess) items.push(it)
+      } else if (hasReasoning) {
         // reasoning 作为过程材料独立输出（无论是否有 text）
         items.push({
           kind: 'assistant',
@@ -116,7 +300,8 @@ export function adaptMessages(
       }
 
       // 工具调用 → 独立 tool items
-      if (msg.toolCalls) {
+      // 走有序事件流时跳过 —— 那些工具已经按真实顺序插在推理之间了（否则会渲染两遍）
+      if (msg.toolCalls && !useOrdered) {
         const resultMap = new Map<string, ToolResult>()
         if (msg.toolResults) {
           for (const tr of msg.toolResults) {
@@ -164,6 +349,8 @@ export function adaptMessages(
           reasoning: '',
           streaming: true,
           reasoningComplete: false,
+          // 有序流里推理已经输出过了 —— 这一项只用来承接正文，不要再吃 live.reasoning
+          ...(useOrdered ? { liveTextOnly: true } : {}),
         } as AssistantItem)
       }
       continue
@@ -172,19 +359,31 @@ export function adaptMessages(
 
   // 追加流式中的 tool items — 包括正在执行和已完成的
   // 已完成的工具调用在持久化前不会出现在 msg.toolCalls 中，
-  // 必须在此处渲染，否则工具一旦完成就从 UI 消失
+  // 必须在此处渲染，否则工具一旦完成就从 UI 消失。
+  //
+  // 走有序事件流时，工具已经按真实顺序插在推理之间了；这里按 **toolCallId 去重**后
+  // 只补事件流里没有的那些 —— 而不是整个跳过。
+  // 原因：events 有可能不完整（某一轮没写事件），一刀跳过会让那几件工具**彻底消失**；
+  // 去重补漏则保证"顺序尽量对，且一个都不丢"。
   if (streamingToolCalls) {
+    const alreadyEmitted = new Set(
+      items.flatMap((it) => (it.kind === 'tool' ? [it.id] : [])),
+    )
     for (const stc of streamingToolCalls) {
+      const id = stc.toolCallId || `streaming-tool-${seq++}`
+      if (alreadyEmitted.has(id)) continue
       const isRunning = stc.status === 'calling' || stc.status === 'thinking'
       items.push({
         kind: 'tool',
-        id: stc.toolCallId || `streaming-tool-${seq++}`,
+        id,
         name: stc.name,
         args: stc.args || '',
         readOnly: isReadOnlyTool(stc.name),
         status: isRunning ? 'running' : 'done',
         output: stc.result,
-        summary: stc.result ? stc.result.slice(0, 80).replace(/\n/g, ' ') : undefined,
+        // 与持久化路径走同一个摘要函数 —— 否则流式期间显示的是输出原文，
+        // 刷新后变成结构化摘要，同一行工具前后长得不一样
+        summary: stc.result ? summarizeToolResult(stc.name, stc.args || '', stc.result) : undefined,
         isShell: isShellTool(stc.name),
       } as ToolItem)
     }

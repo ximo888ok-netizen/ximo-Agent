@@ -16,6 +16,12 @@ vi.mock('electron', () => ({
   app: {
     getPath: vi.fn(() => mockUserData),
     isReady: vi.fn(() => true)
+  },
+  // store.ts 的 saveSettings 会动态 import('electron') 探测 safeStorage，
+  // mock 未定义该导出时 vitest 直接抛错并被 catch 吞掉，导致 settings.json 不落盘。
+  // 测试环境返回"加密不可用"，走明文写入分支（与断言语义一致）。
+  safeStorage: {
+    isEncryptionAvailable: vi.fn(() => false)
   }
 }))
 

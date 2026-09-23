@@ -46,19 +46,19 @@ export function CodingRightPanel(): React.ReactElement {
       <div className="flex shrink-0 border-b border-border-subtle">
         <TabButton
           active={tab === 'files'}
-          icon={<FolderTree size={12} />}
+          icon={<FolderTree size={13} />}
           label="文件"
           onClick={() => setTab('files')}
         />
         <TabButton
           active={tab === 'changes'}
-          icon={<FileDiff size={12} />}
+          icon={<FileDiff size={13} />}
           label="变更"
           onClick={() => setTab('changes')}
         />
         <TabButton
           active={tab === 'tasks'}
-          icon={<ListTodo size={12} />}
+          icon={<ListTodo size={13} />}
           label="任务"
           onClick={() => setTab('tasks')}
         />
@@ -92,10 +92,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-[11px] font-medium transition-colors border-b-2 ${
+      className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-caption font-medium transition-colors border-b-2 ${
         active
           ? 'border-accent text-accent bg-accent/5'
-          : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-bg-hover/50'
+          : 'border-transparent text-text-muted hover:text-text-secondary hover:bg-bg-hover-soft'
       }`}
     >
       {icon}
@@ -123,21 +123,21 @@ function CodingEntriesPanel(): React.ReactElement {
               className="ios-card group flex w-full items-center gap-3 p-3 text-left animate-slide-up"
               style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent transition-all duration-300 group-hover:bg-accent/20 group-hover:shadow-glow group-hover:scale-105">
-                <IconCmp size={18} />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-panel bg-accent/10 text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-base group-hover:bg-accent/20 group-hover:shadow-glow group-hover:scale-105">
+                <IconCmp size={16} />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-text-primary">{entry.label}</p>
-                <p className="text-[11px] text-text-muted">{entry.subtitle}</p>
+                <p className="text-caption text-text-muted">{entry.subtitle}</p>
               </div>
             </button>
           )
         })}
       </div>
-      <div className="flex-shrink-0 border-t border-border-subtle px-3 py-2.5">
-        <div className="ios-card border-dashed flex items-center gap-2.5 px-3 py-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg text-text-muted"><FolderSearch size={13} /></span>
-          <p className="text-[11px] text-text-muted">打开项目后显示文件树</p>
+      <div className="flex-shrink-0 border-t border-border-subtle px-3 py-2">
+        <div className="ios-card border-dashed flex items-center gap-2 px-3 py-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-card text-text-muted"><FolderSearch size={13} /></span>
+          <p className="text-caption text-text-muted">打开项目后显示文件树</p>
         </div>
       </div>
     </div>
@@ -214,26 +214,26 @@ function ProjectFileTreePanel({ projectPath }: { projectPath: string }): React.R
         <div className="flex h-full w-full flex-col">
           <div className="flex items-center justify-between px-3 pt-4 pb-2 border-b border-border-subtle shrink-0">
             <div className="flex min-w-0 items-center gap-2">
-              <FolderOpen size={14} className="shrink-0 text-accent" />
+              <FolderOpen size={13} className="shrink-0 text-accent" />
               <div className="min-w-0">
                 <p className="truncate text-xs font-semibold text-text-primary" title={projectPath}>{projectName}</p>
-                <p className="truncate text-[10px] text-text-muted" title={projectPath}>{projectPath}</p>
+                <p className="truncate text-caption text-text-muted" title={projectPath}>{projectPath}</p>
               </div>
             </div>
-            <button onClick={fetchTree} disabled={loading} className="icon-btn rounded-lg p-1.5 disabled:opacity-30" title="刷新文件树">
-              {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            <button aria-label="刷新文件树" onClick={fetchTree} disabled={loading} className="icon-btn rounded-card p-1.5 disabled:opacity-30" title="刷新文件树">
+              {loading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
             </button>
           </div>
 
           <div className="px-3 py-2 border-b border-border-subtle shrink-0">
             <div className="relative">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索文件..."
-                className="w-full rounded-lg bg-bg-elevated/60 border border-border-subtle pl-7 pr-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/40 focus:bg-bg-elevated"
+                className="w-full rounded-card bg-bg-elevated-soft border border-border-subtle pl-7 pr-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus-ring focus:border-accent/40 focus:bg-bg-elevated"
               />
             </div>
           </div>
@@ -242,7 +242,7 @@ function ProjectFileTreePanel({ projectPath }: { projectPath: string }): React.R
             {error ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-xs text-red-400">{error}</p>
-                <button onClick={fetchTree} className="btn-ghost mt-2 rounded-lg px-3 py-1 text-[11px]">重试</button>
+                <button onClick={fetchTree} className="btn-ghost mt-2 rounded-card px-3 py-1 text-caption">重试</button>
               </div>
             ) : loading && tree.length === 0 ? (
               <div className="flex items-center justify-center py-8"><Loader2 size={20} className="animate-spin text-text-muted" /></div>
@@ -300,7 +300,7 @@ function FileTreeItem({ node, depth, onFileClick, onContextMenu, forceExpand = f
           e.dataTransfer.setData('text/plain', node.path)
           e.dataTransfer.effectAllowed = 'copy'
         }}
-        className="flex w-full items-center gap-1.5 py-[3px] text-left text-xs transition-colors hover:bg-bg-hover"
+        className="flex w-full items-center gap-1.5 py-[3px] text-left text-xs transition-colors hover:bg-bg-hover active:scale-[0.97]"
         style={{ paddingLeft: `${paddingLeft}px`, paddingRight: '8px' }}
         title={node.path}
       >
@@ -308,7 +308,7 @@ function FileTreeItem({ node, depth, onFileClick, onContextMenu, forceExpand = f
         {isDir ? (expanded ? <FolderOpen size={13} className="shrink-0 text-accent" /> : <Folder size={13} className="shrink-0 text-accent" />) : <FileIcon size={13} className="shrink-0 text-text-muted" />}
         <span className={`truncate ${isDir ? 'text-text-secondary font-medium' : 'text-text-primary'}`}>{node.name}</span>
         {!isDir && node.size !== undefined && node.size > 0 && (
-          <span className="ml-auto shrink-0 text-[9px] text-text-muted">{node.size > 1024 ? `${(node.size / 1024).toFixed(1)}K` : `${node.size}B`}</span>
+          <span className="ml-auto shrink-0 text-caption text-text-muted">{node.size > 1024 ? `${(node.size / 1024).toFixed(1)}K` : `${node.size}B`}</span>
         )}
       </button>
       {isDir && expanded && node.children && node.children.length > 0 && (

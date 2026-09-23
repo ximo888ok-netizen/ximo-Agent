@@ -133,11 +133,11 @@ export function ThemeEditor({
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            className={`flex items-center gap-1 rounded-control px-3 py-1 text-caption font-medium transition-colors ${
               mode === m ? 'bg-accent/15 text-accent' : 'text-text-muted hover:text-text-secondary'
             }`}
           >
-            {m === 'light' ? <Sun size={12} /> : <Moon size={12} />}
+            {m === 'light' ? <Sun size={13} /> : <Moon size={13} />}
             {m === 'light' ? '浅色模式' : '深色模式'}
           </button>
         ))}
@@ -148,22 +148,22 @@ export function ThemeEditor({
         <div className="relative">
           <button
             onClick={() => setPresetOpen(!presetOpen)}
-            className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated px-2 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+            className="flex items-center gap-1 rounded-control border border-border bg-bg-elevated px-2 py-1 text-caption text-text-secondary transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
           >
             预设模板 <ChevronDown size={11} className={`transition-transform ${presetOpen ? 'rotate-180' : ''}`} />
           </button>
           {presetOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setPresetOpen(false)} />
-              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-bg-elevated p-1 shadow-lg">
+              <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-card border border-border bg-bg-elevated p-1 shadow-lg">
                 {THEME_PRESETS.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleApplyPreset(p)}
-                    className="block w-full rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent/10"
+                    className="block w-full rounded-control px-2 py-1.5 text-left transition-colors hover:bg-accent/10 active:scale-[0.97]"
                   >
-                    <p className="text-[11px] font-medium text-text-primary">{p.name}</p>
-                    <p className="text-[10px] text-text-muted">{p.desc}</p>
+                    <p className="text-caption font-medium text-text-primary">{p.name}</p>
+                    <p className="text-caption text-text-muted">{p.desc}</p>
                   </button>
                 ))}
               </div>
@@ -177,27 +177,27 @@ export function ThemeEditor({
         {THEME_SCHEMA.map((cat) => {
           const catModified = cat.vars.some((v) => currentVars[v.key] !== undefined)
           return (
-            <details key={cat.id} className="rounded-lg border border-border-subtle overflow-hidden">
-              <summary className="flex cursor-pointer items-center justify-between px-2.5 py-1.5 hover:bg-bg-hover">
-                <span className="flex items-center gap-1.5 text-[11px] font-medium text-text-primary">
+            <details key={cat.id} className="rounded-card border border-border-subtle overflow-hidden">
+              <summary className="flex cursor-pointer items-center justify-between px-3 py-1.5 hover:bg-bg-hover">
+                <span className="flex items-center gap-1.5 text-caption font-medium text-text-primary">
                   <span>{cat.icon}</span>
                   {cat.label}
-                  <span className="text-[9px] text-text-muted">({cat.vars.length})</span>
+                  <span className="text-caption text-text-muted">({cat.vars.length})</span>
                 </span>
                 <div className="flex items-center gap-1">
                   {catModified && (
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCategoryReset(cat.vars) }}
-                      className="rounded p-0.5 text-text-muted transition-colors hover:text-accent"
+                      className="rounded-control p-0.5 text-text-muted transition-colors hover:text-accent active:scale-[0.97]"
                       title="重置此分类"
                     >
                       <RotateCcw size={11} />
                     </button>
                   )}
-                  <ChevronDown size={12} className="text-text-muted" />
+                  <ChevronDown size={13} className="text-text-muted" />
                 </div>
               </summary>
-              <div className="border-t border-border-subtle px-2.5 py-1">
+              <div className="border-t border-border-subtle px-3 py-1">
                 {cat.vars.map((meta) => (
                   <VarRow
                     key={meta.key}
@@ -215,18 +215,18 @@ export function ThemeEditor({
       </div>
 
       {/* 高级 — 自定义 CSS（面向有经验的用户） */}
-      <details className="mt-2 rounded-md border border-border-subtle">
-        <summary className="flex cursor-pointer items-center gap-1 px-2.5 py-1.5 text-[11px] text-text-muted hover:text-text-secondary">
+      <details className="mt-2 rounded-control border border-border-subtle">
+        <summary className="flex cursor-pointer items-center gap-1 px-3 py-1.5 text-caption text-text-muted hover:text-text-secondary">
           <ChevronDown size={11} className="transition-transform" />
           高级选项 · 自定义 CSS 注入
         </summary>
-        <div className="border-t border-border-subtle px-2.5 py-2">
-          <p className="mb-1 text-[10px] text-text-muted">如果上面的可视化控件不够用，可以在这里写自定义 CSS，将追加到全局样式末尾。</p>
+        <div className="border-t border-border-subtle px-3 py-2">
+          <p className="mb-1 text-caption text-text-muted">如果上面的可视化控件不够用，可以在这里写自定义 CSS，将追加到全局样式末尾。</p>
           <textarea
             value={customCss}
             onChange={(e) => update({ customCss: e.target.value })}
             placeholder={`/* 可选：写任意 CSS 覆盖 */\n.ios-card {\n  border-radius: 8px;\n}`}
-            className="h-24 w-full resize-y rounded-md border border-border bg-bg-input p-2 font-mono text-[11px] text-text-primary focus:border-accent focus:outline-none"
+            className="h-24 w-full resize-y rounded-control border border-border bg-bg-input p-2 font-mono text-caption text-text-primary focus:border-accent focus-ring"
             spellCheck={false}
           />
         </div>
@@ -246,15 +246,15 @@ export function ThemeEditor({
       <div className="mt-2 flex items-center justify-between border-t border-border-subtle pt-2">
         <button
           onClick={handleResetAll}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-muted transition-colors hover:text-red-400"
+          className="flex items-center gap-1 rounded-control px-2 py-1 text-caption text-text-muted transition-colors hover:text-red-400 active:scale-[0.97]"
         >
-          <RotateCcw size={12} /> 全部重置
+          <RotateCcw size={13} /> 全部重置
         </button>
         <button
           onClick={handleExport}
-          className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+          className="flex items-center gap-1 rounded-control border border-border bg-bg-elevated px-3 py-1 text-caption text-text-secondary transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
         >
-          <Download size={12} /> 导出主题包
+          <Download size={13} /> 导出主题包
         </button>
       </div>
     </CollapsibleSection>

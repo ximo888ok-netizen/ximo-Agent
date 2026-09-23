@@ -1,7 +1,7 @@
 /**
  * 系统提示词 — 从 modes/index.ts 拆出，延迟加载
  *
- * modes/index.ts 仅保留模式元数据（name/icon/description/quickActions），
+ * modes/index.ts 仅保留模式元数据（name/icon/description/actionGroups），
  * 系统提示词（~25KB）仅在发送消息时通过动态 import 加载。
  */
 import type { Mode } from '@shared/types'

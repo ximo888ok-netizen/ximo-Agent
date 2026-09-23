@@ -79,19 +79,19 @@ export function TerminalPanel({ command: agentCommand, output: agentOutput, cwd 
     <div className="border-t border-border-subtle shrink-0 glass">
       <div className="bg-[#0d1117]/95">
         {/* 终端标题栏 */}
-        <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-border-subtle/50">
+        <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-border-subtle-soft">
           <span className="h-2 w-2 rounded-full bg-red-500/80" />
           <span className="h-2 w-2 rounded-full bg-yellow-500/80" />
           <span className="h-2 w-2 rounded-full bg-green-500/80" />
-          <span className="ml-2 text-[11px] text-text-muted">终端</span>
-          {agentCommand && <span className="ml-3 text-[11px] text-text-muted font-mono truncate">$ {agentCommand}</span>}
+          <span className="ml-2 text-caption text-text-muted">终端</span>
+          {agentCommand && <span className="ml-3 text-caption text-text-muted font-mono truncate">$ {agentCommand}</span>}
         </div>
         {/* 终端输出 */}
         <div ref={scrollRef} className="p-3 font-mono text-xs h-40 overflow-y-auto">
           {/* Agent 执行的命令输出 */}
           {agentOutput && (
             <div className="mb-2">
-              <div className="text-text-muted text-[10px]">[Agent]</div>
+              <div className="text-text-muted text-caption">[Agent]</div>
               <pre className="whitespace-pre-wrap break-all text-green-400">{agentOutput}</pre>
             </div>
           )}
@@ -117,7 +117,7 @@ export function TerminalPanel({ command: agentCommand, output: agentOutput, cwd 
               onKeyDown={handleKeyDown}
               disabled={running}
               placeholder={running ? '执行中...' : '输入命令并按 Enter 执行'}
-              className="flex-1 bg-transparent text-text-primary font-mono outline-none placeholder:text-text-muted/50 disabled:opacity-50"
+              className="flex-1 bg-transparent text-text-primary font-mono outline-none placeholder:text-text-tertiary disabled:opacity-50"
               autoFocus
             />
           </div>

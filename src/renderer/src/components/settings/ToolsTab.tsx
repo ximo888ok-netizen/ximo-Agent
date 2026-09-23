@@ -34,7 +34,7 @@ export function ToolsTab({
         defaultOpen
       >
         <ToggleRow
-          icon={<Zap size={15} />}
+          icon={<Zap size={16} />}
           label="GPU 硬件加速"
           desc="优先调用独显渲染 UI，无独显时自动使用核显。更改后需重启软件生效。"
           active={local.gpuAcceleration ?? true}
@@ -50,7 +50,7 @@ export function ToolsTab({
         desc="命令超时、输出截断、代码执行默认参数"
       >
         <NumberInputRow
-          icon={<Terminal size={15} />}
+          icon={<Terminal size={16} />}
           label="终端命令默认超时"
           desc="terminal_exec 工具的默认超时"
           value={local.terminalTimeout ?? 60}
@@ -61,7 +61,7 @@ export function ToolsTab({
           onChange={(v) => update({ terminalTimeout: v })}
         />
         <NumberInputRow
-          icon={<Cpu size={15} />}
+          icon={<Cpu size={16} />}
           label="代码执行默认超时"
           desc="code_execute 工具的默认超时"
           value={local.codeExecTimeout ?? 60}
@@ -72,7 +72,7 @@ export function ToolsTab({
           onChange={(v) => update({ codeExecTimeout: v })}
         />
         <NumberInputRow
-          icon={<Type size={15} />}
+          icon={<Type size={16} />}
           label="终端输出截断长度"
           desc="超长输出截断防止占满上下文"
           value={local.terminalOutputLimit ?? 50000}
@@ -90,7 +90,7 @@ export function ToolsTab({
         desc="无头模式、空闲超时、视口尺寸"
       >
         <ToggleRow
-          icon={<Monitor size={15} />}
+          icon={<Monitor size={16} />}
           label="浏览器无头模式"
           desc="开启后台运行，关闭显示窗口（调试用）"
           active={local.browserHeadless ?? true}
@@ -99,7 +99,7 @@ export function ToolsTab({
           inactiveText="已关闭 · 显示窗口"
         />
         <NumberInputRow
-          icon={<Clock size={15} />}
+          icon={<Clock size={16} />}
           label="浏览器空闲超时"
           desc="空闲多久后自动关闭释放内存"
           value={local.browserIdleTimeout ?? 5}
@@ -110,7 +110,7 @@ export function ToolsTab({
           onChange={(v) => update({ browserIdleTimeout: v })}
         />
         <NumberInputRow
-          icon={<Monitor size={15} />}
+          icon={<Monitor size={16} />}
           label="浏览器视口宽度"
           desc="页面渲染宽度"
           value={local.browserViewportWidth ?? 1280}
@@ -121,7 +121,7 @@ export function ToolsTab({
           onChange={(v) => update({ browserViewportWidth: v })}
         />
         <NumberInputRow
-          icon={<Monitor size={15} />}
+          icon={<Monitor size={16} />}
           label="浏览器视口高度"
           desc="页面渲染高度"
           value={local.browserViewportHeight ?? 800}
@@ -147,7 +147,7 @@ export function ToolsTab({
         desc="pi-computer-use Helper 命令超时"
       >
         <NumberInputRow
-          icon={<Monitor size={15} />}
+          icon={<Monitor size={16} />}
           label="Helper 命令超时"
           desc="Helper 命令执行超时"
           value={local.helperCommandTimeout ?? 30}
@@ -165,7 +165,7 @@ export function ToolsTab({
         desc="内嵌浏览器抓包行为"
       >
         <NumberInputRow
-          icon={<Network size={15} />}
+          icon={<Network size={16} />}
           label="抓包最大请求数"
           desc="最多保存多少条抓包记录"
           value={local.maxCapturedRequests ?? 500}
@@ -183,7 +183,7 @@ export function ToolsTab({
         desc="MCP 服务器连接超时"
       >
         <NumberInputRow
-          icon={<Server size={15} />}
+          icon={<Server size={16} />}
           label="MCP 连接超时"
           desc="MCP 服务器连接和请求超时"
           value={local.mcpConnectTimeout ?? 30}

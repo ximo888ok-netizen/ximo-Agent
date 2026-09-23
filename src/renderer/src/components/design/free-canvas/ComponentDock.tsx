@@ -36,7 +36,7 @@ export function ComponentDock(): React.ReactElement {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="搜索组件..."
-            className="w-full rounded-md bg-bg-elevated/60 py-1 pl-7 pr-2 text-[11px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent/30"
+            className="w-full rounded-control bg-bg-elevated-soft py-1 pl-7 pr-2 text-caption text-text-primary placeholder:text-text-muted focus-ring focus:ring-1 focus:ring-accent/30"
           />
         </div>
       </div>
@@ -44,7 +44,7 @@ export function ComponentDock(): React.ReactElement {
       <div className="max-h-32 overflow-y-auto px-2 pb-1.5">
         {groupedDock.map(([cat, comps]) => (
           <div key={cat} className="mb-1">
-            <div className="px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-text-muted">
+            <div className="px-1 py-0.5 text-caption font-medium uppercase tracking-wide text-text-muted">
               {cat} ({comps.length})
             </div>
             <div className="flex flex-wrap gap-1">
@@ -55,7 +55,7 @@ export function ComponentDock(): React.ReactElement {
           </div>
         ))}
         {filteredComponents.length === 0 && (
-          <div className="py-3 text-center text-[10px] text-text-muted">未找到匹配组件</div>
+          <div className="py-3 text-center text-caption text-text-muted">未找到匹配组件</div>
         )}
       </div>
     </div>

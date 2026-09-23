@@ -117,7 +117,7 @@ export const UserMessage = memo(function UserMessage({
                 className="msg-edit__btn msg-edit__btn--primary"
                 disabled={submitting || !draft.trim()}
               >
-                <CornerDownRight size={12} />
+                <CornerDownRight size={13} />
                 提交
               </button>
             </div>
@@ -126,7 +126,7 @@ export const UserMessage = memo(function UserMessage({
           <div className="msg__text">
             {item.slashCommand && (
               <span
-                className="mr-1.5 inline-flex items-center rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent align-middle"
+                className="mr-1.5 inline-flex items-center rounded-full bg-accent/15 px-1.5 py-0.5 text-caption font-medium text-accent align-middle"
                 title={item.slashCommand.systemHint}
               >
                 {item.slashCommand.cmd.replace(/^\//, '')}
@@ -139,11 +139,11 @@ export const UserMessage = memo(function UserMessage({
       {!editing && (
         <div className="msg-meta">
           {timeStr && <time className="msg-meta__time">{timeStr}</time>}
-          <button className="msg-meta__btn" type="button" onClick={handleCopy} title="复制">
+          <button aria-label="复制" className="msg-meta__btn" type="button" onClick={handleCopy} title="复制">
             {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
           </button>
           {onEdit && (
-            <button
+            <button aria-label="编辑"
               className="msg-meta__btn"
               type="button"
               onClick={startEdit}

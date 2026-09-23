@@ -2,9 +2,6 @@
 .animate-float { animation: floatY 5.5s ease-in-out infinite; }
 .animate-fade-scale { animation: fadeScaleIn 0.5s var(--ease-out-expo) both; }
 .animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
-.animate-reasoning-pulse-high { animation: reasoningPulseHigh 2.2s ease-in-out infinite; }
-.animate-reasoning-pulse-max { animation: reasoningPulseMax 1.6s ease-in-out infinite; }
-.animate-reasoning-pulse-ultra { animation: reasoningPulseUltra 1.2s ease-in-out infinite; }
 .animate-gradient-pan {
   background-size: 200% 200%;
   animation: gradientPan 6s ease-in-out infinite;
@@ -17,7 +14,7 @@
 
 /* 扩展 GPU 合成层 — 所有动画元素的 transform/opacity 走合成层 */
 .animate-fade-in, .animate-fade-scale, .animate-float, .animate-pulse-dot,
-.animate-gradient-pan, .animate-reasoning-pulse-high, .animate-reasoning-pulse-max, .animate-reasoning-pulse-ultra,
+.animate-gradient-pan,
 .ambient-orb, .halo-pulse::after, .beam-border::before, .text-shine {
   transform: translateZ(0);
 }

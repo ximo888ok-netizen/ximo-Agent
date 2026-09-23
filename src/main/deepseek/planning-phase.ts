@@ -90,9 +90,14 @@ export async function runPlanningPhase(
   if (!filtered) return null
 
   // 保留规划结果到主消息数组，作为执行阶段的上下文
+  // A2' 规划轮同样是思考模式调用 → 它也是一个 assistant 轮，
+  // 后续带 tools 的请求必须能拿到它的 reasoning_content，否则 400
   messages.push({
     role: 'assistant',
-    content: result.content
+    content: result.content,
+    ...(request.thinkingMode && request.reasoningEffort !== 'off'
+      ? { reasoning_content: result.reasoningContent ?? '' }
+      : {})
   })
   messages.push({
     role: 'system',

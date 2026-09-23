@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import type { AppSettings, Conversation, Mode } from '@shared/types'
+import { normalizeModelId } from '@shared/models'
 import { DEFAULT_SETTINGS } from './constants'
 import { settingsFile, conversationsFile, memoryDir } from './paths'
 import { ensureDir, ensureDirPath } from './ensureDir'
@@ -15,7 +16,14 @@ export async function loadSettings(): Promise<AppSettings> {
     const parsed = JSON.parse(raw)
     // 合并加密字段（覆盖明文，优先级更高）
     const encrypted = loadEncryptedFields()
-    return { ...DEFAULT_SETTINGS, ...parsed, ...encrypted }
+    const merged: AppSettings = { ...DEFAULT_SETTINGS, ...parsed, ...encrypted }
+    // 迁移历史模型 ID（deepseek-v4-flash → deepseek-flash）。
+    // 老设置文件里存的是旧 ID，不迁移会把已下线的模型名原样发给 API。
+    return {
+      ...merged,
+      model: normalizeModelId(merged.model) ?? merged.model,
+      subAgentModel: normalizeModelId(merged.subAgentModel) ?? merged.subAgentModel,
+    }
   } catch (e) {
     console.error('加载设置失败：', e)
   }
@@ -26,7 +34,8 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   try {
     await ensureDir()
     // 加密敏感字段并写入 secure.enc
-    saveEncryptedFields(settings as Record<string, unknown>)
+    // AppSettings 是具名字段接口（无索引签名），转 Record 需要经 unknown 中转
+    saveEncryptedFields(settings as unknown as Record<string, unknown>)
     // settings.json 仍然保存完整数据（含明文），保持向后兼容
     // 安全提升：safeStorage 可用时从 settings.json 中擦除敏感字段
     const safeStorage = await import('electron')

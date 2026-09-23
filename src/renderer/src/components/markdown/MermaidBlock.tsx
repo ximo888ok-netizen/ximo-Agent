@@ -54,7 +54,7 @@ export function MermaidBlock({ chart }: MermaidBlockProps): React.ReactElement {
 
   if (error) {
     return (
-      <div className="my-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 animate-fade-scale">
+      <div className="my-3 rounded-card border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 animate-fade-scale">
         <p className="font-semibold mb-1">Mermaid 图表渲染失败</p>
         <pre className="text-xs whitespace-pre-wrap text-red-300/80">{error}</pre>
       </div>

@@ -37,10 +37,10 @@ export function ToolCallGroup({ calls }: { calls: { name: string; status: string
   else statusText = `${doneCount}/${total} 完成`
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-bg-surface/40 overflow-hidden">
+    <div className="rounded-panel border border-border-subtle bg-bg-surface-soft overflow-hidden">
       <button
         onClick={() => { userOverridden.current = true; setExpanded(!expanded) }}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
       >
         {callingCount > 0 || thinkingCount > 0 ? (
           <Loader2 size={13} className="animate-spin text-accent shrink-0" />
@@ -49,14 +49,14 @@ export function ToolCallGroup({ calls }: { calls: { name: string; status: string
         )}
         <span className="text-text-secondary shrink-0">工具调用</span>
         <span className="text-text-muted">{total}</span>
-        {lastLabel && <span className="text-text-muted/70 truncate">· {lastLabel}</span>}
+        {lastLabel && <span className="text-text-muted truncate">· {lastLabel}</span>}
         <span className="ml-auto flex items-center gap-1 text-text-muted shrink-0">
           {statusText}
           <ChevronDown size={11} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-border-subtle/50 px-2 py-1.5 space-y-1.5">
+        <div className="border-t border-border-subtle-soft px-2 py-1.5 space-y-1.5">
           {calls.map((tc, i) => <ToolCallCard key={`${tc.name}-${i}`} tc={tc} />)}
         </div>
       )}
@@ -74,21 +74,21 @@ export function CollapsedToolResults({ results }: { results: ToolResult[] }): Re
   const summary = fileNames.slice(0, 2).join(', ') + (fileNames.length > 2 ? ` 等${fileNames.length}项` : '')
 
   return (
-    <div className="mt-2 rounded-xl border border-border-subtle bg-bg-surface/40 overflow-hidden">
+    <div className="mt-2 rounded-panel border border-border-subtle bg-bg-surface-soft overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
       >
         <CheckCircle size={13} className="text-green-500/70 shrink-0" />
         <span className="text-text-secondary shrink-0">工具结果</span>
         <span className="text-text-muted">{count}</span>
-        {summary && <span className="text-text-muted/70 truncate">· {summary}</span>}
+        {summary && <span className="text-text-muted truncate">· {summary}</span>}
         <span className="ml-auto flex items-center gap-1 text-text-muted shrink-0">
           <ChevronDown size={11} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-border-subtle/50 px-2 py-1.5 space-y-1">
+        <div className="border-t border-border-subtle-soft px-2 py-1.5 space-y-1">
           {results.map((result, i) => (
             <Suspense key={`${result.toolCallId}-${i}`} fallback={null}>
               <ToolResultCard result={result} />
@@ -119,10 +119,10 @@ export function CollapsedToolErrors({ results }: { results: ToolResult[] }): Rea
   const uniqueErrors = deduped.length
 
   return (
-    <div className="mt-2 rounded-xl border border-red-500/20 bg-red-500/5 overflow-hidden">
+    <div className="mt-2 rounded-panel border border-red-500/20 bg-red-500/5 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs transition-colors hover:bg-red-500/8"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-red-500/8 active:scale-[0.97]"
       >
         <AlertTriangle size={13} className="text-red-400/70 shrink-0" />
         <span className="text-red-400 shrink-0">工具错误</span>
@@ -135,7 +135,7 @@ export function CollapsedToolErrors({ results }: { results: ToolResult[] }): Rea
       {expanded && (
         <div className="border-t border-red-500/10 px-2 py-1.5 space-y-1">
           {deduped.map((err, i) => (
-            <div key={i} className="rounded-lg bg-red-500/5 px-2.5 py-1.5 text-xs text-red-400">
+            <div key={i} className="rounded-card bg-red-500/5 px-3 py-1.5 text-xs text-red-400">
               {err.count > 1 && <span className="text-red-400/50 mr-1">[{err.count}×]</span>}
               {err.error}
             </div>

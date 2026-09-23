@@ -28,7 +28,7 @@ export const SelectRow = memo(function SelectRow({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-text-primary">{label}</p>
-          {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+          {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
         </div>
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1">
@@ -36,7 +36,7 @@ export const SelectRow = memo(function SelectRow({
           <button
             key={opt}
             onClick={() => handleClick(opt)}
-            className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+            className={`rounded-control px-2 py-1 text-caption font-medium transition-colors ${
               value === opt
                 ? 'bg-accent/15 text-accent'
                 : 'border border-border text-text-muted hover:text-text-secondary'

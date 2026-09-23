@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Package, Upload, Trash2, Check, AlertCircle } from 'lucide-react'
 import { CollapsibleSection } from './shared-components'
+import { SpinnerBlock } from '@renderer/components/shared/Spinner'
 
 interface ThemePack {
   id: string
@@ -80,9 +81,9 @@ export function ThemePackSection({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+            className="flex items-center gap-1 rounded-control border border-border bg-bg-elevated px-3 py-1 text-caption text-text-secondary transition-colors hover:border-accent hover:text-accent active:scale-[0.97]"
           >
-            <Upload size={12} /> 导入主题包
+            <Upload size={13} /> 导入主题包
           </button>
         </div>
         <input
@@ -95,22 +96,20 @@ export function ThemePackSection({
       </div>
 
       {error && (
-        <div className="mt-2 flex items-center gap-2 rounded-lg bg-red-500/10 p-2 text-[11px] text-red-400">
+        <div className="mt-2 flex items-center gap-2 rounded-card bg-red-500/10 p-2 text-caption text-red-400">
           <AlertCircle size={13} /> {error}
         </div>
       )}
 
       {/* 主题包网格 */}
       {loading ? (
-        <div className="flex items-center justify-center py-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        </div>
+        <SpinnerBlock size="sm" className="py-4" />
       ) : (
         <div className="mt-2 space-y-2">
           {/* 默认主题选项 */}
           <button
             onClick={() => onApply(undefined)}
-            className={`w-full rounded-lg border p-2.5 text-left transition-all ${
+            className={`w-full rounded-card border p-2.5 text-left transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
               !activePackId ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
             }`}
           >
@@ -118,9 +117,9 @@ export function ThemePackSection({
               <span className={`text-xs font-semibold ${!activePackId ? 'text-accent' : 'text-text-primary'}`}>
                 默认主题
               </span>
-              {!activePackId && <Check size={14} className="text-accent" />}
+              {!activePackId && <Check size={13} className="text-accent" />}
             </div>
-            <p className="text-[10px] text-text-muted">使用内置配色，跟随主题颜色选择</p>
+            <p className="text-caption text-text-muted">使用内置配色，跟随主题颜色选择</p>
           </button>
 
           {/* 已导入的主题包 */}
@@ -135,7 +134,7 @@ export function ThemePackSection({
             return (
               <div
                 key={pack.id}
-                className={`group rounded-lg border p-2.5 transition-all ${
+                className={`group rounded-card border p-2.5 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
                   isActive ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
                 }`}
               >
@@ -159,20 +158,20 @@ export function ThemePackSection({
                       </span>
                     </div>
                     {pack.description && (
-                      <p className="mt-0.5 text-[10px] text-text-muted">{pack.description}</p>
+                      <p className="mt-0.5 text-caption text-text-muted">{pack.description}</p>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => onApply(isActive ? undefined : pack.id)}
-                      className={`rounded p-1 text-text-muted transition-colors hover:text-accent ${isActive ? 'text-accent' : ''}`}
+                      className={`rounded-control p-1 text-text-muted transition-colors hover:text-accent ${isActive ? 'text-accent' : ''}`}
                       title={isActive ? '取消应用' : '应用此主题'}
                     >
                       <Check size={13} />
                     </button>
                     <button
                       onClick={() => void handleDelete(pack.id)}
-                      className="rounded p-1 text-text-muted opacity-0 transition-all hover:text-red-400 group-hover:opacity-100"
+                      className="rounded-control p-1 text-text-muted opacity-0 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:text-red-400 group-hover:opacity-100 active:scale-[0.97]"
                       title="删除"
                     >
                       <Trash2 size={13} />
@@ -187,10 +186,10 @@ export function ThemePackSection({
 
       {/* 格式说明 */}
       <details className="mt-2">
-        <summary className="cursor-pointer text-[11px] text-text-muted hover:text-text-secondary">
+        <summary className="cursor-pointer text-caption text-text-muted hover:text-text-secondary">
           主题包 JSON 格式说明
         </summary>
-        <pre className="mt-1 overflow-x-auto rounded-lg bg-bg-input p-2 text-[10px] leading-relaxed text-text-secondary" style={{ fontFamily: 'inherit' }}>{`{
+        <pre className="mt-1 overflow-x-auto rounded-card bg-bg-input p-2 text-caption leading-relaxed text-text-secondary" style={{ fontFamily: 'inherit' }}>{`{
   "id": "midnight-aurora",
   "name": "午夜极光",
   "description": "深蓝紫调极光主题",
@@ -205,7 +204,7 @@ export function ThemePackSection({
     "--text-primary": "#e8e8f0"
   }
 }`}</pre>
-        <p className="mt-1 text-[10px] text-text-muted">
+        <p className="mt-1 text-caption text-text-muted">
           只需指定要覆盖的 CSS 变量，未指定的变量保持默认值。light/dark 至少需要一个。
         </p>
       </details>

@@ -1,31 +1,21 @@
-import { useEffect, useRef, useMemo, lazy, Suspense } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useStore } from '@renderer/store/useStore'
 import { MODE_CONFIGS } from '@renderer/modes'
-import { MessageItem } from '@renderer/components/message/MessageItem'
 import { Icon } from '@renderer/components/Icon'
-import { ToolPanel } from '@renderer/components/message/ToolPanel'
+import { ModeWelcome } from '@renderer/components/shared/ModeWelcome'
+import { ErrorBanner } from '@renderer/components/shared/ErrorBanner'
+import { Transcript } from '@renderer/components/transcript/Transcript'
+import { adaptMessages, buildLiveStream } from '@renderer/lib/transcriptAdapter'
+import { getModelShortLabel } from '@shared/models'
 import type { Mode, ChatMessage } from '@shared/types'
 
-// 懒加载空状态欢迎页
-const DesignWelcome = lazy(() => import('@renderer/DesignWelcome').then(m => ({ default: m.DesignWelcome })))
-
-/** 稳定的流式占位消息对象 */
-const STREAMING_MSG: ChatMessage = { id: 'streaming', role: 'assistant', content: '', timestamp: 0 }
-
-/** 从消息列表中提取最近一次 ui_generate 生成的 HTML 代码 */
-function extractLatestHtml(messages: ChatMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i]
-    if (msg.role !== 'assistant') continue
-    const htmlMatch = msg.content.match(/```(?:html|tsx|jsx)\s*\n([\s\S]*?)```/g)
-    if (htmlMatch) {
-      const lastBlock = htmlMatch[htmlMatch.length - 1]
-      return lastBlock.replace(/^```(?:html|tsx|jsx)\s*\n/, '').replace(/```$/, '')
-    }
-  }
-  return ''
-}
-
+/**
+ * DesignLayout — 设计模式
+ *
+ * 会话区与 Office / Coding 共用 `Transcript`（同一套渲染）：
+ * 思考与工具按真实发生顺序交错、扁平流出、折叠收起。
+ * 设计模式特有的「预览 / 导出 HTML」保留在头部，不属于会话渲染。
+ */
 export function DesignLayout(): React.ReactElement {
   // 用 getCurrentConversation 选择器替代 conversations.find 全量扫描 —
   // 每次 conversations 数组变化（含流式每 chunk）都不再重建 find 结果
@@ -36,14 +26,16 @@ export function DesignLayout(): React.ReactElement {
   const streamingReasoning = useStore((s) => s.streamingReasoning)
   const streamingConversationId = useStore((s) => s.streamingConversationId)
   const streamingToolCalls = useStore((s) => s.streamingToolCalls)
+  const streamingAssistantId = useStore((s) => s.streamingAssistantId)
   const streamingSegments = useStore((s) => s.streamingSegments)
   const error = useStore((s) => s.error)
   const regenerate = useStore((s) => s.regenerate)
   const editMessage = useStore((s) => s.editMessage)
+  const clearDraft = useStore((s) => s.clearDraft)
   const sendMessage = useStore((s) => s.sendMessage)
+  const projectPath = useStore((s) => s.projectPath)
 
   const fontSize = useStore((s) => s.settings?.fontSize) ?? 'md'
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   const messages = conversation?.messages
   const latestHtml = useMemo(() => {
@@ -52,19 +44,36 @@ export function DesignLayout(): React.ReactElement {
   }, [messages])
 
   const isStreamingThis = isStreaming && streamingConversationId === conversation?.id
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    requestAnimationFrame(() => {
-      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
-      if (isNearBottom) {
-        el.scrollTop = el.scrollHeight
-      }
-    })
-  }, [conversation?.messages.length, streamingContent, streamingReasoning, streamingSegments])
-
   const isEmpty = !conversation || conversation.messages.length === 0
+
+  // ── 适配：ChatMessage[] → 扁平 TranscriptItem[] ──
+  const items = useMemo(() => {
+    if (!conversation) return []
+    return adaptMessages(
+      conversation.messages,
+      isStreamingThis ? streamingToolCalls : undefined,
+      isStreamingThis ? streamingAssistantId : undefined,
+      isStreamingThis ? streamingSegments : undefined,
+    )
+  }, [conversation, isStreamingThis, streamingToolCalls, streamingAssistantId, streamingSegments])
+
+  // ── 流式 LiveStream ──
+  const live = useMemo(() => {
+    if (!isStreamingThis || !conversation) return undefined
+    const lastAssistantId = conversation.messages[conversation.messages.length - 1]?.id
+    if (!lastAssistantId) return undefined
+    return buildLiveStream(lastAssistantId, streamingContent, streamingReasoning)
+  }, [isStreamingThis, conversation, streamingContent, streamingReasoning])
+
+  const handleEditMessage = useCallback((turn: number, text: string) => {
+    if (!conversation) return
+    const target = conversation.messages.filter((m: ChatMessage) => m.role === 'user')[turn]
+    if (target) {
+      editMessage(target.id)
+      clearDraft()
+      void sendMessage(text, target.slashCommand ? { slashCommand: target.slashCommand } : undefined)
+    }
+  }, [conversation, editMessage, clearDraft, sendMessage])
 
   const handleOpenPreview = (): void => {
     if (latestHtml) {
@@ -99,25 +108,33 @@ export function DesignLayout(): React.ReactElement {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <ChatHeader mode={(conversation?.mode ?? currentMode) as Mode} title={conversation?.title} onPreview={handleOpenPreview} onExport={handleExportHtml} hasContent={!!latestHtml} />
-      <ToolPanel />
+      {/* 二级头部只在会话态出现：空态的模式名已由 ModeWelcome 承担，
+          再压一条全宽栏会随居中组一起飘到屏幕中间，且与窄内容宽度不匹配 */}
+      {!isEmpty && (
+        <ChatHeader mode={(conversation?.mode ?? currentMode) as Mode} title={conversation?.title} onPreview={handleOpenPreview} onExport={handleExportHtml} hasContent={!!latestHtml} />
+      )}
       {isEmpty ? (
-        <div className="flex-1 overflow-hidden">
-          <Suspense fallback={null}>
-            <DesignWelcome />
-          </Suspense>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
+          <ModeWelcome
+            icon={MODE_CONFIGS.design.icon}
+            title={MODE_CONFIGS.design.name}
+            description={MODE_CONFIGS.design.description}
+            projectPath={projectPath}
+          />
         </div>
       ) : (
         <>
-          <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
-            <div className={`mx-auto max-w-3xl space-y-5 px-4 py-6 chat-fs-${fontSize}`}>
-              {conversation!.messages.map((msg, idx) => (
-                <MessageItem key={msg.id} message={msg} canRegenerate={!isStreaming && msg.role === 'assistant' && idx === conversation!.messages.length - 1} onRegenerate={regenerate} onEditMessage={editMessage} />
-              ))}
-              {isStreamingThis && (
-                <MessageItem message={STREAMING_MSG} isStreaming streamingContent={streamingContent} streamingReasoning={streamingReasoning} streamingToolCalls={streamingToolCalls} streamingSegments={streamingSegments} />
-              )}
-            </div>
+          {/* 包一层只为把字号设置（--chat-font-size）传下去，布局类与 CodingLayout 保持一致 */}
+          <div className={`flex min-h-0 min-w-0 flex-1 flex-col chat-fs-${fontSize}`}>
+            <Transcript
+              items={items}
+              live={live}
+              running={isStreamingThis}
+              turnStartAt={isStreamingThis ? (conversation?.messages[conversation.messages.length - 1]?.timestamp ?? Date.now()) : undefined}
+              onEditMessage={handleEditMessage}
+              onRegenerate={regenerate}
+              canRegenerate={!isStreamingThis}
+            />
           </div>
           {error && <ErrorBanner message={error} />}
         </>
@@ -126,12 +143,26 @@ export function DesignLayout(): React.ReactElement {
   )
 }
 
+/** 从消息列表中提取最近一次 ui_generate 生成的 HTML 代码 */
+function extractLatestHtml(messages: ChatMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]
+    if (msg.role !== 'assistant') continue
+    const htmlMatch = msg.content.match(/```(?:html|tsx|jsx)\s*\n([\s\S]*?)```/g)
+    if (htmlMatch) {
+      const lastBlock = htmlMatch[htmlMatch.length - 1]
+      return lastBlock.replace(/^```(?:html|tsx|jsx)\s*\n/, '').replace(/```$/, '')
+    }
+  }
+  return ''
+}
+
 function ChatHeader({ mode, title, onPreview, onExport, hasContent }: { mode: Mode; title?: string; onPreview: () => void; onExport: () => void; hasContent: boolean }): React.ReactElement {
   const thinkingMode = useStore((s) => s.settings?.thinkingMode)
   const model = useStore((s) => s.settings?.model)
   const config = MODE_CONFIGS[mode]
   return (
-    <div className="flex items-center justify-between border-b border-border-subtle glass px-5 py-2.5 shrink-0">
+    <div className="flex items-center justify-between border-b border-border-subtle glass px-5 py-2 shrink-0">
       <div className="flex items-center gap-2 no-drag">
         <Icon name={config.icon} size={16} className="text-accent" />
         <span className="text-sm font-medium text-text-secondary">{config.name}</span>
@@ -142,24 +173,20 @@ function ChatHeader({ mode, title, onPreview, onExport, hasContent }: { mode: Mo
           <>
             <button
               onClick={onPreview}
-              className="chip flex items-center gap-1 px-2.5 py-1 text-[11px] text-accent border-accent/25 bg-accent/10 hover:bg-accent/15 transition-all duration-200 hover:scale-105 active:scale-95"
+              className="chip flex items-center gap-1 px-3 py-1 text-caption text-accent border-accent/25 bg-accent/10 hover:bg-accent/15 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:scale-105 active:scale-95"
             >
               预览
             </button>
             <button
               onClick={onExport}
-              className="btn-ghost rounded-lg px-2.5 py-1 text-[11px]"
+              className="btn-ghost rounded-card px-3 py-1 text-caption"
             >
               导出
             </button>
           </>
         )}
-        {thinkingMode !== undefined && model && <span className="chip px-2 py-0.5 text-[11px] text-text-muted">{thinkingMode ? '思考' : '快速'} · {model.includes('pro') ? 'V4-Pro' : 'V4-Flash'}</span>}
+        {thinkingMode !== undefined && model && <span className="chip px-2 py-0.5 text-caption text-text-muted">{thinkingMode ? '思考' : '快速'} · {getModelShortLabel(model)}</span>}
       </div>
     </div>
   )
-}
-
-function ErrorBanner({ message }: { message: string }): React.ReactElement {
-  return <div className="mx-4 mb-1 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/8 px-3 py-2 text-sm text-red-400 backdrop-blur-sm"><span className="text-xs">⚠</span><span className="flex-1">{message}</span></div>
 }

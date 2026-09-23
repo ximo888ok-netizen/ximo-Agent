@@ -1,6 +1,6 @@
 // ====== 应用设置类型 ======
 
-import type { ModelId, ReasoningEffort, FontSize, Mode } from './core'
+import type { ModelId, ReasoningEffort, FontSize, Mode, AutoModeLevel } from './core'
 
 /**
  * 自定义模型服务商配置（OpenAI 兼容协议）。
@@ -126,8 +126,8 @@ export interface AppSettings {
   webCacheMaxSizeMB?: number
 
   // ---- 权限与自动化模式 ----
-  /** Auto Mode 默认等级：off/safe/yolo */
-  defaultAutoModeLevel?: 'off' | 'safe' | 'yolo'
+  /** Auto Mode 默认等级 —— 语义见 AutoModeLevel */
+  defaultAutoModeLevel?: AutoModeLevel
   /** 联网搜索默认状态 */
   defaultNetworkSearchOn?: boolean
   /** 检查点自动快照开关 */
@@ -196,6 +196,10 @@ export interface AppSettings {
   // ---- 背景图 ----
   /** 背景图配置 */
   backgroundImage?: BackgroundImageConfig
+
+  // ---- 布局 ----
+  /** 右侧栏收起状态 — 收起后会话区获得完整宽度（Ctrl+B 切换） */
+  rightPanelCollapsed?: boolean
 
   // ---- 语音输入/输出 ----
 /** 流式结束后自动朗读助手回复（TTS） */

@@ -12,9 +12,9 @@ interface SearchSectionProps {
 export function SearchSection({ local, update }: SearchSectionProps): React.ReactElement {
   return (
     <>
-      <div className="ios-card p-3.5 space-y-3 my-2">
+      <div className="ios-card p-3 space-y-3 my-2">
         <div className="flex items-center gap-2">
-          <Globe size={15} className="text-accent" />
+          <Globe size={16} className="text-accent" />
           <div>
             <p className="text-sm font-medium text-text-primary">默认搜索引擎</p>
             <p className="text-xs text-text-muted">主引擎失败时自动降级</p>
@@ -29,7 +29,7 @@ export function SearchSection({ local, update }: SearchSectionProps): React.Reac
             <button
               key={engine.value}
               onClick={() => update({ defaultSearchEngine: engine.value as 'bing' | 'baidu' | 'duckduckgo' })}
-              className={`flex-1 rounded-lg border p-2.5 text-center transition-all duration-200 ${
+              className={`flex-1 rounded-card border p-2.5 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
                 (local.defaultSearchEngine ?? 'bing') === engine.value
                   ? 'border-accent bg-accent/10'
                   : 'border-border bg-bg-elevated hover:border-border-hover'
@@ -40,13 +40,13 @@ export function SearchSection({ local, update }: SearchSectionProps): React.Reac
               }`}>
                 {engine.label}
               </p>
-              <p className="text-[10px] text-text-muted mt-0.5">{engine.desc}</p>
+              <p className="text-caption text-text-muted mt-0.5">{engine.desc}</p>
             </button>
           ))}
         </div>
       </div>
       <NumberInputRow
-        icon={<Search size={15} />}
+        icon={<Search size={16} />}
         label="搜索结果默认数量"
         desc="web_search 默认返回数量"
         value={local.searchResultsCount ?? 5}
@@ -57,7 +57,7 @@ export function SearchSection({ local, update }: SearchSectionProps): React.Reac
         onChange={(v) => update({ searchResultsCount: v })}
       />
       <NumberInputRow
-        icon={<Globe size={15} />}
+        icon={<Globe size={16} />}
         label="网页抓取内容上限"
         desc="web_fetch 默认返回最大字符数"
         value={local.webFetchMaxLength ?? 10000}
@@ -68,7 +68,7 @@ export function SearchSection({ local, update }: SearchSectionProps): React.Reac
         onChange={(v) => update({ webFetchMaxLength: v })}
       />
       <ToggleRow
-        icon={<Database size={15} />}
+        icon={<Database size={16} />}
         label="网页缓存"
         desc="本地缓存减少重复请求"
         active={local.webCacheEnabled ?? true}
@@ -77,7 +77,7 @@ export function SearchSection({ local, update }: SearchSectionProps): React.Reac
         inactiveText="已关闭 · 不缓存"
       />
       <NumberInputRow
-        icon={<Database size={15} />}
+        icon={<Database size={16} />}
         label="网页缓存最大大小"
         desc="超限自动清理最旧条目"
         value={local.webCacheMaxSizeMB ?? 100}
@@ -100,9 +100,9 @@ interface VisionSectionProps {
 
 export function VisionSection({ local, update }: VisionSectionProps): React.ReactElement {
   return (
-    <div className="ios-card p-3.5 space-y-3 my-2">
+    <div className="ios-card p-3 space-y-3 my-2">
       <div className="flex items-center gap-2">
-        <Eye size={15} className="text-accent" />
+        <Eye size={16} className="text-accent" />
         <div>
           <p className="text-sm font-medium text-text-primary">视觉模型配置</p>
           <p className="text-xs text-text-muted">Agent 通过此模型分析截图、UI 设计稿和图片内容</p>
@@ -116,7 +116,7 @@ export function VisionSection({ local, update }: VisionSectionProps): React.Reac
             value={local.visionApiKey ?? ''}
             onChange={(e) => update({ visionApiKey: e.target.value })}
             placeholder="sk-..."
-            className="mt-1 w-full rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="mt-1 w-full rounded-control border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus-ring"
           />
         </div>
         <div>
@@ -126,7 +126,7 @@ export function VisionSection({ local, update }: VisionSectionProps): React.Reac
             value={local.visionBaseUrl ?? ''}
             onChange={(e) => update({ visionBaseUrl: e.target.value })}
             placeholder="https://api.agnes-ai.cn/v1"
-            className="mt-1 w-full rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="mt-1 w-full rounded-control border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus-ring"
           />
         </div>
         <div>
@@ -136,7 +136,7 @@ export function VisionSection({ local, update }: VisionSectionProps): React.Reac
             value={local.visionModel ?? ''}
             onChange={(e) => update({ visionModel: e.target.value })}
             placeholder="agnes-2.5-flash"
-            className="mt-1 w-full rounded-md border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus:outline-none"
+            className="mt-1 w-full rounded-control border border-border bg-bg-elevated px-3 py-1.5 text-sm text-text-primary focus:border-accent focus-ring"
           />
         </div>
       </div>

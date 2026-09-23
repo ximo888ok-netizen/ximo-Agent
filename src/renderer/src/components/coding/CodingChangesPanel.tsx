@@ -55,51 +55,51 @@ export function CodingChangesPanel(): React.ReactElement {
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5 space-y-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 space-y-3">
         {/* ── 变更摘要 ── */}
-        <section className="overflow-hidden rounded-xl border border-border-subtle bg-bg-surface/40">
+        <section className="overflow-hidden rounded-panel border border-border-subtle bg-bg-surface-soft">
           <button
             onClick={() => setShowDiffList(!showDiffList)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover active:scale-[0.97]"
           >
             <FileDiff size={13} className="shrink-0 text-accent" />
             <span className="shrink-0 text-xs font-medium text-text-secondary">变更摘要</span>
             {hasChanges && (
               <>
-                <span className="shrink-0 text-[10px] text-text-muted">{changeRows.length} 个文件</span>
-                <span className="shrink-0 font-mono text-[10px] text-green-400">+{totalAdditions}</span>
-                <span className="shrink-0 font-mono text-[10px] text-red-400">-{totalDeletions}</span>
+                <span className="shrink-0 text-caption text-text-muted">{changeRows.length} 个文件</span>
+                <span className="shrink-0 font-mono text-caption text-green-400">+{totalAdditions}</span>
+                <span className="shrink-0 font-mono text-caption text-red-400">-{totalDeletions}</span>
               </>
             )}
             <span className="ml-auto shrink-0 text-text-muted">
-              <ChevronDown size={12} className={`transition-transform ${showDiffList ? 'rotate-180' : ''}`} />
+              <ChevronDown size={13} className={`transition-transform ${showDiffList ? 'rotate-180' : ''}`} />
             </span>
           </button>
 
           {showDiffList && (
-            <div className="border-t border-border-subtle/50">
+            <div className="border-t border-border-subtle-soft">
               {hasChanges ? (
                 <ul className="max-h-52 overflow-y-auto py-1">
                   {changeRows.map((row, idx) => (
                     <li
                       key={idx}
-                      className="flex items-center gap-2 px-3 py-1 text-[11px] transition-colors hover:bg-bg-hover"
+                      className="flex items-center gap-2 px-3 py-1 text-caption transition-colors hover:bg-bg-hover"
                     >
                       <span className="min-w-0 flex-1 truncate font-mono text-text-primary" title={row.fileName}>{row.fileName}</span>
-                      <span className="shrink-0 text-[10px] text-text-muted">{row.changeDesc}</span>
-                      <span className="shrink-0 font-mono text-[10px] text-green-400">+{row.additions}</span>
-                      <span className="shrink-0 font-mono text-[10px] text-red-400">-{row.deletions}</span>
+                      <span className="shrink-0 text-caption text-text-muted">{row.changeDesc}</span>
+                      <span className="shrink-0 font-mono text-caption text-green-400">+{row.additions}</span>
+                      <span className="shrink-0 font-mono text-caption text-red-400">-{row.deletions}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="px-3 py-4 text-center text-[11px] text-text-muted">暂无文件变更</div>
+                <div className="px-3 py-4 text-center text-caption text-text-muted">暂无文件变更</div>
               )}
               {hasChanges && (
-                <div className="border-t border-border-subtle/50 px-3 py-1.5">
+                <div className="border-t border-border-subtle-soft px-3 py-1.5">
                   <button
                     onClick={() => void sendMessage(`请使用 git_operations 工具查看当前项目的 diff 详细信息。${gitHint}`, { skipNetworkHint: true })}
-                    className="flex w-full items-center justify-center gap-1 rounded-lg py-1 text-[11px] text-accent transition-colors hover:bg-accent/10"
+                    className="flex w-full items-center justify-center gap-1 rounded-card py-1 text-caption text-accent transition-colors hover:bg-accent/10 active:scale-[0.97]"
                   >
                     <ArrowRight size={11} />
                     查看详细 Diff
@@ -116,7 +116,7 @@ export function CodingChangesPanel(): React.ReactElement {
 
       {/* ── Git 操作区 ── */}
       {hasChanges && (
-        <div className="shrink-0 space-y-2 border-t border-border-subtle px-3 py-2.5">
+        <div className="shrink-0 space-y-2 border-t border-border-subtle px-3 py-2">
           <div className="grid grid-cols-4 gap-1.5">
             <ActionIconBtn title="撤销更改 (Git checkout)" onClick={() => void sendMessage(`请使用 git_operations 工具撤销最近的文件更改。${gitHint}\n\n请先查看 git status，然后用 git checkout 撤销工作区修改。操作前请先确认。`, { skipNetworkHint: true })}>
               <Undo2 size={13} />
@@ -145,12 +145,12 @@ export function CodingChangesPanel(): React.ReactElement {
               <Check size={11} /> 检查
             </ActionSmallBtn>
           </div>
-          <button
+          <button aria-label="提交更改 (Git commit)"
             onClick={handleCommit}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 py-1.5 text-[11px] font-medium text-accent transition-all duration-200 hover:bg-accent/15 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-card border border-accent/30 bg-accent/10 py-1.5 text-caption font-medium text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-accent/15 active:scale-[0.98]"
             title="提交更改 (Git commit)"
           >
-            <GitBranch size={12} />
+            <GitBranch size={13} />
             提交更改
           </button>
         </div>
@@ -162,10 +162,10 @@ export function CodingChangesPanel(): React.ReactElement {
 /** 方形图标操作按钮 */
 function ActionIconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }): React.ReactElement {
   return (
-    <button
+    <button aria-label={title}
       onClick={onClick}
       title={title}
-      className="flex h-8 items-center justify-center rounded-lg border border-border bg-bg-surface/60 text-text-secondary transition-all duration-200 hover:bg-bg-hover hover:text-text-primary active:scale-95"
+      className="flex h-8 items-center justify-center rounded-card border border-border bg-bg-surface-soft text-text-secondary transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-bg-hover hover:text-text-primary active:scale-95"
     >
       {children}
     </button>
@@ -177,7 +177,7 @@ function ActionSmallBtn({ onClick, children }: { onClick: () => void; children: 
   return (
     <button
       onClick={onClick}
-      className="flex items-center justify-center gap-1 rounded-lg border border-border bg-bg-surface/60 py-1 text-[10px] text-text-muted transition-all duration-200 hover:bg-bg-hover hover:text-text-primary active:scale-95"
+      className="flex items-center justify-center gap-1 rounded-card border border-border bg-bg-surface-soft py-1 text-caption text-text-muted transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-bg-hover hover:text-text-primary active:scale-95"
     >
       {children}
     </button>

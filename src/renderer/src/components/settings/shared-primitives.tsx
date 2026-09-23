@@ -50,10 +50,10 @@ export function LinkRow({ href, label }: { href: string; label: string }): React
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="ios-card flex items-center justify-between px-3 py-2.5 transition-all hover:border-accent/40"
+      className="ios-card flex items-center justify-between px-3 py-2 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:border-accent/40"
     >
       <span className="text-sm text-text-secondary">{label}</span>
-      <ExternalLink size={14} className="text-text-muted" />
+      <ExternalLink size={13} className="text-text-muted" />
     </a>
   )
 }
@@ -72,8 +72,8 @@ export function DataRow({
   danger?: boolean
 }): React.ReactElement {
   return (
-    <div className="ios-card flex items-center justify-between p-3.5">
-      <div className="flex items-start gap-2.5">
+    <div className="ios-card flex items-center justify-between p-3">
+      <div className="flex items-start gap-2">
         <span className={danger ? 'text-red-400' : 'text-text-muted'}>{icon}</span>
         <div>
           <p className={`text-sm font-medium ${danger ? 'text-red-400' : 'text-text-primary'}`}>

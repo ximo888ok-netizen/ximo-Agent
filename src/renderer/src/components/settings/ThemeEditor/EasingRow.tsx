@@ -48,11 +48,11 @@ export function EasingRow({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-text-primary">{label}</p>
-          {desc && <p className="text-[10px] text-text-muted truncate">{desc}</p>}
+          {desc && <p className="text-caption text-text-muted truncate">{desc}</p>}
         </div>
         {/* 当前选中的预设名 */}
         {matchingPreset && (
-          <span className="rounded bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
+          <span className="rounded-control bg-accent/10 px-1.5 py-0.5 text-caption text-accent">
             {matchingPreset.name}
           </span>
         )}
@@ -66,7 +66,7 @@ export function EasingRow({
             <button
               key={preset.name}
               onClick={() => handlePresetClick(preset.value)}
-              className={`flex flex-col items-center rounded-md border p-1.5 transition-all ${
+              className={`flex flex-col items-center rounded-control border p-1.5 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
                 isActive
                   ? 'border-accent bg-accent/10'
                   : 'border-border hover:border-border-hover'
@@ -74,7 +74,7 @@ export function EasingRow({
               title={preset.desc}
             >
               <EasingCurvePreview parts={preset.value} size={32} active={isActive} />
-              <span className={`mt-0.5 text-[9px] ${isActive ? 'text-accent' : 'text-text-muted'}`}>
+              <span className={`mt-0.5 text-caption ${isActive ? 'text-accent' : 'text-text-muted'}`}>
                 {preset.name}
               </span>
             </button>
@@ -85,16 +85,16 @@ export function EasingRow({
       {/* 自定义微调 */}
       <button
         onClick={() => setShowCustom(!showCustom)}
-        className="mt-1.5 text-[10px] text-text-muted transition-colors hover:text-accent"
+        className="mt-1.5 text-caption text-text-muted transition-colors hover:text-accent active:scale-[0.97]"
       >
         {showCustom ? '收起微调' : '自定义微调'}
       </button>
 
       {showCustom && (
-        <div className="mt-1.5 rounded-md border border-border-subtle bg-bg-elevated/50 p-2">
+        <div className="mt-1.5 rounded-control border border-border-subtle bg-bg-elevated-soft p-2">
           <div className="flex items-center gap-3">
             {/* SVG 曲线预览 */}
-            <EasingCurvePreview parts={parts} size={64} active showGrid />
+            <EasingCurvePreview parts={parts} size={32} active showGrid />
 
             {/* 4个数值滑块 */}
             <div className="flex-1 space-y-1">
@@ -105,7 +105,7 @@ export function EasingRow({
                 { label: '终点 Y', key: 'y2', value: parts.y2, point: 'p2' as const, axis: 'y' as const },
               ]).map((s) => (
                 <div key={s.key} className="flex items-center gap-1.5">
-                  <span className="w-12 text-[9px] text-text-muted">{s.label}</span>
+                  <span className="w-12 text-caption text-text-muted">{s.label}</span>
                   <input
                     type="range"
                     min={-0.5}
@@ -115,7 +115,7 @@ export function EasingRow({
                     onChange={(e) => handleControlPointChange(s.point, s.axis, parseFloat(e.target.value))}
                     className="flex-1 accent-[var(--accent-DEFAULT)]"
                   />
-                  <span className="w-8 text-right text-[9px] font-mono text-text-secondary">
+                  <span className="w-8 text-right text-caption font-mono text-text-secondary">
                     {s.value.toFixed(2)}
                   </span>
                 </div>
@@ -153,10 +153,10 @@ function EasingCurvePreview({
     <svg width={size} height={size} className="overflow-visible">
       {showGrid && (
         <>
-          <line x1={pad} y1={pad} x2={pad + inner} y2={pad} stroke="var(--border-subtle)" strokeWidth={0.5} />
-          <line x1={pad} y1={pad + inner} x2={pad + inner} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={0.5} />
-          <line x1={pad} y1={pad} x2={pad} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={0.5} />
-          <line x1={pad + inner} y1={pad} x2={pad + inner} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={0.5} />
+          <line x1={pad} y1={pad} x2={pad + inner} y2={pad} stroke="var(--border-subtle)" strokeWidth={1.5} />
+          <line x1={pad} y1={pad + inner} x2={pad + inner} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={1.5} />
+          <line x1={pad} y1={pad} x2={pad} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={1.5} />
+          <line x1={pad + inner} y1={pad} x2={pad + inner} y2={pad + inner} stroke="var(--border-subtle)" strokeWidth={1.5} />
         </>
       )}
       <path

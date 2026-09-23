@@ -1,115 +1,156 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { FileText, Server, Square } from 'lucide-react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { Plus, Globe, Terminal, FolderOpen, LayoutDashboard, X } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
+import { OfficeOverviewPanel } from './OfficeOverviewPanel'
+import { SpinnerBlock } from '@renderer/components/shared/Spinner'
 
-// 懒加载内嵌浏览器面板
 const EmbeddedBrowserPanel = lazy(() => import('./EmbeddedBrowserPanel').then(m => ({ default: m.EmbeddedBrowserPanel })))
-// 懒加载 Skill 列表面板
-const SkillListPanel = lazy(() => import('./SkillListPanel').then(m => ({ default: m.SkillListPanel })))
-// 懒加载 MCP 列表面板
-const McpListPanel = lazy(() => import('./McpListPanel').then(m => ({ default: m.McpListPanel })))
+const OfficeTerminalPanel = lazy(() => import('./OfficeTerminalPanel').then(m => ({ default: m.OfficeTerminalPanel })))
+const OfficeFilePanel = lazy(() => import('./OfficeFilePanel').then(m => ({ default: m.OfficeFilePanel })))
 
-/** 上下文模式（办公）右侧面板 — Skill 列表 + MCP 列表 */
+interface PanelDef {
+  id: string
+  label: string
+  icon: LucideIcon
+  hint: string
+}
+
+/** 「+」可新建的面板 — 三者都走真实通道 */
+const PANEL_DEFS: PanelDef[] = [
+  { id: 'browser', label: '浏览器', icon: Globe, hint: '浏览及调试网页' },
+  { id: 'terminal', label: '终端', icon: Terminal, hint: '执行命令及脚本' },
+  { id: 'file', label: '文件', icon: FolderOpen, hint: '浏览和预览任务文件' },
+]
+
+const TAB_META: Record<string, { label: string; icon: LucideIcon }> = {
+  overview: { label: '概览', icon: LayoutDashboard },
+  ...Object.fromEntries(PANEL_DEFS.map((d) => [d.id, { label: d.label, icon: d.icon }])),
+}
+
+/**
+ * ContextRightPanel — 办公模式右栏工作区
+ *
+ * 默认是「概览」分层页（任务待办 / 任务产物 / 意识更新），通过左上角「+」按需新建
+ * 浏览器 / 终端 / 文件 面板。技能列表已迁出为左栏「能力 · 技能」浮层，不再出现在这里。
+ *
+ * 面板状态：overview 常驻；browser 由 browserOpen 派生（webview / 抓包 / 录制都挂在它上面，
+ * 不能另存一份 tab 状态）；terminal / file 存在 store 的 officePanelTabs 里。
+ */
 export function ContextRightPanel({ hasConversation: _hasConversation }: { hasConversation: boolean }): React.ReactElement {
-  const sendMessage = useStore((s) => s.sendMessage)
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingStepCount, setRecordingStepCount] = useState(0)
-  const [activeTab, setActiveTab] = useState<'skill' | 'mcp'>('skill')
+  const panelTabs = useStore((s) => s.officePanelTabs)
+  const panelActive = useStore((s) => s.officePanelActive)
   const browserOpen = useStore((s) => s.browserOpen)
+  const openPanel = useStore((s) => s.openOfficePanel)
+  const closePanel = useStore((s) => s.closeOfficePanel)
+  const setActive = useStore((s) => s.setOfficePanelActive)
+  const [menuOpen, setMenuOpen] = useState(false)
 
+  const tabs = useMemo(() => {
+    const list = ['overview', ...panelTabs.filter((t) => t !== 'browser')]
+    if (browserOpen) list.push('browser')
+    return list
+  }, [panelTabs, browserOpen])
+
+  // 当前 tab 被关掉时回落到概览
+  const active = tabs.includes(panelActive) ? panelActive : 'overview'
+
+  // 从别处（工具面板 / 斜杠命令）打开内嵌浏览器时，自动切到浏览器 tab，
+  // 否则浏览器开了却停在概览页，用户看不到它
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const status = await window.api.skills.recordingStatus()
-        setIsRecording(status.isRecording)
-        if (status.session) setRecordingStepCount(status.session.steps.length)
-      } catch { /* ignore */ }
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (browserOpen) return <BrowserPanelContainer />
+    if (browserOpen) setActive('browser')
+  }, [browserOpen, setActive])
 
   return (
     <aside className="flex h-full w-full flex-col border-l border-border-subtle glass">
-      {isRecording && (
-        <div className="mx-3 mt-3 mb-1 rounded-xl bg-red-500/10 border border-red-500/20 p-2.5 animate-pulse-subtle">
-          <div className="flex items-center gap-2">
-            <div className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-            </div>
-            <span className="text-xs font-medium text-red-400">正在录制</span>
-            <span className="text-[10px] text-red-400/70 ml-auto">{recordingStepCount} 步操作</span>
-          </div>
+      {/* 顶栏：「+ 新建」+ 已打开面板的 tab 条（只有一个面板时不显示 tab 条） */}
+      <div className="flex items-center gap-1 border-b border-border-subtle px-1.5 py-1.5 shrink-0">
+        <div className="relative shrink-0">
           <button
-            onClick={() => sendMessage('请使用 skill_record(action="stop") 结束录制并生成技能。', { skipNetworkHint: true })}
-            className="mt-1.5 w-full flex items-center justify-center gap-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 px-2.5 py-1.5 text-xs text-red-400 transition-all"
+            onClick={() => setMenuOpen(!menuOpen)}
+            className={`icon-btn rounded-control p-1 ${menuOpen ? 'bg-bg-hover text-accent' : ''}`}
+            title="新建面板"
           >
-            <Square size={11} />停止录制
+            <Plus size={13} />
           </button>
-        </div>
-      )}
 
-      <div className="flex items-center gap-0.5 border-b border-border-subtle px-2 py-1.5 shrink-0">
-        <button
-          onClick={() => setActiveTab('skill')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${activeTab === 'skill' ? 'bg-accent/15 text-accent' : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated/50'}`}
-        >
-          <FileText size={13} />Skill
-        </button>
-        <button
-          onClick={() => setActiveTab('mcp')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${activeTab === 'mcp' ? 'bg-accent/15 text-accent' : 'text-text-muted hover:text-text-secondary hover:bg-bg-elevated/50'}`}
-        >
-          <Server size={13} />MCP
-        </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div className="absolute left-0 top-full z-50 mt-1 w-[248px] rounded-panel border border-border-subtle bg-bg-elevated p-1.5 shadow-glass animate-scale-in">
+                <div className="px-2 pb-1 pt-0.5 text-caption text-text-muted">从这里开始</div>
+                {PANEL_DEFS.map((def) => {
+                  const DefIcon = def.icon
+                  const alreadyOpen = tabs.includes(def.id)
+                  return (
+                    <button
+                      key={def.id}
+                      onClick={() => { openPanel(def.id); setMenuOpen(false) }}
+                      className="flex w-full items-center gap-2 rounded-card px-2 py-2 text-left transition-colors hover:bg-bg-hover active:scale-[0.97]"
+                    >
+                      <DefIcon size={13} className="shrink-0 text-text-muted" />
+                      <span className="text-xs text-text-secondary">{def.label}</span>
+                      <span className="ml-auto text-caption text-text-muted">
+                        {alreadyOpen ? '已打开' : def.hint}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {tabs.length > 1 && (
+          <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto">
+            {tabs.map((id) => {
+              const meta = TAB_META[id]
+              const TabIcon = meta.icon
+              const isActive = id === active
+              return (
+                <div
+                  key={id}
+                  className={`group flex shrink-0 items-center rounded-card transition-colors ${
+                    isActive ? 'bg-accent/15 text-accent' : 'text-text-muted hover:bg-bg-hover hover:text-text-secondary'
+                  }`}
+                >
+                  <button onClick={() => setActive(id)} className="flex items-center gap-1 py-1 pl-2 pr-1 text-caption">
+                    <TabIcon size={11} />
+                    {meta.label}
+                  </button>
+                  {id !== 'overview' && (
+                    <button
+                      onClick={() => closePanel(id)}
+                      className="py-1 pl-0.5 pr-1.5 opacity-0 transition-opacity group-hover:opacity-100 active:scale-[0.97]"
+                      title={`关闭${meta.label}`}
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 min-h-0">
-        {activeTab === 'skill' ? (
-          <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-accent/20 border-t-accent" /></div>}><SkillListPanel /></Suspense>
-        ) : (
-          <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-accent/20 border-t-accent" /></div>}><McpListPanel /></Suspense>
+      {/* 面板内容 */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {active === 'overview' && <OfficeOverviewPanel />}
+        {active === 'browser' && (
+          <Suspense fallback={<PanelSpinner />}><EmbeddedBrowserPanel /></Suspense>
+        )}
+        {active === 'terminal' && (
+          <Suspense fallback={<PanelSpinner />}><OfficeTerminalPanel /></Suspense>
+        )}
+        {active === 'file' && (
+          <Suspense fallback={<PanelSpinner />}><OfficeFilePanel /></Suspense>
         )}
       </div>
     </aside>
   )
 }
 
-/** 浏览器面板容器 — 支持拖拽调节宽度 */
-export function BrowserPanelContainer(): React.ReactElement {
-  const [width, setWidth] = useState(480)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const handleMouseDown = useCallback((e: React.MouseEvent): void => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
-
-  useEffect(() => {
-    if (!isDragging) return
-    const handleMouseMove = (e: MouseEvent): void => { setWidth(Math.max(320, Math.min(1200, window.innerWidth - e.clientX))) }
-    const handleMouseUp = (): void => { setIsDragging(false) }
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-    return () => { document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp) }
-  }, [isDragging])
-
-  return (
-    <div className="absolute inset-y-0 right-0 z-30 flex h-full" style={{ userSelect: isDragging ? 'none' : undefined }}>
-      <div
-        onMouseDown={handleMouseDown}
-        className="group relative flex h-full w-1 shrink-0 cursor-col-resize items-center justify-center bg-border-subtle hover:bg-accent/40 transition-colors"
-      >
-        <div className="absolute inset-y-0 -left-1 -right-1" />
-      </div>
-      <aside className="flex h-full min-h-0 flex-col border-l border-border-subtle bg-bg-base" style={{ width: `${width}px`, flexShrink: 0 }}>
-        <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-accent/20 border-t-accent" /></div>}>
-          <EmbeddedBrowserPanel />
-        </Suspense>
-      </aside>
-      {isDragging && <div className="fixed inset-0 z-[9999] cursor-col-resize" style={{ userSelect: 'none' }} />}
-    </div>
-  )
+function PanelSpinner(): React.ReactElement {
+  return <SpinnerBlock className="h-full" />
 }

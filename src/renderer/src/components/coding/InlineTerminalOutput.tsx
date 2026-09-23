@@ -14,11 +14,11 @@ export function InlineTerminalOutput({
   const isSuccess = exitCode === undefined || exitCode === 0
 
   return (
-    <div className="my-2 overflow-hidden rounded-xl border border-border-subtle bg-[#0d1117] shadow-glass">
+    <div className="my-2 overflow-hidden rounded-panel border border-border-subtle bg-[#0d1117] shadow-glass">
       {/* 命令行栏 */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-subtle/50 bg-bg-surface/40 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-subtle-soft bg-bg-surface-soft backdrop-blur-sm">
         <span className="text-xs text-text-muted font-mono">$ {command}</span>
-        {duration && <span className="text-[10px] text-text-muted">{duration}</span>}
+        {duration && <span className="text-caption text-text-muted">{duration}</span>}
       </div>
       {/* 输出区 */}
       <div className="p-3 font-mono text-xs max-h-48 overflow-y-auto">

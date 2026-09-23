@@ -90,23 +90,23 @@ export function SessionBar({
           <div className="relative flex items-center">
             <button
               onClick={() => setShowBranches(!showBranches)}
-              className="chip flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-accent hover:border-accent/40 transition-all"
+              className="chip flex items-center gap-1 px-1.5 py-0.5 text-caption text-accent hover:border-accent/40 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
             >
-              <GitBranch size={10} />
+              <GitBranch size={11} />
               {gitBranch}
-              <ChevronDown size={9} className="text-text-muted" />
+              <ChevronDown size={11} className="text-text-muted" />
             </button>
             {showBranches && branches.length > 0 && (
-              <div className="glass-strong absolute left-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border-subtle py-1 shadow-glass animate-scale-in min-w-[120px]">
+              <div className="glass-strong absolute left-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-panel border border-border-subtle py-1 shadow-glass animate-scale-in min-w-[120px]">
                 {branches.map((b) => (
                   <button
                     key={b}
                     onClick={() => void handleSwitchBranch(b)}
-                    className={`flex w-full items-center gap-1.5 px-2 py-1 text-[11px] hover:bg-bg-hover transition-colors ${
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 text-caption hover:bg-bg-hover transition-colors ${
                       b === gitBranch ? 'text-accent font-medium' : 'text-text-secondary'
                     }`}
                   >
-                    <GitBranch size={9} />
+                    <GitBranch size={11} />
                     {b}
                     {b === gitBranch && <span className="ml-auto text-green-500">✓</span>}
                   </button>
@@ -120,12 +120,12 @@ export function SessionBar({
       {/* 右侧：运行 + 模型 + Token + 计时 */}
       <div className="flex items-center gap-3 shrink-0">
         {onRunProject && projectPath && (
-          <button
+          <button aria-label="一键运行项目"
             onClick={onRunProject}
-            className="chip flex items-center gap-1 px-2 py-0.5 text-[11px] text-green-400 hover:border-green-500/40 transition-all"
+            className="chip flex items-center gap-1 px-2 py-0.5 text-caption text-green-400 hover:border-green-500/40 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
             title="一键运行项目"
           >
-            <Play size={10} />
+            <Play size={11} />
             运行
           </button>
         )}

@@ -215,9 +215,9 @@ export function VoiceOrb(): React.ReactElement | null {
         {/* 中心图标 */}
         <div className="voice-orb__core">
           {discussion.isActive ? (
-            <MessageCircle size={18} />
+            <MessageCircle size={16} />
           ) : panelOpen ? (
-            <MessageCircle size={18} />
+            <MessageCircle size={16} />
           ) : isTranscribing ? (
             <Volume2 size={20} />
           ) : isListening ? (
@@ -225,7 +225,7 @@ export function VoiceOrb(): React.ReactElement | null {
           ) : isSpeaking ? (
             <Volume2 size={20} />
           ) : (
-            <Mic size={18} />
+            <Mic size={16} />
           )}
         </div>
 

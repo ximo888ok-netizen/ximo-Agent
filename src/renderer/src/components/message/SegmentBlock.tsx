@@ -21,15 +21,15 @@ function ReasoningBlock({ text, isStreaming, showReasoning, onToggle }: {
     : text
 
   return (
-    <div className="mb-2 overflow-hidden rounded-xl border border-border-subtle bg-bg-surface/60 backdrop-blur-sm">
+    <div className="mb-2 overflow-hidden rounded-panel border border-border-subtle bg-bg-surface-soft backdrop-blur-sm">
       <button
         onClick={onToggle}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary transition-colors hover:text-text-primary"
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-text-secondary transition-colors hover:text-text-primary active:scale-[0.97]"
       >
         <Brain size={13} className="text-accent" />
         <span>思考过程</span>
         {shouldTruncate && !expanded && (
-          <span className="text-text-muted/50 text-[10px]">{text.length} 字</span>
+          <span className="text-text-tertiary text-caption">{text.length} 字</span>
         )}
         <ChevronDown size={13} className={`ml-auto transition-transform ${showReasoning ? 'rotate-180' : ''}`} />
       </button>
@@ -38,7 +38,7 @@ function ReasoningBlock({ text, isStreaming, showReasoning, onToggle }: {
           {shouldTruncate && !expanded && (
             <button
               onClick={() => setExpanded(true)}
-              className="mb-1.5 flex items-center gap-1 text-[10px] text-accent/70 transition-colors hover:text-accent"
+              className="mb-1.5 flex items-center gap-1 text-caption text-accent/70 transition-colors hover:text-accent active:scale-[0.97]"
             >
               <ChevronUp size={11} />
               <span>展开全部 {text.length} 字</span>
@@ -47,7 +47,7 @@ function ReasoningBlock({ text, isStreaming, showReasoning, onToggle }: {
           {shouldTruncate && expanded && (
             <button
               onClick={() => setExpanded(false)}
-              className="mb-1.5 flex items-center gap-1 text-[10px] text-accent/70 transition-colors hover:text-accent"
+              className="mb-1.5 flex items-center gap-1 text-caption text-accent/70 transition-colors hover:text-accent active:scale-[0.97]"
             >
               <ChevronDown size={11} />
               <span>收起（只显示最近 {REASONING_MAX_CHARS} 字）</span>

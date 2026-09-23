@@ -53,16 +53,16 @@ export function AgentExpertPanel(): React.ReactElement | null {
         {/* 标题栏 */}
         <div className="flex items-center justify-between border-b border-border-subtle px-5 py-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-muted shadow-lg shadow-accent/20">
-              <Users size={18} className="text-white" />
+            <div className="accent-tile flex h-9 w-9 items-center justify-center rounded-panel shadow-lg shadow-accent/20">
+              <Users size={16} className="text-white" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-text-primary">AI 专家库</h2>
               <p className="text-xs text-text-muted">254 位专家 · 17 个部门 · 一键激活</p>
             </div>
           </div>
-          <button onClick={() => setShowAgentPanel(false)} className="icon-btn rounded-lg p-1.5">
-            <X size={18} />
+          <button onClick={() => setShowAgentPanel(false)} className="icon-btn rounded-card p-1.5">
+            <X size={16} />
           </button>
         </div>
 
@@ -70,13 +70,13 @@ export function AgentExpertPanel(): React.ReactElement | null {
           {/* 左侧：部门列表 */}
           <nav className="glass w-52 flex-shrink-0 border-r border-border-subtle overflow-y-auto p-2">
             <div className="mb-2 px-2">
-              <div className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-input px-2.5 py-1.5">
+              <div className="flex items-center gap-1.5 rounded-card border border-border bg-bg-input px-3 py-1.5">
                 <Search size={13} className="text-text-muted" />
                 <input
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setSelectedDivision(null) }}
                   placeholder="搜索专家..."
-                  className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+                  className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus-ring"
                 />
               </div>
             </div>
@@ -88,22 +88,22 @@ export function AgentExpertPanel(): React.ReactElement | null {
                 <button
                   key={div.key}
                   onClick={() => { setSelectedDivision(isSelected ? null : div.key); setSearchQuery('') }}
-                  className={`mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  className={`mb-0.5 flex w-full items-center gap-2 rounded-card px-3 py-2 text-sm transition-colors ${
                     isSelected
                       ? 'bg-accent/15 text-accent'
                       : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
                   }`}
                 >
                   <span
-                    className="flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold"
+                    className="flex h-5 w-5 items-center justify-center rounded-control text-caption font-bold"
                     style={{ backgroundColor: div.color + '20', color: div.color }}
                   >
                     {div.label[0]}
                   </span>
                   <span className="flex-1 text-left truncate">{div.label}</span>
-                  <span className="text-[10px] text-text-muted">{count}</span>
+                  <span className="text-caption text-text-muted">{count}</span>
                   {activeCount > 0 && (
-                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent/20 px-1 text-[9px] font-bold text-accent">
+                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent/20 px-1 text-caption font-bold text-accent">
                       {activeCount}
                     </span>
                   )}
@@ -132,7 +132,7 @@ export function AgentExpertPanel(): React.ReactElement | null {
               <div>
                 <div className="mb-3 flex items-center gap-2">
                   <span
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-sm font-bold"
+                    className="flex h-7 w-7 items-center justify-center rounded-card text-sm font-bold"
                     style={{ backgroundColor: AGENT_DIVISIONS.find(d => d.key === selectedDivision)?.color + '20', color: AGENT_DIVISIONS.find(d => d.key === selectedDivision)?.color }}
                   >
                     {AGENT_DIVISIONS.find(d => d.key === selectedDivision)?.label[0]}
@@ -150,8 +150,8 @@ export function AgentExpertPanel(): React.ReactElement | null {
               </div>
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-                  <Sparkles size={28} />
+                <div className="flex h-16 w-16 items-center justify-center rounded-panel bg-accent/10 text-accent">
+                  <Sparkles size={32} />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-text-primary">选择部门或搜索专家</h3>
@@ -164,7 +164,7 @@ export function AgentExpertPanel(): React.ReactElement | null {
                     <button
                       key={div.key}
                       onClick={() => setSelectedDivision(div.key)}
-                      className="chip flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:border-accent/30 hover:text-accent transition-all"
+                      className="chip flex items-center gap-1.5 px-3 py-1.5 text-xs text-text-secondary hover:border-accent/30 hover:text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter]"
                     >
                       <span style={{ color: div.color }}>{div.label[0]}</span>
                       {div.label}
@@ -179,7 +179,7 @@ export function AgentExpertPanel(): React.ReactElement | null {
 
         {/* 底部：已激活专家状态 */}
         {activeExperts.length > 0 && (
-          <div className="flex items-center gap-2 border-t border-border-subtle px-4 py-2.5">
+          <div className="flex items-center gap-2 border-t border-border-subtle px-4 py-2">
             <Star size={13} className="text-accent" />
             <span className="text-xs text-text-muted">已激活 {activeExperts.length} 位专家：</span>
             <div className="flex flex-1 flex-wrap gap-1 overflow-hidden">
@@ -187,13 +187,13 @@ export function AgentExpertPanel(): React.ReactElement | null {
                 const agent = getAgentById(id)
                 if (!agent) return null
                 return (
-                  <span key={id} className="chip flex items-center gap-1 px-2 py-0.5 text-[10px] text-accent border-accent/30 bg-accent/10">
+                  <span key={id} className="chip flex items-center gap-1 px-2 py-0.5 text-caption text-accent border-accent/30 bg-accent/10">
                     {agent.emoji} {agent.name}
                   </span>
                 )
               })}
               {activeExperts.length > 5 && (
-                <span className="text-[10px] text-text-muted">+{activeExperts.length - 5} 更多</span>
+                <span className="text-caption text-text-muted">+{activeExperts.length - 5} 更多</span>
               )}
             </div>
           </div>
@@ -208,7 +208,7 @@ function AgentCard({ agent, isActive, onActivate }: { agent: AgentExpert; isActi
   const divInfo = AGENT_DIVISIONS.find(d => d.key === agent.division)
   return (
     <div
-      className={`ios-card flex items-start gap-3 p-3 transition-all cursor-pointer ${
+      className={`ios-card flex items-start gap-3 p-3 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] cursor-pointer ${
         isActive ? 'border-accent/40 shadow-glow' : ''
       }`}
       onClick={() => onActivate(agent)}
@@ -219,7 +219,7 @@ function AgentCard({ agent, isActive, onActivate }: { agent: AgentExpert; isActi
           <h4 className="text-sm font-medium text-text-primary truncate">{agent.name}</h4>
           {divInfo && (
             <span
-              className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium"
+              className="shrink-0 rounded-control px-1.5 py-0.5 text-caption font-medium"
               style={{ backgroundColor: divInfo.color + '15', color: divInfo.color }}
             >
               {divInfo.label}
@@ -228,11 +228,11 @@ function AgentCard({ agent, isActive, onActivate }: { agent: AgentExpert; isActi
         </div>
         <p className="mt-0.5 text-xs text-text-muted line-clamp-2">{agent.description}</p>
         {agent.vibe && (
-          <p className="mt-1 text-[11px] italic text-text-muted/70">"{agent.vibe}"</p>
+          <p className="mt-1 text-caption italic text-text-muted">"{agent.vibe}"</p>
         )}
       </div>
       <button
-        className={`mt-0.5 flex-shrink-0 flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all ${
+        className={`mt-0.5 flex-shrink-0 flex items-center gap-1 rounded-card px-3 py-1 text-caption font-medium transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
           isActive
             ? 'bg-accent/20 text-accent'
             : 'bg-bg-hover text-text-secondary hover:bg-accent/10 hover:text-accent'

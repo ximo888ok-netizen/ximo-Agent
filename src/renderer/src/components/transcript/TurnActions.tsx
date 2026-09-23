@@ -37,13 +37,13 @@ export const TurnActions = memo(function TurnActions({
   return (
     <div className="turn-actions">
       {text.trim() && (
-        <button className="turn-actions__btn" type="button" onClick={handleCopy} title="复制">
+        <button aria-label="复制" className="turn-actions__btn" type="button" onClick={handleCopy} title="复制">
           {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
           <span>{copied ? '已复制' : '复制'}</span>
         </button>
       )}
       {canRegenerate && onRegenerate && (
-        <button className="turn-actions__btn" type="button" onClick={onRegenerate} title="重新生成">
+        <button aria-label="重新生成" className="turn-actions__btn" type="button" onClick={onRegenerate} title="重新生成">
           <RotateCcw size={13} />
           <span>重新生成</span>
         </button>

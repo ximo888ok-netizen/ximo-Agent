@@ -52,32 +52,5 @@
   50% { background-position: 100% 50%; }
 }
 
-/* 思考强度脉冲动效 */
-@keyframes reasoningPulseHigh {
-  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--theme-color) 35%, transparent); transform: scale(1); }
-  50% { box-shadow: 0 0 12px color-mix(in srgb, var(--theme-color) 55%, transparent); transform: scale(1.15); }
-}
-@keyframes reasoningPulseMax {
-0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--theme-color) 50%, transparent); transform: scale(1); }
-50% { box-shadow: 0 0 20px color-mix(in srgb, var(--theme-color) 80%, transparent); transform: scale(1.2); }
-}
-@keyframes reasoningPulseUltra {
-0%, 100% { box-shadow: 0 0 12px color-mix(in srgb, var(--theme-color) 60%, transparent), 0 0 24px color-mix(in srgb, hsl(42, 95%, 62%) 30%, transparent); transform: scale(1); }
-50% { box-shadow: 0 0 24px color-mix(in srgb, var(--theme-color) 90%, transparent), 0 0 36px color-mix(in srgb, hsl(42, 95%, 62%) 40%, transparent); transform: scale(1.25); }
-}
-
-/* 思考强度粒子拖尾 — 从圆点向左飘散，支持每档不同速度和距离 */
-@keyframes effortParticle {
-  0% {
-    opacity: 0.95;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  40% {
-    opacity: 0.6;
-    transform: translateY(calc(-50% + var(--ep-y, 0px))) translateX(calc(var(--ep-dist, 20px) * -0.4)) scale(0.8);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(calc(-50% + var(--ep-y, 0px) * 0.5)) translateX(calc(var(--ep-dist, 20px) * -1)) scale(0.2);
-  }
-}
+/* 思考强度的"活着"信号已改由 canvas 点阵承担（ReasoningMosaicTrack），
+   原先的圆点脉冲与粒子拖尾随之移除 —— 160 个 DOM 粒子换成单张 canvas。 */

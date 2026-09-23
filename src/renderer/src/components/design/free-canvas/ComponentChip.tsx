@@ -15,7 +15,7 @@ export function ComponentChip({ comp }: { comp: ComponentMeta }): React.ReactEle
     <button
       draggable
       onDragStart={handleDragStart}
-      className="flex items-center gap-1 rounded-md border border-border-subtle bg-bg-surface px-1.5 py-0.5 text-[10px] transition-all hover:border-accent/40 hover:bg-accent/5 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
+      className="flex items-center gap-1 rounded-control border border-border-subtle bg-bg-surface px-1.5 py-0.5 text-caption transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] hover:border-accent/40 hover:bg-accent/5 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing"
       title={`${comp.nameCn} (${comp.name}) — 拖拽到画布`}
     >
       <span

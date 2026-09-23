@@ -1,15 +1,13 @@
-import { useMemo, useCallback, lazy, Suspense } from 'react'
-import { FileCode2 } from 'lucide-react'
+import { useMemo, useCallback } from 'react'
 import { useStore } from '@renderer/store/useStore'
-import { ToolPanel } from '@renderer/components/message/ToolPanel'
+import { MODE_CONFIGS } from '@renderer/modes'
 import { SessionBar } from '@renderer/components/coding/SessionBar'
 import { Transcript } from '@renderer/components/transcript/Transcript'
+import { ModeWelcome } from '@renderer/components/shared/ModeWelcome'
 import { adaptMessages, buildLiveStream } from '@renderer/lib/transcriptAdapter'
+import { getModelLabel } from '@shared/models'
 import type { ChatMessage } from '@shared/types'
-import { SessionTimer, ErrorBanner } from '@renderer/components/coding/CodingParts'
-
-// 懒加载空状态欢迎页
-const CodingWelcome = lazy(() => import('@renderer/CodingWelcome').then(m => ({ default: m.CodingWelcome })))
+import { ErrorBanner } from '@renderer/components/shared/ErrorBanner'
 
 export function CodingLayout(): React.ReactElement {
   // 精确选择当前会话 — 避免订阅整个 conversations 数组
@@ -21,6 +19,8 @@ export function CodingLayout(): React.ReactElement {
   const streamingTokens = useStore((s) => s.streamingTokens)
   const streamingToolCalls = useStore((s) => s.streamingToolCalls)
   const streamingAssistantId = useStore((s) => s.streamingAssistantId)
+  // 有序事件流 —— 推理与工具按真实发生顺序交错渲染的依据
+  const streamingSegments = useStore((s) => s.streamingSegments)
   const error = useStore((s) => s.error)
   const regenerate = useStore((s) => s.regenerate)
   const sendMessage = useStore((s) => s.sendMessage)
@@ -29,7 +29,8 @@ export function CodingLayout(): React.ReactElement {
   const clearDraft = useStore((s) => s.clearDraft)
 
   const fontSize = useStore((s) => s.settings?.fontSize) ?? 'md'
-  const modelLabel = useStore((s) => s.settings?.model?.includes('pro')) ? 'DeepSeek V4-Pro' : 'DeepSeek V4-Flash'
+  const model = useStore((s) => s.settings?.model)
+  const modelLabel = getModelLabel(model)
 
   const isEmpty = !conversation || conversation.messages.length === 0
   const isStreamingThis = isStreaming && streamingConversationId === conversation?.id
@@ -41,8 +42,9 @@ export function CodingLayout(): React.ReactElement {
       conversation.messages,
       isStreamingThis ? streamingToolCalls : undefined,
       isStreamingThis ? streamingAssistantId : undefined,
+      isStreamingThis ? streamingSegments : undefined,
     )
-  }, [conversation, isStreamingThis, streamingToolCalls, streamingAssistantId])
+  }, [conversation, isStreamingThis, streamingToolCalls, streamingAssistantId, streamingSegments])
 
   // ── 流式 LiveStream ──────────────────────────────────────────────────
   const live = useMemo(() => {
@@ -75,21 +77,14 @@ export function CodingLayout(): React.ReactElement {
   // 空状态 — 主入口，输入框由 GlobalChatInput 管理
   if (isEmpty) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <SessionBar
-          projectPath={projectPath}
-          model={modelLabel}
-          tokenCount={streamingTokens}
-          sessionStartTime={conversation?.createdAt ?? Date.now()}
-          toolCalls={streamingToolCalls}
-          onRunProject={() => sendMessage('请帮我运行当前项目。先检查 package.json 中的 scripts，然后执行启动命令。', { skipNetworkHint: true })}
-        />
-        <div className="flex min-h-0 flex-1">
-          <div className="flex-1 overflow-hidden">
-            <Suspense fallback={null}>
-            <CodingWelcome />
-          </Suspense>
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
+          <ModeWelcome
+            icon={MODE_CONFIGS.coding.icon}
+            title={MODE_CONFIGS.coding.name}
+            description={MODE_CONFIGS.coding.description}
+            projectPath={projectPath}
+          />
         </div>
       </div>
     )
@@ -98,23 +93,20 @@ export function CodingLayout(): React.ReactElement {
   // 任务执行状态
   return (
     <div className={`flex min-h-0 flex-1 flex-col chat-fs-${fontSize}`}>
-      {/* 头部 — 任务执行详情 */}
-      <div className="flex items-center justify-between border-b border-border-subtle glass px-4 py-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <FileCode2 size={14} className="text-accent" />
-          <span className="text-sm font-medium text-text-primary">ximo-Agent Code</span>
-          <span className="text-xs text-text-muted">· 任务耗时 <SessionTimer startTime={conversation?.createdAt ?? Date.now()} /></span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="chip px-2 py-0.5 text-[11px] text-text-muted">{modelLabel}</span>
-        </div>
-      </div>
+      {/* 顶部状态栏 — 项目 / 分支 / 一键运行 / 模型 / Token / 耗时（原空态专用，现改为会话态常驻，两条栏合一） */}
+      <SessionBar
+        projectPath={projectPath}
+        model={modelLabel}
+        tokenCount={streamingTokens}
+        sessionStartTime={conversation?.createdAt ?? Date.now()}
+        toolCalls={streamingToolCalls}
+        onRunProject={() => sendMessage('请帮我运行当前项目。先检查 package.json 中的 scripts，然后执行启动命令。', { skipNetworkHint: true })}
+      />
 
       <div className="flex min-h-0 flex-1">
-        {/* 中间主内容区 */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <ToolPanel />
-
+        {/* 中间主内容区 —— 三个模式共用同一套 Transcript 渲染；
+            这里包 chat-fs-* 把字号设置传下去，与 Office / Design 保持一致 */}
+        <div className={`flex min-h-0 min-w-0 flex-1 flex-col chat-fs-${fontSize}`}>
           {/* ── 新 Transcript 会话区 ── */}
           <Transcript
             items={items}

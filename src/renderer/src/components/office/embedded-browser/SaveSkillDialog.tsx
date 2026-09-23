@@ -24,23 +24,23 @@ export function SaveSkillDialog({ initialName, initialDesc, stepCount, endpointC
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-border-subtle bg-bg-base px-3 py-1.5 text-xs text-text-primary focus:border-accent/40 focus:outline-none"
+            className="w-full rounded-card border border-border-subtle bg-bg-base px-3 py-1.5 text-xs text-text-primary focus:border-accent/40 focus-ring"
             placeholder="技能名称"
           />
           <textarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
-            className="w-full rounded-lg border border-border-subtle bg-bg-base px-3 py-1.5 text-xs text-text-primary focus:border-accent/40 focus:outline-none resize-none"
+            className="w-full rounded-card border border-border-subtle bg-bg-base px-3 py-1.5 text-xs text-text-primary focus:border-accent/40 focus-ring resize-none"
             placeholder="技能描述"
             rows={2}
           />
-          <div className="text-[10px] text-text-muted">
+          <div className="text-caption text-text-muted">
             {stepCount} 步操作 · {endpointCount} 个 API 端点
           </div>
         </div>
         <div className="mt-3 flex justify-end gap-2">
-          <button onClick={onCancel} className="btn-ghost rounded-lg px-3 py-1 text-xs">取消</button>
-          <button onClick={() => onSave(name, desc)} className="btn-primary rounded-lg px-3 py-1 text-xs">保存</button>
+          <button onClick={onCancel} className="btn-ghost rounded-card px-3 py-1 text-xs">取消</button>
+          <button onClick={() => onSave(name, desc)} className="btn-primary rounded-card px-3 py-1 text-xs">保存</button>
         </div>
       </div>
     </div>

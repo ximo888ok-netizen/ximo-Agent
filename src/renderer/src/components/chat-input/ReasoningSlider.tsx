@@ -1,258 +1,334 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Zap } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Zap, HelpCircle } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { isReasoningCapable } from '@renderer/lib/providers'
+import {
+  LEVEL_COUNT,
+  REASONING_LEVELS,
+  effortIndex,
+  isThinking,
+  normalizeEffort
+} from '@renderer/lib/reasoning-levels'
+import { deriveAccentTokens } from '@renderer/lib/accent'
 import type { ReasoningEffort } from '@shared/types'
+import { ReasoningMosaicTrack } from './ReasoningMosaicTrack'
 
-/** 思考强度调节器 — 点击向上展开横向滑块，支持拖拽 */
-const EFFORT_LEVELS: { value: ReasoningEffort; label: string; desc: string }[] = [
-  { value: 'off', label: '关', desc: '不输出思维链' },
-  { value: 'high', label: 'High', desc: '深度推理' },
-  { value: 'max', label: 'Max', desc: '极致推理' },
-  { value: 'ultra', label: 'Ultra', desc: '工程范式 + 监督审查' }
-]
+/** 轨道高度与圆点直径 —— 圆点内嵌在轨道里（对应参考设计的"瓶子 + 内嵌白球"） */
+const TRACK_H = 30
+const KNOB_D = 24
 
-// 每档粒子配置：粒子数、飘散速度(s)、飘散距离(px)、Y轴抖动幅度(px)
-const PARTICLE_CONFIG: Record<string, { count: number; duration: number; distance: number; ySpread: number }> = {
-  off: { count: 0, duration: 0, distance: 0, ySpread: 0 },
-  high: { count: 80, duration: 2.0, distance: 35, ySpread: 8 },
-  max: { count: 120, duration: 1.1, distance: 50, ySpread: 12 },
-  ultra: { count: 160, duration: 0.8, distance: 60, ySpread: 16 }
-}
-
-// 粒子颜色调色板 — 金色 + 青色 + 洋红，循环分配让拖尾更炫酷
-const PARTICLE_PALETTE = [
-  // 金色系列（3 级明度）
-  'hsl(42, 95%, 62%)',
-  'hsl(42, 90%, 52%)',
-  'hsl(38, 85%, 72%)',
-  // 青色系列（3 级明度）
-  'hsl(185, 88%, 55%)',
-  'hsl(185, 82%, 45%)',
-  'hsl(190, 75%, 68%)',
-  // 洋红/粉色系列（3 级明度）
-  'hsl(330, 90%, 62%)',
-  'hsl(330, 85%, 50%)',
-  'hsl(335, 78%, 72%)'
-]
-
-function particleColor(index: number, _total: number): string {
-  return PARTICLE_PALETTE[index % PARTICLE_PALETTE.length]
-}
-
+/**
+ * 思考强度调节器
+ *
+ * 视觉语言：轨道填充是一块**点阵马赛克**，档位越高颗粒越细、越密、越亮、流动越快
+ * —— 「思考强度 = 计算的分辨率」。动态由 ReasoningMosaicTrack（canvas）承担，
+ * 面板本身只负责布局、交互与可访问性。
+ */
 export function ReasoningSlider(): React.ReactElement {
   const settings = useStore((s) => s.settings)
-  const effort = settings?.reasoningEffort ?? 'high'
   const updateSettings = useStore((s) => s.updateSettings)
+  const isStreaming = useStore((s) => s.isStreaming)
+
+  const effort: ReasoningEffort = normalizeEffort(settings?.reasoningEffort)
+  const idx = effortIndex(effort)
+  const thinking = isThinking(effort)
   // 当前服务商不支持 reasoning 参数时禁用调节（主进程会剥离这些参数）
   const reasoningCapable = isReasoningCapable(settings)
+
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
+  const [showHelp, setShowHelp] = useState(false)
+  const [trackW, setTrackW] = useState(0)
   const [dragging, setDragging] = useState(false)
+  const [pointerRatio, setPointerRatio] = useState<number | null>(null)
 
-  // 顺序：off=0, high=1, max=2, ultra=3，从左到右强度递增
-  const currentIndex = EFFORT_LEVELS.findIndex((l) => l.value === effort)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const sliderRef = useRef<HTMLDivElement>(null)
 
-  // 点击外部关闭
+  /**
+   * 点阵颜色用**派生后的强调色填充支**而不是原始主色 ——
+   * 原始主色可能是近白/亮黄这类承载不了视觉重量的颜色，
+   * 派生支保证无论选什么主色，点阵在两种主题下都够深、看得见。
+   * 与全局强调色同一套派生逻辑（lib/accent.ts），不另造一套。
+   */
+  const mosaicColor = useMemo(() => {
+    const raw = settings?.themeColor
+    if (!raw) return '#3b82f6'
+    const tokens = deriveAccentTokens(raw, settings?.theme === 'light' ? 'light' : 'dark')
+    return tokens['--accent-fill'] ?? raw
+  }, [settings?.themeColor, settings?.theme])
+
+  /* 轨道宽度 —— 圆点要内嵌，所以位置计算依赖实测宽度 */
   useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent): void => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const el = trackRef.current
+    if (!el) return
+    const measure = (): void => setTrackW(el.clientWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [open])
 
-  // 根据鼠标位置算出最近的档位
-  const getLevelFromX = useCallback((clientX: number): ReasoningEffort => {
-    if (!trackRef.current) return effort
-    const rect = trackRef.current.getBoundingClientRect()
-    const padding = 16 // px-4
-    const innerWidth = rect.width - padding * 2
-    const x = clientX - rect.left - padding
-    const ratio = Math.max(0, Math.min(1, x / innerWidth))
-    const index = Math.round(ratio * (EFFORT_LEVELS.length - 1))
-    return EFFORT_LEVELS[Math.min(index, EFFORT_LEVELS.length - 1)].value
-  }, [effort])
-
-  // 拖拽事件
+  /* 点击外部关闭；Escape 关闭 */
   useEffect(() => {
-    if (!dragging) return
-    const onMove = (e: MouseEvent): void => {
-      const newLevel = getLevelFromX(e.clientX)
-      if (newLevel !== useStore.getState().settings?.reasoningEffort) {
-        // 联动思考模式开关：非 off 档位需 thinkingMode=true，off 档位关闭思考（与设置页 ToggleRow 行为对称）
-        void updateSettings(
-          newLevel === 'off'
-            ? { reasoningEffort: newLevel, thinkingMode: false }
-            : { reasoningEffort: newLevel, thinkingMode: true }
-        )
-      }
+    if (!open) return
+    const onDown = (e: MouseEvent): void => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
     }
-    const onUp = (): void => setDragging(false)
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
     return () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
     }
-  }, [dragging, getLevelFromX, updateSettings])
+  }, [open])
 
-  const currentLabel = EFFORT_LEVELS[currentIndex].label
-  const fillPercent = (currentIndex / (EFFORT_LEVELS.length - 1)) * 100
-  const config = PARTICLE_CONFIG[effort] ?? PARTICLE_CONFIG.off
+  /* 展开后把焦点交给滑块 —— 键盘用户可以立刻用方向键调节 */
+  useEffect(() => {
+    if (open) sliderRef.current?.focus({ preventScroll: true })
+  }, [open])
+
+  const commit = useCallback(
+    (next: ReasoningEffort): void => {
+      if (!reasoningCapable) return
+      if (next === normalizeEffort(useStore.getState().settings?.reasoningEffort)) return
+      // 联动思考模式开关：off 档位关思考，其余档位开（与设置页 ToggleRow 行为对称）
+      void updateSettings(
+        next === 'off'
+          ? { reasoningEffort: next, thinkingMode: false }
+          : { reasoningEffort: next, thinkingMode: true }
+      )
+    },
+    [reasoningCapable, updateSettings]
+  )
+
+  /* 圆点的可移动行程：两端各留出半个圆点，保证圆点始终完整可见 */
+  const travel = Math.max(0, trackW - KNOB_D)
+  const knobLeft = KNOB_D / 2 + (idx / (LEVEL_COUNT - 1)) * travel
+  const mosaicFill = trackW > 0 ? knobLeft / trackW : 0
+
+  /** 指针 x → 轨道比例（0–1，已按圆点行程归一化） */
+  const ratioFromX = useCallback(
+    (clientX: number): number => {
+      const el = trackRef.current
+      if (!el || travel <= 0) return 0
+      const x = clientX - el.getBoundingClientRect().left - KNOB_D / 2
+      return Math.max(0, Math.min(1, x / travel))
+    },
+    [travel]
+  )
+
+  const levelFromX = useCallback(
+    (clientX: number): ReasoningEffort =>
+      REASONING_LEVELS[Math.round(ratioFromX(clientX) * (LEVEL_COUNT - 1))].value,
+    [ratioFromX]
+  )
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!reasoningCapable) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDragging(true)
+    setPointerRatio(ratioFromX(e.clientX))
+    commit(levelFromX(e.clientX))
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!dragging) return
+    setPointerRatio(ratioFromX(e.clientX))
+    commit(levelFromX(e.clientX))
+  }
+
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!dragging) return
+    setDragging(false)
+    setPointerRatio(null)
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (!reasoningCapable) return
+    let next = idx
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = Math.max(0, idx - 1)
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = Math.min(LEVEL_COUNT - 1, idx + 1)
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = LEVEL_COUNT - 1
+    else return
+    e.preventDefault()
+    commit(REASONING_LEVELS[next].value)
+  }
+
+  const current = REASONING_LEVELS[idx]
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={rootRef}>
       {/* 触发按钮 */}
       <button
-        onClick={() => { if (reasoningCapable) setOpen(!open) }}
-        className={`chip flex cursor-pointer items-center gap-1 px-2 py-1 text-[11px] transition-all duration-200 active:scale-95 ${
+        onClick={() => {
+          if (reasoningCapable) setOpen(!open)
+        }}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className={`chip flex cursor-pointer items-center gap-1 px-2 py-1 text-caption transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-95 ${
           !reasoningCapable
             ? 'opacity-40 cursor-not-allowed text-text-muted'
             : open
-            ? 'border-accent/40 text-accent bg-accent/8'
-            : effort === 'off'
-              ? 'text-text-muted hover:text-text-secondary'
-              : effort === 'ultra'
-                ? 'border-accent/40 text-accent bg-accent/15 shadow-[0_0_10px_color-mix(in_srgb,var(--theme-color)_30%,transparent)]'
-                : effort === 'max'
-                  ? 'border-accent/30 text-accent bg-accent/10'
-                  : 'text-text-secondary hover:text-text-primary hover:border-border-hover'
+              ? 'border-accent/40 text-accent bg-accent/8'
+              : !thinking
+                ? 'text-text-muted hover:text-text-secondary'
+                : 'border-accent/30 text-accent bg-accent/10'
         }`}
         title={reasoningCapable ? '思考强度' : '当前服务商不支持思考参数'}
       >
-        <Zap size={11} className={effort !== 'off' ? 'text-accent' : ''} />
-        <span>{currentLabel}</span>
+        <Zap size={11} className={thinking ? 'text-accent' : ''} />
+        <span>{current.label}</span>
       </button>
 
-      {/* 向上展开的横向滑块面板 */}
+      {/* 向上展开的面板 */}
       {open && (
-        <div className="absolute bottom-full right-0 mb-2 rounded-xl border border-border-subtle bg-bg-elevated shadow-glass animate-fade-scale">
-          <div className="px-3 py-1.5 text-[10px] text-text-muted border-b border-border-subtle text-center">
-            思考强度
+        <div
+          role="dialog"
+          aria-label="思考强度"
+          className="absolute bottom-full right-0 mb-2 w-[280px] rounded-panel border border-border-subtle bg-bg-elevated p-3 shadow-glass animate-fade-scale"
+        >
+          {/* 标题行：当前档位 + 说明开关 */}
+          <div className="mb-3 flex items-center gap-1.5">
+            <span className="text-sm text-text-secondary">推理</span>
+            <span className="text-sm font-semibold text-accent">{current.label}</span>
+            <button
+              onClick={() => setShowHelp((v) => !v)}
+              aria-label="档位说明"
+              aria-expanded={showHelp}
+              className={`focus-ring ml-auto grid h-4 w-4 place-items-center rounded-full border transition-colors duration-fast active:scale-[0.97] ${
+                showHelp
+                  ? 'border-accent/50 text-accent'
+                  : 'border-border text-text-quaternary hover:border-accent/40 hover:text-accent'
+              }`}
+            >
+              <HelpCircle size={11} />
+            </button>
           </div>
 
-          {/* 横向滑块区域 */}
-          <div className="px-4 pt-4 pb-2" style={{ width: '280px' }} ref={trackRef}>
-            {/* 横向轨道 — 胶囊瓶子 */}
-            <div className="relative overflow-hidden rounded-full" style={{ height: '32px' }}>
-              {/* 背景轨道 — 瓶子外壳 */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[18px] rounded-full bg-border/40 border border-border-subtle" />
-              {/* 渐变填充轨道 — 液体 */}
-              {currentIndex > 0 && (
-                <div
-                  className="absolute left-0 top-1/2 -translate-y-1/2 h-[18px] rounded-full transition-all duration-300 ease-out-quart"
-                  style={{
-                    width: `${fillPercent}%`,
-                    background: `linear-gradient(to right, color-mix(in srgb, var(--theme-color) 50%, transparent), var(--theme-color), color-mix(in srgb, hsl(42, 95%, 62%) 40%, var(--theme-color)))`,
-                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.2), 0 0 10px color-mix(in srgb, var(--theme-color) 35%, transparent)`
-                  }}
-                />
-              )}
+          {showHelp && (
+            <p className="mb-3 rounded-card bg-bg-surface-soft px-2 py-1.5 text-caption leading-relaxed text-text-muted animate-fade-in">
+              {current.desc}
+            </p>
+          )}
 
-              {/* 刻度档位圆点（不可拖，仅指示位置） */}
-              {EFFORT_LEVELS.map((level, i) => {
-                const isFilled = i <= currentIndex
-                const leftPercent = (i / (EFFORT_LEVELS.length - 1)) * 100
-                return (
-                  <span
-                    key={level.value}
-                    className="absolute top-1/2 rounded-full pointer-events-none transition-all duration-300"
-                    style={{
-                      left: `${leftPercent}%`,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
-                    <span className={`block rounded-full ${
-                      i === currentIndex
-                        ? 'h-1.5 w-1.5 bg-white/80'
-                        : isFilled
-                          ? 'h-1 w-1 bg-white/50'
-                          : 'h-1 w-1 bg-border'
-                    }`} />
-                  </span>
-                )
-              })}
+          {/* 轴标：左"更快" ← → 右"更聪明" */}
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="text-caption text-text-tertiary">更快</span>
+            <span
+              aria-hidden
+              className="h-px flex-1"
+              style={{
+                background: `linear-gradient(to right, transparent, color-mix(in srgb, ${mosaicColor} 45%, transparent))`
+              }}
+            />
+            <span className="text-caption text-text-tertiary">更聪明</span>
+          </div>
 
-              {/* 可拖拽的圆点手柄 */}
-              <div
-                className="absolute top-1/2 cursor-grab active:cursor-grabbing"
+          {/* 轨道 —— 点阵马赛克 + 内嵌圆点。容器层负责"内凹槽 + 顶光罩"（见 effects.css） */}
+          <div
+            ref={trackRef}
+            className="mosaic-track relative overflow-hidden rounded-full"
+            style={{ height: `${TRACK_H}px` }}
+          >
+            <ReasoningMosaicTrack
+              // 关闭档不铺点阵 —— 圆点停在最左端，整条轨道只留中性底纹，
+              // 让"未启用"在读感上就与"低档"区分开
+              fill={thinking ? mosaicFill : 0}
+              level={idx}
+              active={isStreaming}
+              pointerX={pointerRatio}
+              themeColor={mosaicColor}
+              className="absolute inset-0"
+            />
+            {/* 顶光玻璃罩 —— 叠在点阵之上，给表面一层受光的壳 */}
+            <span aria-hidden className="mosaic-sheen pointer-events-none absolute inset-0 rounded-full" />
+
+            {/* 滑块本体：透明命中层 + 凸起圆点 */}
+            <div
+              ref={sliderRef}
+              role="slider"
+              tabIndex={reasoningCapable ? 0 : -1}
+              aria-label="思考强度"
+              aria-orientation="horizontal"
+              aria-valuemin={1}
+              aria-valuemax={LEVEL_COUNT}
+              aria-valuenow={idx + 1}
+              aria-valuetext={`${current.label} —— ${current.desc}`}
+              aria-disabled={!reasoningCapable}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              onKeyDown={handleKeyDown}
+              className={`focus-ring absolute inset-0 ${
+                reasoningCapable
+                  ? dragging
+                    ? 'cursor-grabbing'
+                    : 'cursor-grab'
+                  : 'cursor-not-allowed'
+              }`}
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 rounded-full transition-[width,height,left,box-shadow,background] duration-base ease-out-quart"
                 style={{
-                  left: `${fillPercent}%`,
+                  left: `${knobLeft}px`,
+                  width: `${dragging ? KNOB_D + 3 : KNOB_D}px`,
+                  height: `${dragging ? KNOB_D + 3 : KNOB_D}px`,
                   transform: 'translate(-50%, -50%)',
-                  zIndex: 10,
+                  // 圆点始终是白的 —— 它是"读数指针"，不参与主题化，
+                  // 否则浅色主色下会和点阵糊在一起。
+                  // 立体感靠三件事：左上受光的径向渐变 + 1px 描边 + 双层投影（近处硬、远处散）
+                  background: thinking
+                    ? 'radial-gradient(circle at 34% 26%, #ffffff 0%, #f4f6f9 58%, #dfe4ea 100%)'
+                    : 'radial-gradient(circle at 34% 26%, #ffffff 0%, #f0f1f3 60%, #dadde2 100%)',
+                  border: `1px solid ${
+                    thinking ? `color-mix(in srgb, ${mosaicColor} 30%, transparent)` : 'rgba(0,0,0,0.08)'
+                  }`,
+                  boxShadow: thinking
+                    ? `0 1px 2px rgba(0,0,0,0.18), 0 3px 8px -1px rgba(0,0,0,0.26), 0 0 ${dragging ? 12 : 7}px color-mix(in srgb, ${mosaicColor} ${dragging ? 45 : 30}%, transparent)`
+                    : '0 1px 2px rgba(0,0,0,0.14), 0 2px 5px -1px rgba(0,0,0,0.2)',
+                  opacity: thinking ? 1 : 0.82
                 }}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  setDragging(true)
-                }}
-              >
-                {/* 粒子拖尾 */}
-                {config.count > 0 && (
-                  <span className="pointer-events-none" style={{ position: 'absolute', top: '50%', left: 0, width: 0, height: 0, overflow: 'visible' }}>
-                    {Array.from({ length: config.count }).map((_, pi) => {
-                      const seed = pi * 137.5
-                      const yOffset = Math.sin(seed) * config.ySpread
-                      const sizeBase = Math.max(1, 3.5 - (pi / config.count) * 2.5)
-                      const delay = (pi / config.count) * config.duration * 0.9 + Math.cos(seed) * 0.05
-                      const color = particleColor(pi, config.count)
-                      return (
-                        <span
-                          key={pi}
-                          className="rounded-full"
-                          style={{
-                            position: 'absolute',
-                            width: `${sizeBase}px`,
-                            height: `${sizeBase}px`,
-                            top: 0,
-                            left: `${-6 - (pi % 12) * 2.5}px`,
-                            background: color,
-                            boxShadow: `0 0 ${Math.max(1, 3 - (pi / config.count) * 2)}px ${color}`,
-                            animation: `effortParticle ${config.duration}s ${delay}s ease-out infinite both`,
-                            '--ep-y': `${yOffset}px`,
-                            '--ep-dist': `${config.distance}px`,
-                          } as React.CSSProperties}
-                        />
-                      )
-                    })}
-                  </span>
-                )}
-                <span
-                  className={`rounded-full transition-all duration-200 ease-out-quart ${
-                    effort !== 'off'
-                      ? `h-6 w-6 bg-accent shadow-[0_0_14px_color-mix(in_srgb,var(--theme-color)_60%,transparent)] animate-reasoning-pulse-${effort}`
-                      : 'h-5 w-5 bg-border'
-                  }`}
-                  style={{ display: 'block' }}
-                />
-              </div>
+              />
             </div>
+          </div>
 
-            {/* 档位标签 */}
-            <div className="relative mt-1" style={{ height: '14px' }}>
-              {EFFORT_LEVELS.map((level, i) => {
-                const isCurrent = level.value === effort
-                const leftPercent = (i / (EFFORT_LEVELS.length - 1)) * 100
-                return (
-                  <button
-                    key={level.value}
-                    onClick={() => void updateSettings(
-                      level.value === 'off'
-                        ? { reasoningEffort: level.value, thinkingMode: false }
-                        : { reasoningEffort: level.value, thinkingMode: true }
-                    )}
-                    className="absolute top-0 text-[10px] font-medium transition-colors"
-                    style={{ left: `${leftPercent}%`, transform: 'translateX(-50%)' }}
+          {/* 档位标签 —— 与轨道同宽，5 档等距 */}
+          <div className="mt-2 flex justify-between">
+            {REASONING_LEVELS.map((level, i) => {
+              const isCurrent = i === idx
+              return (
+                <button
+                  key={level.value}
+                  onClick={() => commit(level.value)}
+                  disabled={!reasoningCapable}
+                  aria-current={isCurrent}
+                  className="focus-ring rounded-control px-1 text-caption transition-colors duration-fast disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ minWidth: '1.6rem' }}
+                >
+                  <span
+                    className={`inline-block transition-[color,transform] duration-fast ease-out-quart ${
+                      isCurrent
+                        ? 'text-accent font-semibold'
+                        : 'text-text-tertiary hover:text-text-secondary'
+                    }`}
+                    style={{ transform: isCurrent ? 'translateY(-0.5px)' : 'none' }}
                   >
-                    <span className={isCurrent ? 'text-accent' : 'text-text-muted hover:text-text-secondary'}>
-                      {level.label}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+                    {level.label}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

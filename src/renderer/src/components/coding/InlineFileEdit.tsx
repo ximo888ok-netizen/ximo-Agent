@@ -118,7 +118,7 @@ export function InlineFileEdit({
   return (
     <div className="my-1.5">
       <div
-        className={`flex items-center gap-2 px-3 py-1.5 text-xs border-l-2 bg-bg-surface rounded-r cursor-pointer transition-colors hover:bg-bg-hover ${
+        className={`flex items-center gap-2 px-3 py-1.5 text-xs border-l-2 bg-bg-surface rounded-r-control cursor-pointer transition-colors hover:bg-bg-hover ${
           isDone ? 'border-green-500/60' : 'border-accent'
         }`}
         onClick={() => hasDiff && setExpanded(!expanded)}
@@ -137,8 +137,8 @@ export function InlineFileEdit({
         )}
       </div>
       {expanded && diffLines.length > 0 && (
-        <div className="mt-0.5 overflow-hidden rounded-lg border border-border-subtle bg-[#0d1117] shadow-glass">
-          <div className="overflow-x-auto py-1 font-mono text-[11px] leading-relaxed">
+        <div className="mt-0.5 overflow-hidden rounded-card border border-border-subtle bg-[#0d1117] shadow-glass">
+          <div className="overflow-x-auto py-1 font-mono text-caption leading-relaxed">
             {diffLines.map((line, i) => (
               <div
                 key={i}
@@ -150,10 +150,10 @@ export function InlineFileEdit({
                     : 'text-text-muted'
                 }`}
               >
-                <span className="select-none text-text-muted/40 w-7 text-right shrink-0">
+                <span className="select-none text-text-quaternary w-7 text-right shrink-0">
                   {line.oldNum ?? ''}
                 </span>
-                <span className="select-none text-text-muted/40 w-7 text-right shrink-0 ml-2">
+                <span className="select-none text-text-quaternary w-7 text-right shrink-0 ml-2">
                   {line.newNum ?? ''}
                 </span>
                 <span className="select-none mx-2 shrink-0">
@@ -166,7 +166,7 @@ export function InlineFileEdit({
         </div>
       )}
       {isDone && filesCount && filesCount > 1 && (
-        <div className="mt-0.5 text-[10px] text-text-muted px-3">
+        <div className="mt-0.5 text-caption text-text-muted px-3">
           {filesCount} files
         </div>
       )}

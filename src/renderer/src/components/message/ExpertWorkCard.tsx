@@ -60,18 +60,18 @@ export function ExpertWorkCard({ events }: { events: SubAgentEvent[] }): React.R
   const toolCount = rows.filter(r => r.stage === 'tool').length
 
   return (
-    <div className={`my-2 overflow-hidden rounded-xl border transition-all duration-300 ${
-      working ? 'border-accent/30 bg-accent/5 shadow-glow' : 'border-border-subtle bg-bg-surface/40'
+    <div className={`my-2 overflow-hidden rounded-panel border transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-base ${
+      working ? 'border-accent/30 bg-accent/5 shadow-glow' : 'border-border-subtle bg-bg-surface-soft'
     }`}>
       {/* 头部：专家身份 + 状态 */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
       >
-        <Bot size={14} className={working ? 'text-accent animate-pulse' : 'text-text-muted'} />
+        <Bot size={13} className={working ? 'text-accent animate-pulse' : 'text-text-muted'} />
         <span className="font-medium text-text-secondary truncate">{expertName}</span>
         {taskSummary && (
-          <span className="text-text-muted/70 truncate max-w-[200px]">· {taskSummary}</span>
+          <span className="text-text-muted truncate max-w-[200px]">· {taskSummary}</span>
         )}
         <span className="ml-auto flex items-center gap-1 text-text-muted shrink-0">
           {working ? (
@@ -85,14 +85,14 @@ export function ExpertWorkCard({ events }: { events: SubAgentEvent[] }): React.R
               <span className="text-green-500">已完成</span>
             </>
           )}
-          {hasTool && <span className="text-text-muted/60">· {toolCount} 个工具</span>}
+          {hasTool && <span className="text-text-tertiary">· {toolCount} 个工具</span>}
           <ChevronDown size={11} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </span>
       </button>
 
       {/* 工作轨迹 */}
       {expanded && (
-        <div className="border-t border-border-subtle/50 px-3 py-2 space-y-1.5">
+        <div className="border-t border-border-subtle-soft px-3 py-2 space-y-1.5">
           {rows.map((row, i) => (
             <div key={i} className="flex items-start gap-2 text-xs">
               <span className="mt-0.5 shrink-0">{STAGE_ICON[row.stage]}</span>
@@ -102,17 +102,17 @@ export function ExpertWorkCard({ events }: { events: SubAgentEvent[] }): React.R
                   {row.detail && <span className="text-text-muted truncate">{row.detail}</span>}
                 </div>
                 {row.toolArgs && (
-                  <div className="mt-0.5 text-[11px] text-text-muted/70 whitespace-pre-wrap break-words">
+                  <div className="mt-0.5 text-caption text-text-muted whitespace-pre-wrap break-words">
                     参数：{row.toolArgs}
                   </div>
                 )}
                 {row.result && row.stage === 'tool' && (
-                  <div className="mt-0.5 text-[11px] text-text-muted/70 whitespace-pre-wrap break-words line-clamp-3">
+                  <div className="mt-0.5 text-caption text-text-muted whitespace-pre-wrap break-words line-clamp-3">
                     {row.result}
                   </div>
                 )}
                 {row.stage === 'finished' && row.result && (
-                  <div className="mt-1 rounded-lg bg-bg-surface/60 px-2 py-1.5 text-[11px] text-text-secondary whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                  <div className="mt-1 rounded-card bg-bg-surface-soft px-2 py-1.5 text-caption text-text-secondary whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
                     {row.result.slice(0, 1000)}
                     {row.result.length > 1000 && '…'}
                   </div>

@@ -84,7 +84,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   z-index: 15;
-  transition: all 0.25s var(--ease-out-quart);
+  transition: color var(--dur-fast) var(--ease-out-quart), background-color var(--dur-fast) var(--ease-out-quart), border-color var(--dur-fast) var(--ease-out-quart), box-shadow var(--dur-fast) var(--ease-out-quart), opacity var(--dur-fast) var(--ease-out-quart), transform var(--dur-fast) var(--ease-out-quart);
 }
 .transcript__jump-bottom:hover {
   background: var(--bg-elevated);

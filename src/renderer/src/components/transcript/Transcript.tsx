@@ -128,7 +128,13 @@ export function Transcript({
         actionText += item.text
       }
       if (!actionText.trim()) return
-      out.push(<TurnActions key={`ta-${turn}`} text={actionText} canRegenerate={canRegenerate && turn === lastTurn && !running} onRegenerate={onRegenerate} />)
+      // ⚠️ 任何**直接挂到 .transcript 下的块**都必须包 .transcript-row，
+      // 否则它会满宽铺开、与居中的消息栏宽错位（漏过 TurnCollapse、TurnActions、NoticeCard 各一次）
+      out.push(
+        <div className="transcript-row" key={`ta-${turn}`}>
+          <TurnActions text={actionText} canRegenerate={canRegenerate && turn === lastTurn && !running} onRegenerate={onRegenerate} />
+        </div>
+      )
     }
 
     const pushTurnBody = (key: string, turnItems: readonly TranscriptItem[], turnIsActive: boolean) => {
@@ -138,20 +144,25 @@ export function Transcript({
         const isLastSegment = segmentIndex === segments.length - 1
         if (segment.processItems.length > 0) {
           out.push(
-            <TurnCollapse
-              key={`turn-process-${key}-${segment.processItems[0].id}`}
-              items={segment.processItems}
-              durationMs={isLastSegment ? turnWorkDurationMs(turnItems) : 0}
-              turnActive={turnIsActive && isLastSegment}
-              turnStartAt={turnIsActive && isLastSegment ? turnStartAt : undefined}
-              hasOutsideContent={turnHasOutsideContent}
-              live={live}
-            />
+            <div className="transcript-row" key={`turn-process-${key}-${segment.processItems[0].id}`}>
+              <TurnCollapse
+                items={segment.processItems}
+                durationMs={isLastSegment ? turnWorkDurationMs(turnItems) : 0}
+                turnActive={turnIsActive && isLastSegment}
+                turnStartAt={turnIsActive && isLastSegment ? turnStartAt : undefined}
+                hasOutsideContent={turnHasOutsideContent}
+                live={live}
+              />
+            </div>
           )
         }
         for (const item of segment.outsideItems) {
           if (item.kind === 'notice') {
-            out.push(<NoticeCard key={item.id} item={item} />)
+            out.push(
+              <div className="transcript-row" key={item.id}>
+                <NoticeCard item={item} />
+              </div>
+            )
           } else {
             out.push(
               <LiveAssistantMessage
@@ -207,16 +218,19 @@ export function Transcript({
           onKeyDownCapture={handleKeyScrollIntent}
         >
           {turnGroups.length > HOT_TURNS && (
-            <WarmZone
-              turnGroups={turnGroups}
-              expandedWarmTurns={expandedWarmTurns}
-              warmStartTurn={warmStartTurn}
-              warmEndTurn={warmEndTurn}
-              coldTurnCount={coldTurnCount}
-              items={items}
-              onToggleColdPage={() => setWarmLayerState((prev) => warmLayerWithNextColdPage(prev, sessionKey))}
-              onToggleWarmTurn={(g, expand) => setWarmLayerState((prev) => warmLayerWithExpandedTurn(prev, sessionKey, g, expand))}
-            />
+            /* 与过程块、消息共用同一条居中栏宽 */
+            <div className="transcript-row">
+              <WarmZone
+                turnGroups={turnGroups}
+                expandedWarmTurns={expandedWarmTurns}
+                warmStartTurn={warmStartTurn}
+                warmEndTurn={warmEndTurn}
+                coldTurnCount={coldTurnCount}
+                items={items}
+                onToggleColdPage={() => setWarmLayerState((prev) => warmLayerWithNextColdPage(prev, sessionKey))}
+                onToggleWarmTurn={(g, expand) => setWarmLayerState((prev) => warmLayerWithExpandedTurn(prev, sessionKey, g, expand))}
+              />
+            </div>
           )}
           {hotZoneNodes}
         </div>
@@ -233,7 +247,7 @@ export function Transcript({
             aria-label="回到底部"
             title="回到底部"
           >
-            <ArrowDown size={18} strokeWidth={2.2} aria-hidden="true" />
+            <ArrowDown size={16} strokeWidth={2} aria-hidden="true" />
           </button>
         )}
       </div>

@@ -20,7 +20,8 @@ export function ScreenshotPreview({ dataUrl, onClose }: ScreenshotPreviewProps):
       >
         <button
           onClick={onClose}
-          className="absolute right-2 top-2 z-10 rounded-full bg-black/50 p-1.5 text-white/80 hover:bg-black/70 transition-colors"
+          aria-label="关闭预览"
+          className="absolute right-2 top-2 z-10 rounded-full bg-black/50 p-1.5 text-white/80 hover:bg-black/70 transition-colors active:scale-[0.97]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>

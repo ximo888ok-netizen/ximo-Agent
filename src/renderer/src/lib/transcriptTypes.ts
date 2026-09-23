@@ -20,6 +20,14 @@ export type TranscriptItem =
       reasoningComplete?: boolean
       reasoningDurationMs?: number
       model?: string
+      /**
+       * 只作为「流式正文的挂载点」存在，不接收 live 的 reasoning。
+       *
+       * 走有序事件流渲染时（推理与工具已按真实顺序交错输出），还会额外放一个
+       * id === streamingAssistantId 的空项，用来承接 `live.text`（正文）；
+       * 但它不能再吃 `live.reasoning` —— 那会把整段推理在末尾**重复渲染一遍**。
+       */
+      liveTextOnly?: boolean
     }
   | {
       kind: 'phase'

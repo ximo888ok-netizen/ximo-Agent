@@ -27,21 +27,21 @@ export function SubAgentTreeSection({ messages }: { messages: ChatMessage[] }): 
   const anyWorking = roots.some((r) => !r.finished) || containsWorking(roots)
 
   return (
-    <section className="mt-3 overflow-hidden rounded-xl border border-border-subtle bg-bg-surface/40">
+    <section className="mt-3 overflow-hidden rounded-panel border border-border-subtle bg-bg-surface-soft">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover/50"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
       >
         <Users size={13} className="shrink-0 text-accent" />
         <span className="text-xs font-medium text-text-secondary">子 Agent 调用链</span>
-        <span className="rounded-full bg-bg-hover px-1.5 py-0.5 text-[10px] text-text-muted">{total} 个</span>
+        <span className="rounded-full bg-bg-hover px-1.5 py-0.5 text-caption text-text-muted">{total} 个</span>
         {anyWorking && <Loader2 size={11} className="shrink-0 animate-spin text-accent" />}
         <span className="ml-auto shrink-0 text-text-muted">
-          <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </span>
       </button>
       {open && (
-        <div className="space-y-2 border-t border-border-subtle/50 px-3 py-2.5">
+        <div className="space-y-2 border-t border-border-subtle-soft px-3 py-2">
           {roots.map((node) => (
             <ExpertNodeCard key={node.expertId} node={node} depth={0} />
           ))}
@@ -75,31 +75,31 @@ function ExpertNodeCard({ node, depth }: { node: ExpertNode; depth: number }): R
   }
 
   return (
-    <div className={depth > 0 ? 'ml-2.5 border-l border-border-subtle/60 pl-2' : ''}>
-      <div className={`overflow-hidden rounded-lg border ${working ? 'border-accent/30 bg-accent/5' : 'border-border-subtle bg-bg-elevated/60'}`}>
+    <div className={depth > 0 ? 'ml-2 border-l border-border-subtle-soft pl-2' : ''}>
+      <div className={`overflow-hidden rounded-card border ${working ? 'border-accent/30 bg-accent/5' : 'border-border-subtle bg-bg-elevated-soft'}`}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left transition-colors hover:bg-bg-hover/50"
+          className="flex w-full items-center gap-1.5 px-2 py-1.5 text-left transition-colors hover:bg-bg-hover-soft active:scale-[0.97]"
         >
           <span className="shrink-0">
             {working ? <Loader2 size={11} className="animate-spin text-accent" /> : <Bot size={11} className="text-text-muted" />}
           </span>
           <span className="min-w-0 flex-1">
-            <span className={`block truncate text-[11px] font-medium ${working ? 'text-accent' : 'text-text-primary'}`}>{node.name}</span>
+            <span className={`block truncate text-caption font-medium ${working ? 'text-accent' : 'text-text-primary'}`}>{node.name}</span>
             {node.taskSummary && (
-              <span className="block truncate text-[10px] text-text-muted">{node.taskSummary}</span>
+              <span className="block truncate text-caption text-text-muted">{node.taskSummary}</span>
             )}
           </span>
-          <span className="shrink-0 text-[10px] text-text-muted">
+          <span className="shrink-0 text-caption text-text-muted">
             {working ? '工作中' : finishedEvent ? '已完成' : '未完成'}
             {toolCount > 0 && ` · ${toolCount} 工具`}
             {hasChildren && ` · ${node.children.length} 嵌套`}
           </span>
-          <ChevronDown size={10} className={`shrink-0 text-text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={11} className={`shrink-0 text-text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
-          <div className="space-y-1.5 border-t border-border-subtle/50 px-2 py-1.5">
+          <div className="space-y-1.5 border-t border-border-subtle-soft px-2 py-1.5">
             {/* 嵌套孙 Agent */}
             {hasChildren && (
               <div className="space-y-1.5">
@@ -112,11 +112,11 @@ function ExpertNodeCard({ node, depth }: { node: ExpertNode; depth: number }): R
             {rows.length > 0 && (
               <div className="space-y-1 pt-1">
                 {rows.map((r, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px]">
-                    <Wrench size={9} className="mt-0.5 shrink-0 text-amber-400/80" />
+                  <div key={i} className="flex items-start gap-1.5 text-caption">
+                    <Wrench size={11} className="mt-0.5 shrink-0 text-amber-400/80" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-text-secondary">{r.name || '工具调用'}</p>
-                      {r.args && <p className="truncate text-text-muted/60">{r.args}</p>}
+                      {r.args && <p className="truncate text-text-tertiary">{r.args}</p>}
                       {r.result && <p className="line-clamp-2 break-words text-text-muted">{r.result}</p>}
                     </div>
                   </div>
@@ -125,9 +125,9 @@ function ExpertNodeCard({ node, depth }: { node: ExpertNode; depth: number }): R
             )}
             {/* 最终结果 */}
             {finishedEvent?.result && (
-              <div className="rounded-lg bg-bg-surface/60 px-2 py-1.5 text-[10px] leading-relaxed text-text-secondary">
+              <div className="rounded-card bg-bg-surface-soft px-2 py-1.5 text-caption leading-relaxed text-text-secondary">
                 <p className="mb-0.5 flex items-center gap-1 text-green-500">
-                  <CheckCircle2 size={9} /> 最终结果
+                  <CheckCircle2 size={11} /> 最终结果
                 </p>
                 <p className="line-clamp-4 break-words whitespace-pre-wrap">{finishedEvent.result.slice(0, 600)}</p>
               </div>

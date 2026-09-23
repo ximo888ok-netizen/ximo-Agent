@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { streamChat, agentLoop, testConnection, configureAgentLoop } from '@main/deepseek'
 import { resolveActiveProvider } from '@main/deepseek/provider'
-import type { ChatRequest, StreamChunk, ToolContext, ApiMessage } from '@shared/types'
+import type { ChatRequest, StreamChunk, ToolContext, ApiMessage, AutoModeLevel } from '@shared/types'
 import { loadSettings } from '@main/store'
 import { toolRegistry } from '@main/tools'
 import { modeToolNames, ensureModeToolsLoaded } from '@main/tools/lazy-registry'
@@ -37,16 +37,29 @@ export function registerChatHandlers(): void {
 
     const win = event.sender
 
+    /*
+     * Auto Mode 等级 —— 权限判定的**唯一权威**。
+     *
+     * 这里刻意不再读 `settings.yoloMode`：它是历史遗留的布尔镜像，
+     * 只在通过输入框切换时会同步写入；从设置页改档位时不会写它。
+     * 于是出现过「设置页选了手动审批，但 yoloMode 仍是 true，确认链路被跳过」
+     * 这种选项看着生效、实际不生效的情况。等级本身没有这个歧义。
+     */
+    const autoModeLevel: AutoModeLevel =
+      request.autoModeLevel ?? settings.defaultAutoModeLevel ?? 'off'
+    const autoApproveAll = autoModeLevel === 'yolo'
+
     const handlers = {
       signal: streamSignal,
-      yoloMode: settings.yoloMode,
-      autoModeLevel: request.autoModeLevel ?? (settings.yoloMode ? 'yolo' : 'off'),
+      // 派生值 —— tool-permissions 读它，但来源只有一个
+      yoloMode: autoApproveAll,
+      autoModeLevel,
       onChunk: (chunk: StreamChunk) => {
         if (!win.isDestroyed()) {
           win.send('chat:chunk', chunk)
         }
       },
-      requestConfirmation: (settings.yoloMode || (request.autoModeLevel === 'yolo')) ? undefined : async (toolName: string, message: string): Promise<boolean> => {
+      requestConfirmation: autoApproveAll ? undefined : async (toolName: string, message: string): Promise<boolean> => {
         if (win.isDestroyed()) return false
         win.send('confirm:request', { toolName, message })
         return withTimeout(

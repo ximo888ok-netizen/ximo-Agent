@@ -44,3 +44,7 @@ ximo-Agent-Furnace/
 # 审计脚本临时输出
 scripts/check-*.txt
 scripts/audit-*.cjs
+
+# 体积超限的大文件，禁止入库
+ximo-Agent-go.zip
+resources/officecli/*.old

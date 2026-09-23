@@ -1,9 +1,11 @@
 import { useState, useMemo, useRef } from 'react'
-import { Plus, Users, Brain, Library, RefreshCw, BarChart3, Settings, Folder } from 'lucide-react'
+import { Plus, Users, Brain, Library, Server, Puzzle, RefreshCw, BarChart3, Settings, Folder } from 'lucide-react'
 import { useStore } from '@renderer/store/useStore'
 import { MODE_CONFIGS } from '@renderer/modes'
 import { ProjectGroup } from './sidebar/ProjectGroup'
 import { ConversationItem } from './sidebar/ConversationItem'
+import { SidebarNavItem } from './sidebar/SidebarNavItem'
+import { useSidebarNavCounts } from './sidebar/useSidebarNavCounts'
 
 export function Sidebar(): React.ReactElement {
   const allConversations = useStore((s) => s.conversations)
@@ -18,6 +20,13 @@ export function Sidebar(): React.ReactElement {
   const setShowTokenStats = useStore((s) => s.setShowTokenStats)
   const openProject = useStore((s) => s.openProject)
   const memoryEnabled = useStore((s) => s.settings?.memoryEnabled ?? true)
+  const activeExperts = useStore((s) => s.activeExperts)
+  // 导航项右侧徽标的真实计数（记忆行数 / 知识库条数 / MCP 启用数 / 技能数）
+  const counts = useSidebarNavCounts()
+  // 技能 = 导入 + 录制两套存储之和（悬停提示里给出分解）
+  const skillTotal = counts.skillImported === null && counts.skillRecorded === null
+    ? null
+    : (counts.skillImported ?? 0) + (counts.skillRecorded ?? 0)
   const collapsedProjects = useStore((s) => s.collapsedProjects)
   const toggleProjectCollapsed = useStore((s) => s.toggleProjectCollapsed)
   const newConversationForProject = useStore((s) => s.newConversationForProject)
@@ -63,6 +72,14 @@ export function Sidebar(): React.ReactElement {
     useStore.getState().setShowKnowledgePanel(true)
   }
 
+  const handleMcp = (): void => {
+    useStore.getState().setShowMcpPanel(true)
+  }
+
+  const handleSkill = (): void => {
+    useStore.getState().setShowSkillPanel(true)
+  }
+
   // coding/design 模式：按 projectPath 分组
   const projectGroups = useMemo(() => {
     if (!isProjectMode) return []
@@ -86,64 +103,88 @@ export function Sidebar(): React.ReactElement {
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border-subtle glass">
-      {/* 顶部三按钮 */}
-      <div className="flex items-center gap-1.5 px-3 pt-3.5 pb-2">
+      {/* 主操作 */}
+      <div className="px-3 pt-3 pb-2">
         <button
           onClick={handleNew}
-          className="btn-liquid flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-semibold"
+          className="btn-liquid flex w-full items-center justify-center gap-1.5 rounded-panel px-2 py-2 text-xs font-semibold"
         >
-          <Plus size={14} strokeWidth={2.5} />
+          <Plus size={13} strokeWidth={2} />
           {isProjectMode ? '打开项目' : '新建任务'}
         </button>
-        <button
+      </div>
+
+      {/* 导航 · 上下文组 — 跟随当前任务 */}
+      <div className="px-2 pb-1">
+        <div className="flex items-baseline gap-1.5 px-2 pb-0.5">
+          <span className="text-caption text-text-muted">上下文</span>
+          <span className="text-caption text-text-quaternary">跟随当前任务</span>
+        </div>
+        <SidebarNavItem
+          icon={Brain}
+          label="记忆"
+          onClick={handleMemory}
+          badge={!memoryEnabled ? '已关闭' : counts.memoryLines === null ? undefined : counts.memoryLines > 0 ? `${counts.memoryLines} 行` : '空'}
+          tone={memoryEnabled ? 'default' : 'off'}
+          title={memoryEnabled ? '打开记忆面板' : '记忆已关闭 — 可在面板中重新开启'}
+        />
+        <SidebarNavItem
+          icon={Library}
+          label="知识库"
+          onClick={handleKnowledge}
+          badge={counts.knowledgeTotal === null ? undefined : String(counts.knowledgeTotal)}
+          title="打开知识库面板"
+        />
+      </div>
+
+      {/* 导航 · 能力组 — 全局配置，与任务无关 */}
+      <div className="border-t border-border-subtle px-2 pt-1.5 pb-1">
+        <div className="flex items-baseline gap-1.5 px-2 pb-0.5">
+          <span className="text-caption text-text-muted">能力</span>
+          <span className="text-caption text-text-quaternary">全局配置</span>
+        </div>
+        <SidebarNavItem
+          icon={Users}
+          label="专家库"
           onClick={handleAgentPanel}
-          className="btn-ghost flex items-center justify-center rounded-xl px-2 py-2 text-xs"
-          title="AI 专家库"
-        >
-          <Users size={14} />
-        </button>
-        {memoryEnabled && (
-          <button
-            onClick={handleMemory}
-            className="btn-ghost flex items-center justify-center rounded-xl px-2 py-2 text-xs"
-            title="记忆"
-          >
-            <Brain size={14} />
-          </button>
-        )}
-        {memoryEnabled && (
-          <button
-            onClick={handleKnowledge}
-            className="btn-ghost flex items-center justify-center rounded-xl px-2 py-2 text-xs"
-            title="知识库"
-          >
-            <Library size={14} />
-          </button>
-        )}
+          badge={activeExperts.length > 0 ? `已激活 ${activeExperts.length}` : undefined}
+          tone="accent"
+          title="打开 AI 专家库"
+        />
+        <SidebarNavItem
+          icon={Server}
+          label="MCP 服务器"
+          onClick={handleMcp}
+          badge={counts.mcpTotal === null || counts.mcpTotal === 0 ? undefined : `${counts.mcpEnabled}/${counts.mcpTotal}`}
+          tone={counts.mcpTotal !== null && counts.mcpTotal > 0 && counts.mcpEnabled !== counts.mcpTotal ? 'warn' : 'default'}
+          title="管理 MCP 服务器"
+        />
+        <SidebarNavItem
+          icon={Puzzle}
+          label="技能"
+          onClick={handleSkill}
+          badge={skillTotal === null ? undefined : String(skillTotal)}
+          title={
+            counts.skillImported === null && counts.skillRecorded === null
+              ? '管理技能'
+              : `导入 ${counts.skillImported ?? 0} 个 · 录制 ${counts.skillRecorded ?? 0} 个`
+          }
+        />
       </div>
 
       {/* 列表标题 */}
-      <div className="flex items-center justify-between px-3.5 pt-3 pb-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+      <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
+        <span className="text-caption font-semibold uppercase tracking-wider text-text-muted">
           {modeConfig.name} · {isProjectMode ? '项目' : '任务'}
         </span>
         <div className="flex items-center gap-1">
-          <button
+          <button aria-label="刷新列表"
             onClick={handleRefresh}
-            className="icon-btn rounded-md p-1"
+            className="icon-btn rounded-control p-1"
             title="刷新列表"
           >
-            <RefreshCw size={12} />
+            <RefreshCw size={13} />
           </button>
-          {!isProjectMode && (
-            <button
-              onClick={handleNew}
-              className="icon-btn rounded-md p-1"
-              title="新增任务"
-            >
-              <Plus size={12} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -176,12 +217,12 @@ export function Sidebar(): React.ReactElement {
             })}
             {projectGroups.length === 0 && (
               <div className="mt-8 flex flex-col items-center gap-3 px-4 text-center animate-fade-scale">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent shadow-glow edge-light">
-                  <Folder size={20} strokeWidth={2.5} />
+                <div className="flex h-12 w-12 items-center justify-center rounded-panel bg-accent/10 text-accent shadow-glow edge-light">
+                  <Folder size={20} strokeWidth={2} />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-text-secondary">还没有项目</p>
-                  <p className="mt-0.5 text-[11px] text-text-muted">点击上方「打开项目」开始</p>
+                  <p className="mt-0.5 text-caption text-text-muted">点击上方「打开项目」开始</p>
                 </div>
               </div>
             )}
@@ -208,12 +249,12 @@ export function Sidebar(): React.ReactElement {
             ))}
             {conversations.length === 0 && (
               <div className="mt-8 flex flex-col items-center gap-3 px-4 text-center animate-fade-scale">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent shadow-glow edge-light">
-                  <Plus size={20} strokeWidth={2.5} />
+                <div className="flex h-12 w-12 items-center justify-center rounded-panel bg-accent/10 text-accent shadow-glow edge-light">
+                  <Plus size={20} strokeWidth={2} />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-text-secondary">还没有任务</p>
-                  <p className="mt-0.5 text-[11px] text-text-muted">点击上方「新建任务」开始</p>
+                  <p className="mt-0.5 text-caption text-text-muted">点击上方「新建任务」开始</p>
                 </div>
               </div>
             )}
@@ -222,21 +263,21 @@ export function Sidebar(): React.ReactElement {
       </div>
 
       {/* 底部：Token 统计 + 设置按钮 */}
-      <div className="flex-shrink-0 border-t border-border-subtle px-3 py-2.5 space-y-1.5">
+      <div className="flex-shrink-0 border-t border-border-subtle px-3 py-2 space-y-1.5">
         <button
           onClick={() => setShowTokenStats(true)}
-          className="ios-card flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary active:scale-[0.98]"
+          className="ios-card flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary active:scale-[0.98]"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <span className="flex h-6 w-6 items-center justify-center rounded-card bg-accent/10 text-accent">
             <BarChart3 size={13} />
           </span>
           Token 统计
         </button>
         <button
           onClick={() => setShowSettings(true)}
-          className="ios-card flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary active:scale-[0.98]"
+          className="ios-card flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary active:scale-[0.98]"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent/10 text-accent">
+          <span className="flex h-6 w-6 items-center justify-center rounded-card bg-accent/10 text-accent">
             <Settings size={13} />
           </span>
           设置

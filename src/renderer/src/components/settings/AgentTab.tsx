@@ -6,7 +6,9 @@ import {
   Sparkles,
   MessageSquareText
 } from 'lucide-react'
-import type { AppSettings, ModelId, ReasoningEffort } from '@shared/types'
+import type { AppSettings } from '@shared/types'
+import { DS_MODEL_FLASH, DS_MODEL_PRO } from '@shared/models'
+import { REASONING_LEVELS } from '@renderer/lib/reasoning-levels'
 import {
   SectionTitle,
   Divider,
@@ -31,7 +33,7 @@ export function AgentTab({
       <SectionTitle title="主Agent模式" desc="控制编排模式下主 Agent 的行为风格" />
 
       <ToggleRow
-        icon={<Bot size={15} />}
+        icon={<Bot size={16} />}
         label="狂暴模式"
         desc="开启后，主 Agent 进入狂暴状态：强制主动决策、绝不推诿，遇到困难必须自己想办法解决，绝不说「做不到」。"
         active={local.orchestratorEnforce ?? true}
@@ -49,7 +51,7 @@ export function AgentTab({
 
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <MessageSquareText size={15} className="text-accent" />
+          <MessageSquareText size={16} className="text-accent" />
           <label className="text-sm font-medium text-text-primary">主 Agent 自定义提示词</label>
         </div>
         <textarea
@@ -57,7 +59,7 @@ export function AgentTab({
           onChange={(e) => update({ mainAgentCustomPrompt: e.target.value })}
           rows={4}
           placeholder="为主 Agent 定义人格、行为风格、工作偏好等。例如：&#10;- 始终以简洁的方式回答，避免冗余解释&#10;- 遇到问题先分析根因再行动&#10;- 优先使用工具完成任务，而非直接回答"
-          className="w-full resize-none rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+          className="w-full resize-none rounded-card border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus-ring"
         />
         <p className="mt-1.5 text-xs text-text-muted">
           此提示词会注入到主 Agent 的系统提示词中，影响所有对话
@@ -70,21 +72,21 @@ export function AgentTab({
 
       <div className="grid grid-cols-2 gap-3">
         <ModelCard
-          active={(local.subAgentModel ?? 'deepseek-v4-flash') === 'deepseek-v4-pro'}
-          onClick={() => update({ subAgentModel: 'deepseek-v4-pro' as ModelId })}
-          icon={<Cpu size={18} />}
-          title="V4-Pro"
+          active={(local.subAgentModel ?? DS_MODEL_FLASH) === DS_MODEL_PRO}
+          onClick={() => update({ subAgentModel: DS_MODEL_PRO })}
+          icon={<Cpu size={16} />}
+          title="V4 Pro"
           subtitle="旗舰版"
           specs={['深度推理', '高质量']}
           desc="子 Agent 回复质量更高，但耗时和成本更大"
         />
         <ModelCard
-          active={(local.subAgentModel ?? 'deepseek-v4-flash') === 'deepseek-v4-flash'}
-          onClick={() => update({ subAgentModel: 'deepseek-v4-flash' as ModelId })}
-          icon={<Zap size={18} />}
-          title="V4-Flash"
-          subtitle="轻量版"
-          specs={['快速响应', '低成本']}
+          active={(local.subAgentModel ?? DS_MODEL_FLASH) === DS_MODEL_FLASH}
+          onClick={() => update({ subAgentModel: DS_MODEL_FLASH })}
+          icon={<Zap size={16} />}
+          title="Flash"
+          subtitle="原生多模态"
+          specs={['原生多模态', '快速响应', '低成本']}
           desc="子 Agent 回复更快更省，推荐默认选择"
         />
       </div>
@@ -97,7 +99,7 @@ export function AgentTab({
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label className="text-sm font-medium text-text-primary">子 Agent 温度</label>
-          <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
+          <span className="rounded-control bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
             {(local.subAgentTemperature ?? 0.7).toFixed(1)}
           </span>
         </div>
@@ -110,7 +112,7 @@ export function AgentTab({
           onChange={(e) => update({ subAgentTemperature: parseFloat(e.target.value) })}
           className="w-full accent-accent"
         />
-        <div className="mt-1 flex justify-between text-[10px] text-text-muted">
+        <div className="mt-1 flex justify-between text-caption text-text-muted">
           <span>精确 (0)</span>
           <span>平衡 (1.0)</span>
           <span>发散 (2.0)</span>
@@ -122,8 +124,8 @@ export function AgentTab({
         <div className="mb-2 flex items-center justify-between">
           <label className="text-sm font-medium text-text-primary">子 Agent 超时</label>
           <div className="flex items-center gap-1">
-            <Clock size={12} className="text-text-muted" />
-            <span className="rounded bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
+            <Clock size={13} className="text-text-muted" />
+            <span className="rounded-control bg-bg-elevated px-2 py-0.5 text-xs font-mono text-accent">
               {(local.subAgentTimeout ?? 60)}s
             </span>
           </div>
@@ -137,7 +139,7 @@ export function AgentTab({
           onChange={(e) => update({ subAgentTimeout: parseInt(e.target.value) || 60 })}
           className="w-full accent-accent"
         />
-        <div className="mt-1 flex justify-between text-[10px] text-text-muted">
+        <div className="mt-1 flex justify-between text-caption text-text-muted">
           <span>10s</span>
           <span>60s</span>
           <span>300s</span>
@@ -148,41 +150,38 @@ export function AgentTab({
       </div>
 
       {/* 子 Agent 思考强度 */}
-      <div className="ios-card p-3.5 space-y-3">
+      <div className="ios-card p-3 space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles size={15} className="text-accent" />
+          <Sparkles size={16} className="text-accent" />
           <div>
             <p className="text-sm font-medium text-text-primary">子 Agent 思考强度</p>
             <p className="text-xs text-text-muted">控制子 Agent 的推理深度，强度越高回答越精准但耗时更长</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {([
-            { value: 'off' as ReasoningEffort, label: '关闭', desc: '不输出思维链' },
-            { value: 'high' as ReasoningEffort, label: 'High', desc: '深度推理' },
-            { value: 'max' as ReasoningEffort, label: 'Max', desc: '极致推理' }
-          ]).map((level) => (
-            <button
-              key={level.value}
-              onClick={() => update({ subAgentReasoningEffort: level.value })}
-              className={`flex-1 rounded-lg border p-2.5 text-center transition-all duration-200 ${
-                (local.subAgentReasoningEffort ?? 'high') === level.value
-                  ? level.value === 'max'
-                    ? 'border-accent bg-accent/15 shadow-[0_0_12px_color-mix(in_srgb,var(--theme-color)_40%,transparent)]'
-                    : level.value === 'high'
-                      ? 'border-accent bg-accent/10'
-                      : 'border-border bg-bg-elevated'
-                  : 'border-border bg-bg-elevated hover:border-border-hover'
-              }`}
-            >
-              <p className={`text-xs font-semibold ${
-                (local.subAgentReasoningEffort ?? 'high') === level.value ? 'text-accent' : 'text-text-primary'
-              }`}>
-                {level.label}
-              </p>
-              <p className="text-[10px] text-text-muted mt-0.5">{level.desc}</p>
-            </button>
-          ))}
+        <div className="grid grid-cols-4 gap-2">
+          {/* 子 Agent 刻意不提供「超高」档 —— ultra 会为每个子 Agent 再起一轮监督审查，
+              开销随子 Agent 数量线性放大，不适合放在这里 */}
+          {REASONING_LEVELS.filter((l) => l.value !== 'ultra').map((level) => {
+            const current = local.subAgentReasoningEffort ?? 'high'
+            const active = current === level.value
+            return (
+              <button
+                key={level.value}
+                onClick={() => update({ subAgentReasoningEffort: level.value })}
+                title={level.desc}
+                className={`rounded-card border p-2.5 text-center transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
+                  active
+                    ? 'border-accent bg-accent/15'
+                    : 'border-border bg-bg-elevated hover:border-border-hover'
+                }`}
+              >
+                <p className={`text-xs font-semibold ${active ? 'text-accent' : 'text-text-primary'}`}>
+                  {level.label}
+                </p>
+                <p className="mt-0.5 text-caption text-text-muted">{level.desc}</p>
+              </button>
+            )
+          })}
         </div>
         <p className="text-xs text-text-muted">
           关闭时子 Agent 使用温度参数进行采样；开启时使用思维链推理，温度参数不生效

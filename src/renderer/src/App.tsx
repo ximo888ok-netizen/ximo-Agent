@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { useStore } from './store/useStore'
 import { TitleBar } from './components/TitleBar'
 import { Sidebar } from './components/Sidebar'
@@ -20,6 +21,8 @@ const SettingsModal = lazy(() => import('./components/settings/SettingsModal').t
 const AgentExpertPanel = lazy(() => import('./components/panels/AgentExpertPanel').then(m => ({ default: m.AgentExpertPanel })))
 const MemoryPanel = lazy(() => import('./components/panels/MemoryPanel').then(m => ({ default: m.MemoryPanel })))
 const KnowledgePanel = lazy(() => import('./components/panels/KnowledgePanel').then(m => ({ default: m.KnowledgePanel })))
+const McpPanel = lazy(() => import('./components/panels/McpPanel').then(m => ({ default: m.McpPanel })))
+const SkillPanel = lazy(() => import('./components/panels/SkillPanel').then(m => ({ default: m.SkillPanel })))
 const PlanSpecDialog = lazy(() => import('./components/panels/PlanSpecDialog').then(m => ({ default: m.PlanSpecDialog })))
 const TokenStatsModal = lazy(() => import('./components/panels/TokenStatsModal').then(m => ({ default: m.TokenStatsModal })))
 
@@ -71,6 +74,58 @@ export default function App(): React.ReactElement {
   // ---- 侧栏拖拽宽度 ----
   const [leftWidth, setLeftWidth] = useState(240)
   const [rightWidth, setRightWidth] = useState(280)
+  // 窄窗口降级要在 resize 回调里读到最新宽度（effect 只注册一次，不能闭包捕获初值）
+  const leftWidthRef = useRef(leftWidth)
+  leftWidthRef.current = leftWidth
+
+  // ---- 右侧栏收起状态 ----
+  const rightPanelCollapsed = useStore((s) => s.rightPanelCollapsed)
+  const setRightPanelCollapsed = useStore((s) => s.setRightPanelCollapsed)
+  const browserOpen = useStore((s) => s.browserOpen)
+  const collapseRightPanel = useCallback((): void => setRightPanelCollapsed(true), [setRightPanelCollapsed])
+  const expandRightPanel = useCallback((): void => setRightPanelCollapsed(false), [setRightPanelCollapsed])
+
+  // 确认弹窗的「不再提示」直接切换自动化等级 —— 不再走 sessionStorage 私标记，
+  // 避免出现"输入框选了手动审批、弹窗却照样不弹"的第二套真相
+  const setAutoModeLevel = useStore((s) => s.setAutoModeLevel)
+
+  // 内嵌浏览器由右栏承载（webview + 抓包 + 录制），收起会让它卸载并丢失录制现场，
+  // 因此浏览器开启期间锁定为展开态 — 对应「工具在跑就展开，不跑就收着」
+  const rightPanelHidden = rightPanelCollapsed && !browserOpen
+
+  // ---- 窄窗口降级 ----
+  // 全仓原先 0 个尺寸断点：窗口窄化时左右栏固定占用，会话区被压到不可用。
+  // 桌面应用的布局宽度由状态驱动（不是 CSS 栅格），所以用窗口宽度驱动状态，
+  // 而不是媒体查询。只在"变窄"时收敛，用户手动拖宽的值记下来，窗口恢复到
+  // 阈值以上时还原 —— 避免把用户的偏好永久改掉。
+  const NARROW_WIDTH = 1100
+  const NARROW_SIDEBAR = 180
+  const widthBeforeNarrowRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const apply = (): void => {
+      const narrow = window.innerWidth < NARROW_WIDTH
+      document.documentElement.classList.toggle('window-narrow', narrow)
+      if (narrow) {
+        if (widthBeforeNarrowRef.current === null) widthBeforeNarrowRef.current = leftWidthRef.current
+        setRightPanelCollapsed(true)
+        if (leftWidthRef.current > NARROW_SIDEBAR) setLeftWidth(NARROW_SIDEBAR)
+      } else if (widthBeforeNarrowRef.current !== null) {
+        setLeftWidth(widthBeforeNarrowRef.current)
+        widthBeforeNarrowRef.current = null
+      }
+    }
+    apply()
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
+  }, [setRightPanelCollapsed])
+
+  // 空会话 → 会话区与输入框作为一组垂直居中；一旦产生消息，输入框立刻沉到底部
+  const hasMessages = useStore(
+    (s) => (s.conversations.find((c) => c.id === s.currentConversationId)?.messages.length ?? 0) > 0
+  )
+
+  // 切换模式时不再自动展开右栏 —— 三模式统一默认收起，需要时用右上角按钮 / Ctrl+B 展开
 
   // 主界面内容
   const mainContent = (loaded && settings) ? (
@@ -97,8 +152,8 @@ export default function App(): React.ReactElement {
           onResize={setLeftWidth}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${hasMessages ? '' : 'justify-center'}`}>
+          <div className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${hasMessages ? 'flex-1' : 'shrink-0'}`}>
             <Suspense fallback={null}>
               {currentMode === 'office' && <OfficeLayout />}
               {currentMode === 'coding' && <CodingLayout />}
@@ -106,20 +161,37 @@ export default function App(): React.ReactElement {
             </Suspense>
           </div>
           <Suspense fallback={null}>
-            <GlobalChatInput />
+            <GlobalChatInput emptyState={!hasMessages} />
           </Suspense>
         </div>
 
-        <ResizableDivider
-          side="right"
-          width={rightWidth}
-          minWidth={240}
-          maxWidth={800}
-          onResize={setRightWidth}
-        />
-        <div style={{ width: `${rightWidth}px`, flexShrink: 0 }} className="h-full">
-          <RightSidebar />
-        </div>
+        {rightPanelHidden ? (
+          /* 收起态 — 保留 24px 窄条作为展开入口，避免用户找不到如何唤回 */
+          <button aria-label="展开右侧栏 (Ctrl+B)"
+            onClick={expandRightPanel}
+            title="展开右侧栏 (Ctrl+B)"
+            className="group flex h-full w-6 shrink-0 flex-col items-center justify-center border-l border-border-subtle glass text-text-muted transition-colors hover:text-accent active:scale-[0.97]"
+          >
+            <ChevronLeft size={13} className="transition-transform duration-fast group-hover:-translate-x-0.5" />
+          </button>
+        ) : (
+          <>
+            <ResizableDivider
+              side="right"
+              width={rightWidth}
+              minWidth={240}
+              maxWidth={800}
+              onResize={setRightWidth}
+              snapThreshold={browserOpen ? undefined : 200}
+              onSnapCollapse={browserOpen ? undefined : collapseRightPanel}
+              onCollapseClick={browserOpen ? undefined : collapseRightPanel}
+              collapseTitle="收起右侧栏 (Ctrl+B)"
+            />
+            <div style={{ width: `${rightWidth}px`, flexShrink: 0 }} className="h-full">
+              <RightSidebar />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 弹窗区 */}
@@ -127,6 +199,8 @@ export default function App(): React.ReactElement {
       <Suspense fallback={null}><AgentExpertPanel /></Suspense>
       <Suspense fallback={null}><MemoryPanel /></Suspense>
       <Suspense fallback={null}><KnowledgePanel /></Suspense>
+      <Suspense fallback={null}><McpPanel /></Suspense>
+      <Suspense fallback={null}><SkillPanel /></Suspense>
       <Suspense fallback={null}><PlanSpecDialog /></Suspense>
       <ConfirmDialog
         open={confirmState !== null}
@@ -134,6 +208,7 @@ export default function App(): React.ReactElement {
         message={confirmState?.message ?? ''}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        onRemember={() => setAutoModeLevel('yolo')}
       />
       <Suspense fallback={null}><TokenStatsModal /></Suspense>
 

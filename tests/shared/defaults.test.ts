@@ -70,7 +70,7 @@ describe('DEFAULT_SETTINGS', () => {
   })
 
   it('subAgent 默认模型为 flash', () => {
-    expect(DEFAULT_SETTINGS.subAgentModel).toBe('deepseek-v4-flash')
+    expect(DEFAULT_SETTINGS.subAgentModel).toBe('deepseek-flash')
   })
 
   it('上下文压缩参数有合理默认值', () => {

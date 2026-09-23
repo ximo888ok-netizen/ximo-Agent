@@ -1,15 +1,17 @@
-import { Paperclip, AtSign, Globe, ArrowUp, Zap, Square, Sparkles, Loader2, Undo2 } from 'lucide-react'
+import { Paperclip, AtSign, Globe, ArrowUp, Square, Sparkles, Loader2, Undo2 } from 'lucide-react'
 import { ModelSelector } from './ModelSelector'
 import { ReasoningSlider } from './ReasoningSlider'
 import { LongTaskPicker } from './LongTaskPicker'
+import { AutoModeSelect } from './AutoModeSelect'
+import type { AutoModeLevel } from '@shared/types'
 
 interface ChatInputActionsProps {
   onAttachFile: () => Promise<void>
   onAtSign: () => void
   networkSearchOn: boolean
   onToggleNetwork: () => void
-  autoModeLevel: string
-  onCycleAutoMode: () => void
+  autoModeLevel: AutoModeLevel
+  onAutoModeChange: (next: AutoModeLevel) => void
   isStreaming: boolean
   streamingTokens: number | null
   text: string
@@ -26,96 +28,86 @@ interface ChatInputActionsProps {
 export function ChatInputActions({
   onAttachFile, onAtSign,
   networkSearchOn, onToggleNetwork,
-  autoModeLevel, onCycleAutoMode,
+  autoModeLevel, onAutoModeChange,
   isStreaming, streamingTokens,
   text, onSend, onCancel,
   currentMode, onEnhancePrompt, isEnhancing, onUndoEnhance, canUndo,
   children
 }: ChatInputActionsProps): React.ReactElement {
   return (
-    <div className="flex items-center justify-between px-3 pb-2.5">
+    <div className="flex items-center justify-between px-3 pb-2">
       <div className="flex items-center gap-1">
-        <button onClick={() => void onAttachFile()} className="icon-btn p-1.5" title="附加文件"><Paperclip size={14} /></button>
-        <button onClick={onAtSign} className="icon-btn p-1.5" title="@引用文件"><AtSign size={14} /></button>
+        <button onClick={() => void onAttachFile()} className="icon-btn p-1.5" title="附加文件"><Paperclip size={13} /></button>
+        <button aria-label="@引用文件" onClick={onAtSign} className="icon-btn p-1.5" title="@引用文件"><AtSign size={13} /></button>
         {isEnhancing ? (
-          <button
+          <button aria-label="正在增强..."
             disabled
             className="icon-btn p-1.5 text-accent"
             title="正在增强..."
           >
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={13} className="animate-spin" />
           </button>
         ) : canUndo ? (
-          <button
+          <button aria-label="撤销增强 — 恢复原始输入"
             onClick={onUndoEnhance}
-            className="icon-btn p-1.5 text-accent hover:text-accent transition-all duration-200 active:scale-90"
+            className="icon-btn p-1.5 text-accent hover:text-accent transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-90"
             title="撤销增强 — 恢复原始输入"
           >
-            <Undo2 size={14} />
+            <Undo2 size={13} />
           </button>
         ) : (
-          <button
+          <button aria-label="增强提示词 — AI 根据当前会话和模式优化你的输入"
             onClick={onEnhancePrompt}
             disabled={!text.trim()}
-            className={`icon-btn p-1.5 transition-all duration-200 ${
+            className={`icon-btn p-1.5 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast ${
               text.trim() ? 'hover:text-accent' : 'opacity-40'
             }`}
             title="增强提示词 — AI 根据当前会话和模式优化你的输入"
           >
-            <Sparkles size={14} />
+            <Sparkles size={13} />
           </button>
         )}
         {children}
 
         <LongTaskPicker />
 
-        <button
+        <button aria-label="联网搜索"
           onClick={onToggleNetwork}
-          className={`chip flex items-center gap-1 px-2 py-0.5 text-[11px] transition-all duration-200 active:scale-95 ${
+          className={`chip flex items-center gap-1 px-2 py-0.5 text-caption transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-95 ${
             networkSearchOn ? 'border-accent/30 text-accent bg-accent/10' : 'text-text-muted hover:text-text-secondary'
           }`}
           title="联网搜索"
         >
-          <Globe size={12} />联网
+          <Globe size={13} />联网
         </button>
 
-        <button
-          onClick={onCycleAutoMode}
-          className={`chip flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium transition-all duration-200 active:scale-95 ${
-            autoModeLevel === 'yolo' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-              : autoModeLevel === 'safe' ? 'border-accent/30 text-accent bg-accent/10'
-                : 'text-text-muted hover:text-text-secondary'
-          }`}
-          title={autoModeLevel === 'off' ? '按模式规则：常规操作自动，危险操作需确认' : autoModeLevel === 'safe' ? '安全模式：读操作和常规写操作自动，危险操作需确认' : 'YOLO 模式：全部自动执行'}
-        >
-          <Zap size={11} />{autoModeLevel === 'off' ? '手动' : autoModeLevel === 'safe' ? 'Safe' : 'YOLO'}
-        </button>
+        <AutoModeSelect level={autoModeLevel} onChange={onAutoModeChange} />
       </div>
 
       <div className="flex items-center gap-2">
         {streamingTokens !== null && isStreaming && (
-          <span className="text-[11px] text-text-muted">{streamingTokens.toLocaleString()} tokens</span>
+          <span className="text-caption text-text-muted">{streamingTokens.toLocaleString()} tokens</span>
         )}
         <ModelSelector />
         <ReasoningSlider />
         {isStreaming ? (
-          <button
+          <button aria-label="取消"
             onClick={onCancel}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-[0_0_14px_rgba(239,68,68,0.45)] transition-all duration-200 hover:bg-red-600 hover:scale-105 active:scale-90 halo-pulse"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500 text-white shadow-[0_0_14px_rgba(239,68,68,0.45)] transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast hover:bg-red-600 hover:scale-105 active:scale-90 halo-pulse"
             title="取消"
           >
             <Square size={13} />
           </button>
         ) : (
-          <button
+          <button aria-label="发送"
             onClick={onSend}
             disabled={!text.trim()}
-            className={`btn-liquid flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${
+            className={`btn-liquid flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${
               text.trim() ? 'halo-pulse hover:scale-105 active:scale-90' : ''
             }`}
             title="发送"
           >
-            <ArrowUp size={15} strokeWidth={2.5} />
+            <ArrowUp size={16} strokeWidth={2} />
           </button>
         )}
       </div>

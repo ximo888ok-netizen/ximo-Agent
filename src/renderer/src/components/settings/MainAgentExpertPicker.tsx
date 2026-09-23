@@ -25,10 +25,10 @@ export function MainAgentExpertPicker({ selectedId, onSelect }: {
   }, [search, ready])
 
   return (
-    <div className="ios-card p-3.5">
+    <div className="ios-card p-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className={selected ? 'text-accent' : 'text-text-muted'}><Users size={15} /></span>
+        <div className="flex items-center gap-2">
+          <span className={selected ? 'text-accent' : 'text-text-muted'}><Users size={16} /></span>
           <div>
             <p className="text-sm font-medium text-text-primary">专家注入</p>
             <p className="text-xs text-text-muted">
@@ -40,14 +40,14 @@ export function MainAgentExpertPicker({ selectedId, onSelect }: {
           {selected && (
             <button
               onClick={() => onSelect(undefined)}
-              className="rounded-lg px-2 py-1 text-xs text-text-muted hover:text-red-400 transition-colors"
+              className="rounded-card px-2 py-1 text-xs text-text-muted hover:text-red-400 transition-colors active:scale-[0.97]"
             >
               清除
             </button>
           )}
           <button
             onClick={() => setOpen(!open)}
-            className="rounded-lg bg-bg-elevated px-3 py-1.5 text-xs text-text-primary hover:bg-bg-hover transition-colors"
+            className="rounded-card bg-bg-elevated px-3 py-1.5 text-xs text-text-primary hover:bg-bg-hover transition-colors active:scale-[0.97]"
           >
             {open ? '收起' : '选择'}
           </button>
@@ -56,13 +56,13 @@ export function MainAgentExpertPicker({ selectedId, onSelect }: {
 
       {open && (
         <div className="mt-3 space-y-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-input px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 rounded-card border border-border bg-bg-input px-3 py-1.5">
             <Search size={13} className="text-text-muted" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索专家..."
-              className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+              className="flex-1 bg-transparent text-xs text-text-primary placeholder:text-text-muted focus-ring"
             />
           </div>
           <div className="max-h-[200px] overflow-y-auto space-y-1">
@@ -75,14 +75,14 @@ export function MainAgentExpertPicker({ selectedId, onSelect }: {
                 <button
                   key={agent.id}
                   onClick={() => { onSelect(agent.id); setOpen(false) }}
-                  className={`flex w-full items-center gap-2 rounded-lg p-2 text-left transition-colors ${
+                  className={`flex w-full items-center gap-2 rounded-card p-2 text-left transition-colors ${
                     selectedId === agent.id ? 'bg-accent/15 text-accent' : 'hover:bg-bg-hover'
                   }`}
                 >
                   <span className="text-base flex-shrink-0">{agent.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{agent.name}</p>
-                    <p className="text-[10px] text-text-muted truncate">{agent.description}</p>
+                    <p className="text-caption text-text-muted truncate">{agent.description}</p>
                   </div>
                 </button>
               ))

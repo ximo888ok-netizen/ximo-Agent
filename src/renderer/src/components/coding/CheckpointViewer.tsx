@@ -76,27 +76,27 @@ export function CheckpointViewer({ sessionId, onRestore }: CheckpointViewerProps
   if (!sessionId) return null
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-bg-surface/40 overflow-hidden">
+    <div className="rounded-panel border border-border-subtle bg-bg-surface-soft overflow-hidden">
       {/* 标题栏 */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-bg-hover active:scale-[0.97]"
       >
         <History size={13} className="text-text-muted shrink-0" />
         <span className="text-xs font-medium text-text-secondary">检查点</span>
         {checkpoints.length > 0 && (
-          <span className="text-[10px] text-text-muted bg-bg-hover rounded-full px-1.5 py-0.5">
+          <span className="text-caption text-text-muted bg-bg-hover rounded-full px-1.5 py-0.5">
             {checkpoints.length}
           </span>
         )}
         <span className="ml-auto">
-          <ChevronDown size={12} className={`text-text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          <ChevronDown size={13} className={`text-text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </span>
       </button>
 
       {/* 检查点列表 */}
       {expanded && (
-        <div className="border-t border-border-subtle/50 max-h-64 overflow-y-auto">
+        <div className="border-t border-border-subtle-soft max-h-64 overflow-y-auto">
           {loading ? (
             <div className="px-3 py-4 text-center text-xs text-text-muted">加载中...</div>
           ) : checkpoints.length === 0 ? (
@@ -115,23 +115,23 @@ export function CheckpointViewer({ sessionId, onRestore }: CheckpointViewerProps
                     className="px-3 py-1.5 hover:bg-bg-hover transition-colors group"
                   >
                     <div className="flex items-center gap-2">
-                      <Clock size={10} className="text-text-muted/50 shrink-0" />
-                      <span className="text-[10px] text-text-muted shrink-0">T{cp.turn}</span>
-                      <span className="text-[11px] text-text-secondary truncate flex-1 font-mono">
+                      <Clock size={11} className="text-text-tertiary shrink-0" />
+                      <span className="text-caption text-text-muted shrink-0">T{cp.turn}</span>
+                      <span className="text-caption text-text-secondary truncate flex-1 font-mono">
                         {promptPreview || '(空)'}
                       </span>
-                      <span className="text-[10px] text-text-muted shrink-0">{timeStr}</span>
+                      <span className="text-caption text-text-muted shrink-0">{timeStr}</span>
                       <button
                         onClick={() => void handleRestore(cp.turn)}
                         disabled={isRestoring}
-                        className="opacity-0 group-hover:opacity-100 text-[10px] px-1.5 py-0.5 rounded text-orange-400/80 hover:text-orange-400 hover:bg-orange-500/10 transition-all duration-200 active:scale-95 disabled:opacity-50 flex items-center gap-1"
+                        className="opacity-0 group-hover:opacity-100 text-caption px-1.5 py-0.5 rounded-control text-orange-400/80 hover:text-orange-400 hover:bg-orange-500/10 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-fast active:scale-95 disabled:opacity-50 flex items-center gap-1"
                         title={`回退到轮次 ${cp.turn}`}
                       >
-                        {isRestoring ? '...' : <><RotateCcw size={10} /> 回退</>}
+                        {isRestoring ? '...' : <><RotateCcw size={11} /> 回退</>}
                       </button>
                     </div>
                     {fileCount > 0 && (
-                      <div className="ml-7 mt-0.5 text-[10px] text-text-muted/60">
+                      <div className="ml-7 mt-0.5 text-caption text-text-tertiary">
                         {cp.paths.slice(0, 3).map(p => p.split(/[/\\]/).pop()).join(', ')}
                         {fileCount > 3 && ` 等${fileCount}项`}
                       </div>
@@ -143,15 +143,15 @@ export function CheckpointViewer({ sessionId, onRestore }: CheckpointViewerProps
           )}
           {/* 回退结果提示 */}
           {restoreResult && (
-            <div className="border-t border-border-subtle/50 px-3 py-1.5 flex items-center gap-1.5">
-              <AlertCircle size={10} className="text-orange-400 shrink-0" />
-              <span className="text-[10px] text-text-muted">{restoreResult}</span>
+            <div className="border-t border-border-subtle-soft px-3 py-1.5 flex items-center gap-1.5">
+              <AlertCircle size={11} className="text-orange-400 shrink-0" />
+              <span className="text-caption text-text-muted">{restoreResult}</span>
             </div>
           )}
           {/* 底部提示 */}
           {checkpoints.length > 0 && (
-            <div className="border-t border-border-subtle/50 px-3 py-1.5">
-              <p className="text-[10px] text-text-muted/60">
+            <div className="border-t border-border-subtle-soft px-3 py-1.5">
+              <p className="text-caption text-text-tertiary">
                 检查点在每次用户消息时自动创建，记录文件修改前的状态。回退将恢复代码到该轮次开始时的状态。
               </p>
             </div>

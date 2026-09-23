@@ -86,10 +86,10 @@ export const DesignPreviewPanel = memo(function DesignPreviewPanel({
             <span className="text-xs font-medium text-text-secondary">{name} · 预览</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <button onClick={() => setFullscreen(false)} className="icon-btn rounded p-1">
-              <Minimize2 size={14} />
+            <button onClick={() => setFullscreen(false)} aria-label="退出全屏" className="icon-btn rounded-control p-1">
+              <Minimize2 size={13} />
             </button>
-            <button onClick={onClose} className="icon-btn rounded p-1 text-xs">✕</button>
+            <button onClick={onClose} aria-label="关闭预览" className="icon-btn rounded-control p-1 text-xs">✕</button>
           </div>
         </div>
         <div className="flex-1 relative bg-[#0f172a]">
@@ -111,10 +111,10 @@ export const DesignPreviewPanel = memo(function DesignPreviewPanel({
           <span className="text-xs font-medium text-text-secondary">{name}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setFullscreen(true)} className="icon-btn rounded p-0.5" title="全屏">
-            <Maximize2 size={12} />
+          <button onClick={() => setFullscreen(true)} className="icon-btn rounded-control p-0.5" title="全屏">
+            <Maximize2 size={13} />
           </button>
-          <button onClick={onClose} className="icon-btn rounded p-0.5 text-xs">✕</button>
+          <button onClick={onClose} aria-label="关闭预览" className="icon-btn rounded-control p-0.5 text-xs">✕</button>
         </div>
       </div>
       {/* 预览区 */}
@@ -133,7 +133,7 @@ function LoadingOverlay(): React.ReactElement {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#0f172a]">
       <Loader2 size={20} className="animate-spin text-accent" />
-      <p className="text-[10px] text-text-muted">加载预览中...</p>
+      <p className="text-caption text-text-muted">加载预览中...</p>
     </div>
   )
 }
@@ -143,14 +143,14 @@ function LoadingOverlay(): React.ReactElement {
 function ErrorOverlay({ name, src }: { name: string; src: string }): React.ReactElement {
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center bg-[#0f172a]">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+      <div className="flex h-12 w-12 items-center justify-center rounded-panel bg-accent/10">
         <Maximize2 size={20} className="text-accent/60" />
       </div>
       <div>
         <p className="text-xs font-medium text-text-secondary">{name}</p>
-        <p className="text-[9px] text-text-muted mt-0.5">预览加载失败</p>
-        <p className="text-[8px] text-text-muted/60 mt-1 font-mono break-all max-w-[280px]">{src}</p>
-        <p className="text-[8px] text-text-muted/50 mt-0.5">可能原因：网络无法访问 esm.sh CDN</p>
+        <p className="text-caption text-text-muted mt-0.5">预览加载失败</p>
+        <p className="text-caption text-text-tertiary mt-1 font-mono break-all max-w-[280px]">{src}</p>
+        <p className="text-caption text-text-tertiary mt-0.5">可能原因：网络无法访问 esm.sh CDN</p>
       </div>
     </div>
   )

@@ -5,8 +5,9 @@ import type { ProviderCapabilities } from './provider'
 /**
  * 将应用层 ReasoningEffort 映射为 DeepSeek API 支持的 reasoning_effort 值。
  * 'ultra' 是应用层自定义等级（工程范式 + 监督审查），API 层等价于 'max'。
+ * 其余取值一一透传 —— 官方接受 `low/high/max`（'off' 表示调用方不会走这个分支）。
  */
-export function toApiEffort(effort: ReasoningEffort): 'off' | 'high' | 'max' {
+export function toApiEffort(effort: ReasoningEffort): 'off' | 'low' | 'high' | 'max' {
   return effort === 'ultra' ? 'max' : effort
 }
 

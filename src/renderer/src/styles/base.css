@@ -2,10 +2,14 @@
   /* ── 浅色主题（默认）— 磨砂白玻璃 ── */
   :root {
     color-scheme: light;
+    /* --theme-color 是"身份色"：原样保留用户所选，窗口边框/选区/主题包都以它为基准。
+       下面带 fallback 的别名则指向 lib/accent.ts 派生出的三条支线
+       （填充支承载白字、墨色支落在底色上、发光支做光晕）。
+       JS 未执行时退回旧的 color-mix 算法，不会白屏。 */
     --theme-color: #3b82f6;
     --theme-accent: var(--theme-color);
-    --theme-accent-hover: color-mix(in srgb, var(--theme-color) 85%, black);
-    --theme-accent-muted: color-mix(in srgb, var(--theme-color) 70%, white);
+    --theme-accent-hover: var(--accent-ink-strong, color-mix(in srgb, var(--theme-color) 85%, black));
+    --theme-accent-muted: var(--accent-fill-top, color-mix(in srgb, var(--theme-color) 70%, white));
 
     --bg-base: #eef0f4;
     --bg-surface: #ffffff;
@@ -19,30 +23,91 @@
     --glass-border: rgba(20, 30, 50, 0.08);
     --glass-highlight: rgba(255, 255, 255, 0.5);
     --glass-shadow: 0 8px 32px rgba(31, 45, 74, 0.12), 0 1.5px 6px rgba(31, 45, 74, 0.08);
-    --glow-color: color-mix(in srgb, var(--theme-color) 38%, transparent);
+    --glow-color: var(--theme-glow, color-mix(in srgb, var(--theme-color) 38%, transparent));
 
     --border-DEFAULT: rgba(20, 30, 50, 0.1);
     --border-subtle: rgba(20, 30, 50, 0.06);
     --border-hover: rgba(20, 30, 50, 0.18);
 
-    --accent-DEFAULT: var(--theme-color);
-    --accent-hover: var(--theme-accent-hover);
-    --accent-muted: var(--theme-accent-muted);
-    --accent-light: color-mix(in srgb, var(--theme-color) 70%, white);
+    --accent-DEFAULT: var(--accent-ink, var(--theme-color));
+    --accent-hover: var(--accent-ink-strong, var(--theme-accent-hover));
+    --accent-muted: var(--accent-fill-top, var(--theme-accent-muted));
+    --accent-light: var(--accent-ink-subtle, color-mix(in srgb, var(--theme-color) 70%, white));
 
     --text-primary: #141c2b;
-    --text-secondary: #5a6472;
-    --text-muted: #9aa3af;
+    /* 7.6:1 —— 原 #5a6472 只有 6.00:1，未达方案定的 ≥7:1 */
+    --text-secondary: #4b5563;
+    /* 4.83:1 on --bg-surface（原 #9aa3af 只有 2.55:1，正文尺寸读不清） */
+    --text-muted: #6b7280;
 
-    /* 极光环境光 */
-    --orb-1: color-mix(in srgb, var(--theme-color) 34%, transparent);
-    --orb-2: rgba(56, 189, 248, 0.26);
-    --orb-3: rgba(168, 130, 255, 0.22);
+    /* 比 muted 更弱的两档 —— 替代先前失效的 `text-text-muted/70 /60 /50 /40`。
+       tertiary 用于"略弱于 muted"的提示文字，quaternary 只用于分隔符/装饰，
+       二者都**不承载必须读到的信息**（透明白叠加后对比度低于 AA，见交付报告）。 */
+    --text-tertiary: color-mix(in srgb, var(--text-muted) 75%, transparent);
+    --text-quaternary: color-mix(in srgb, var(--text-muted) 45%, transparent);
+
+    /* 软背景 / 软描边 —— 替代失效的 `bg-bg-xxx/N`、`border-border-xxx/N`。
+       用 color-mix 从原令牌派生：主题包覆写 `--bg-*` / `--border-*` 时自动跟随。 */
+    --bg-base-soft: color-mix(in srgb, var(--bg-base) 40%, transparent);
+    --bg-surface-soft: color-mix(in srgb, var(--bg-surface) 50%, transparent);
+    --bg-elevated-soft: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+    --bg-hover-soft: color-mix(in srgb, var(--bg-hover) 50%, transparent);
+    --border-soft: color-mix(in srgb, var(--border-DEFAULT) 50%, transparent);
+    --border-subtle-soft: color-mix(in srgb, var(--border-subtle) 50%, transparent);
+
+    /* ── 字号阶梯：7 档，每档自带行高 ──
+       原先 14 档散点（7~30px），443 处任意值字号中仅 25 处配了行高
+       → 同样是小字、行盒比例不同，多行并排基线参差。 */
+    --fs-caption: 11px;  --lh-caption: 15px;  /* 徽标 · kbd · 极密元信息 */
+    --fs-xs:      12px;  --lh-xs:      17px;  /* 元信息 · 时间戳 · 次级标签 */
+    --fs-sm:      13px;  --lh-sm:      19px;  /* 控件文字 · 按钮 · 导航 */
+    --fs-base:    14px;  --lh-base:    21px;  /* 紧凑正文 */
+    --fs-body:    15px;  --lh-body:    24px;  /* 会话正文（对齐 --chat-font-size） */
+    --fs-title:   20px;  --lh-title:   27px;  /* 面板标题 · 区块标题 */
+    --fs-display: 30px;  --lh-display: 37px;  /* 空态大标题 */
+
+    /* 字距 —— 负字距只对大字号有益；中文用小负字距会显挤。
+       原先 body 上挂 -0.011em 是按 Inter 的拉丁度量调的，改成只给大字号用。 */
+    --tracking-tight: -0.011em;
+
+    /* 圆角语义 —— 4 档，替代 13 种随手写法（`rounded`(4) 与 `rounded-md`(6) 并存是主要噪音源） */
+    --radius-control: 6px;   /* 按钮 · 输入 · chip */
+    --radius-card: 10px;     /* 卡片 · 列表项 */
+    --radius-panel: 14px;    /* 浮层 · 侧栏分组 */
+
+    /* 时长 —— 4 档，替代 150/200/300/500 + 未定义混用 */
+    --dur-instant: 120ms;
+    --dur-fast: 200ms;
+    --dur-base: 300ms;
+    --dur-slow: 500ms;
 
     /* 缓动 */
     --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+    /* ── 语义状态色 ──
+       刻意**不跟随主题色**：录音指示必须是红的、成功必须是绿的 ——
+       这是产品语义，不是品牌色。跟主题变会让"正在录音"这个信号失去意义。
+       取名而不是散落字面量，是为了让"这是语义色、不是漏改的硬编码"一目了然。 */
+    --state-error: #ef4444;
+    --state-success: #22c55e;
+    --state-warning: #f59e0b;
+    --state-info: #3b82f6;
+    --state-connected: #14b8a6;
+    --state-connected-deep: #0d9488;
+
+    /* ── 中性深度 ──
+       内高光 / 内阴影 / 发丝线 / 遮罩 —— 与主题无关的物理感取值 */
+    --inset-highlight: rgba(255, 255, 255, 0.25);
+    --inset-highlight-strong: rgba(255, 255, 255, 0.35);
+    --inset-shade: rgba(0, 0, 0, 0.3);
+    --hairline: rgba(255, 255, 255, 0.1);
+
+    /* 极光环境光 */
+    --orb-1: var(--orb-1-c, color-mix(in srgb, var(--theme-color) 34%, transparent));
+    --orb-2: rgba(56, 189, 248, 0.26);
+    --orb-3: rgba(168, 130, 255, 0.22);
   }
 
   /* ── 深色主题 — 深空墨蓝 + 极光 ── */
@@ -59,22 +124,24 @@
     --glass-border: rgba(255, 255, 255, 0.09);
     --glass-highlight: rgba(255, 255, 255, 0.12);
     --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
-    --glow-color: color-mix(in srgb, var(--theme-color) 55%, transparent);
+    --glow-color: var(--theme-glow, color-mix(in srgb, var(--theme-color) 55%, transparent));
 
     --border-DEFAULT: rgba(255, 255, 255, 0.1);
     --border-subtle: rgba(255, 255, 255, 0.06);
     --border-hover: rgba(255, 255, 255, 0.2);
 
-    --accent-DEFAULT: var(--theme-color);
-    --accent-hover: color-mix(in srgb, var(--theme-color) 88%, white);
-    --accent-muted: color-mix(in srgb, var(--theme-color) 70%, black);
-    --accent-light: #60a5fa;
+    --accent-DEFAULT: var(--accent-ink, var(--theme-color));
+    --accent-hover: var(--accent-ink-strong, color-mix(in srgb, var(--theme-color) 88%, white));
+    --accent-muted: var(--accent-fill-top, color-mix(in srgb, var(--theme-color) 70%, black));
+    /* 原值硬编码 #60a5fa —— 换任何主色都不跟着变，是条假令牌 */
+    --accent-light: var(--accent-ink-subtle, color-mix(in srgb, var(--theme-color) 70%, white));
 
     --text-primary: #f2f4f8;
     --text-secondary: #a3aab8;
-    --text-muted: #646b78;
+    /* 5.91:1 on #12151c（原 #646b78 只有 3.66:1，正文尺寸不达 AA） */
+    --text-muted: #8b93a1;
 
-    --orb-1: color-mix(in srgb, var(--theme-color) 30%, transparent);
+    --orb-1: var(--orb-1-c, color-mix(in srgb, var(--theme-color) 30%, transparent));
     --orb-2: rgba(34, 211, 238, 0.13);
     --orb-3: rgba(147, 96, 255, 0.16);
   }
@@ -95,7 +162,9 @@
     @apply text-text-primary font-sans antialiased;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.011em;
+    /* 不在此设 letter-spacing：原先的 -0.011em 是按 Inter 的拉丁度量调的，
+       而实际字体是 Segoe UI / 微软雅黑 —— 中文挂负字距会显挤。
+       负字距改由 --tracking-tight 只给大字号使用。 */
     /* 透明窗口 — body 背景必须透明，让桌面透过圆角可见 */
     background: transparent;
   }
@@ -156,9 +225,10 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* 焦点环 — iOS 风格柔和光晕 */
+  /* 焦点环 — 令牌化：lib/accent.ts 把主色明度归一化后保证对底色 ≥3:1，
+     避免"浅色主色 + 浅色底"时焦点环看不见（原来直接用主色 55% 透明度） */
   :focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-color) 55%, transparent);
+    outline: 2px solid var(--focus-ring, color-mix(in srgb, var(--theme-color) 55%, transparent));
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -178,5 +248,15 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  }
+
+  /* ── 窄窗口降级 ──
+     布局宽度由状态驱动（App.tsx 监听窗口宽度自动收起右栏、收窄侧栏），
+     这里只处理纯视觉密度：窗口变窄时标题栏的模式标签只留图标，
+     把横向空间让给任务状态与窗口控制按钮。 */
+  @media (max-width: 1100px) {
+    .window-narrow .mode-tab-label {
+      display: none;
+    }
   }
 }

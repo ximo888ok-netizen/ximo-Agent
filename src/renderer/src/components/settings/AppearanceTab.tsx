@@ -1,5 +1,6 @@
 import { Type, Sun, Moon, Palette, CheckCircle2 } from 'lucide-react'
 import type { AppSettings, FontSize } from '@shared/types'
+import { readableOn } from '@renderer/lib/accent'
 import { THEME_PRESETS, SectionTitle } from './shared-components'
 import { ThemePackSection } from './ThemePackSection'
 import { ThemeEditor } from './ThemeEditor/ThemeEditor'
@@ -39,7 +40,7 @@ export function AppearanceTab({
       {/* 字体大小 */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <Type size={15} className="text-accent" />
+          <Type size={16} className="text-accent" />
           <label className="text-sm font-medium text-text-primary">消息字体大小</label>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -47,14 +48,14 @@ export function AppearanceTab({
             <button
               key={fs}
               onClick={() => update({ fontSize: fs })}
-              className={`rounded-lg border p-3 text-center transition-colors ${
+              className={`rounded-card border p-3 text-center transition-colors ${
                 local.fontSize === fs ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
               }`}
             >
               <p className={`font-medium ${local.fontSize === fs ? 'text-accent' : 'text-text-primary'}`} style={{ fontSize: fs === 'sm' ? '13px' : fs === 'md' ? '15px' : '17px' }}>
                 {fs === 'sm' ? '小' : fs === 'md' ? '中' : '大'}
               </p>
-              <p className="mt-0.5 text-[10px] text-text-muted">{fs === 'sm' ? '13px' : fs === 'md' ? '15px' : '17px'}</p>
+              <p className="mt-0.5 text-caption text-text-muted">{fs === 'sm' ? '13px' : fs === 'md' ? '15px' : '17px'}</p>
             </button>
           ))}
         </div>
@@ -63,26 +64,26 @@ export function AppearanceTab({
       {/* 明暗主题 */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          {local.theme === 'dark' ? <Moon size={15} className="text-accent" /> : <Sun size={15} className="text-accent" />}
+          {local.theme === 'dark' ? <Moon size={16} className="text-accent" /> : <Sun size={16} className="text-accent" />}
           <label className="text-sm font-medium text-text-primary">界面主题</label>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => update({ theme: 'light' })}
-            className={`rounded-lg border p-3 text-center transition-colors ${
+            className={`rounded-card border p-3 text-center transition-colors ${
               local.theme === 'light' ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
             }`}
           >
-            <Sun size={18} className={`mx-auto ${local.theme === 'light' ? 'text-accent' : 'text-text-muted'}`} />
+            <Sun size={16} className={`mx-auto ${local.theme === 'light' ? 'text-accent' : 'text-text-muted'}`} />
             <p className={`mt-1 text-xs font-medium ${local.theme === 'light' ? 'text-accent' : 'text-text-primary'}`}>浅色</p>
           </button>
           <button
             onClick={() => update({ theme: 'dark' })}
-            className={`rounded-lg border p-3 text-center transition-colors ${
+            className={`rounded-card border p-3 text-center transition-colors ${
               local.theme === 'dark' ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-border-hover'
             }`}
           >
-            <Moon size={18} className={`mx-auto ${local.theme === 'dark' ? 'text-accent' : 'text-text-muted'}`} />
+            <Moon size={16} className={`mx-auto ${local.theme === 'dark' ? 'text-accent' : 'text-text-muted'}`} />
             <p className={`mt-1 text-xs font-medium ${local.theme === 'dark' ? 'text-accent' : 'text-text-primary'}`}>深色</p>
           </button>
         </div>
@@ -91,7 +92,7 @@ export function AppearanceTab({
       {/* 主题颜色 */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <Palette size={15} className="text-accent" />
+          <Palette size={16} className="text-accent" />
           <label className="text-sm font-medium text-text-primary">主题颜色</label>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -99,14 +100,14 @@ export function AppearanceTab({
             <button
               key={preset.value}
               onClick={() => update({ themeColor: preset.value })}
-              className={`h-8 w-8 rounded-full transition-all ${
+              className={`h-8 w-8 rounded-full transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] ${
                 local.themeColor.toLowerCase() === preset.value.toLowerCase() ? 'ring-2 ring-offset-2 ring-offset-bg-surface' : 'hover:scale-110'
               }`}
               style={{ backgroundColor: preset.value, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
               title={preset.name}
             >
               {local.themeColor.toLowerCase() === preset.value.toLowerCase() && (
-                <CheckCircle2 size={14} className="mx-auto text-white drop-shadow" />
+                <CheckCircle2 size={13} className="mx-auto drop-shadow" style={{ color: readableOn(preset.value) }} />
               )}
             </button>
           ))}
@@ -114,13 +115,13 @@ export function AppearanceTab({
             className="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-dashed border-border text-text-muted transition-colors hover:border-accent hover:text-accent"
             title="自定义颜色"
           >
-            <Palette size={14} />
+            <Palette size={13} />
             <input type="color" value={local.themeColor} onChange={(e) => update({ themeColor: e.target.value })} className="absolute inset-0 cursor-pointer opacity-0" />
           </label>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <span className="text-xs text-text-muted">当前：</span>
-          <span className="rounded bg-bg-elevated px-2 py-0.5 font-mono text-xs text-text-secondary">{local.themeColor}</span>
+          <span className="rounded-control bg-bg-elevated px-2 py-0.5 font-mono text-xs text-text-secondary">{local.themeColor}</span>
         </div>
       </div>
 
