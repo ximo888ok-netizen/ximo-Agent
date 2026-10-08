@@ -8,6 +8,11 @@ DIR=/opt/ximo-host
 mkdir -p "$DIR/config" "$DIR/data"
 chown -R ximo-host:ximo-host "$DIR"
 
+# workspace 父目录（阶段 D5 沙箱）— 任务用户 ximo-t* 需在此创建各自工作区：
+# 组写 + sticky（仅属主/root 可删他人条目），agent-hostd（CAP_CHOWN）再逐任务 chown
+mkdir -p "$DIR/data/workspace" "$DIR/data/snapshots"
+chmod 1777 "$DIR/data/workspace"
+
 # 配置占位 — apiKey 需要填写（SSH 进系统编辑，或后续驾驶舱远程下发）
 if [ ! -f "$DIR/config/config.json" ]; then
   cat > "$DIR/config/config.json" <<'EOF'

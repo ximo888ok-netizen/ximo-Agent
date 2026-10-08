@@ -69,6 +69,9 @@ async function checkHealth(token, { requireDesktop = false } = {}) {
     if (requireDesktop) {
       record('[3b] 桌面栈就绪（Xvfb 会话）', body.desktop?.enabled === true,
         body.desktop ? `display=${body.desktop.display}` : '主机未上报 desktop 状态（镜像缺桌面栈）')
+      // [3c] 按任务用户沙箱（阶段 D5）— 镜像内应为 uid 级（非 root 或用户池缺失即降级）
+      record('[3c] 按任务用户沙箱（uid 级）', body.sandbox?.mode === 'uid',
+        body.sandbox ? `mode=${body.sandbox.mode} pool=${body.sandbox.pool}${body.sandbox.reason ? ' — ' + body.sandbox.reason : ''}` : '主机未上报 sandbox 状态')
     } else if (body.desktop) {
       console.log(`ℹ 桌面栈：${body.desktop.enabled ? '已启用' : '未启用'}（display=${body.desktop.display}）— 加 --require-desktop 可作为硬断言`)
     }

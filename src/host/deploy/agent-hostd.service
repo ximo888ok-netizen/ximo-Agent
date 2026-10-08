@@ -9,8 +9,13 @@ Wants=network-online.target xvfb@99.service ximo-wm.service
 
 [Service]
 Type=simple
-# 用专用低权用户跑（勿用 root）—— 阶段 3 会进一步按任务拆分用户
-User=ximo-host
+# root + 最小能力集（阶段 D5 按任务用户沙箱）—— 需 CAP_SETUID/SETGID 把 worker
+# 降权到任务用户（ximo-t1..t4）、CAP_CHOWN 移交工作区所有权、CAP_KILL 清理越界 worker。
+# CapabilityBoundingSet 是白名单：未列出即不可用（其余能力全部丢弃）。
+# 注意不能用 NoNewPrivileges=true —— 它会阻止 fork 出的 worker 通过 setuid 降权。
+User=root
+CapabilityBoundingSet=CAP_SETUID CAP_SETGID CAP_CHOWN CAP_KILL
+AmbientCapabilities=
 ExecStart=/usr/bin/node /opt/ximo-host/dist-host/agent-hostd.cjs
 Environment=XIMO_HOST_LISTEN=0.0.0.0:17890
 Environment=XIMO_HOST_DIR=/opt/ximo-host/config
@@ -22,8 +27,7 @@ RestartSec=3
 # 日志双写 journal + 控制台 — QEMU 串口(-serial file:...)由此捕获首启令牌回显
 StandardOutput=journal+console
 StandardError=journal+console
-# 基础沙箱 — 阶段 3 收紧为按任务隔离
-NoNewPrivileges=true
+# 文件系统加固 — 与能力集互补（root 但系统目录只读）
 ProtectSystem=strict
 ReadWritePaths=/opt/ximo-host
 PrivateTmp=true

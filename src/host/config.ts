@@ -84,3 +84,28 @@ export function workspaceDir(taskId: string): string {
   mkdirSync(dir, { recursive: true })
   return dir
 }
+
+/**
+ * 工作区子卷化（阶段 D5）— btrfs 上把任务工作区做成子卷，使 btrfs 原生快照可用
+ * （非子卷目录无法被 `btrfs subvolume snapshot` 快照）。
+ * 幂等：已是子卷或非 btrfs 时静默跳过（快照实现会自动回退 rsync 复制）。
+ */
+export function ensureWorkspaceSubvolume(taskId: string): void {
+  const dir = workspaceDir(taskId)
+  if (process.env.XIMO_WORKSPACE_SUBVOL === '0') return
+  try {
+    // 能力探测：仅 btrfs 才建子卷（stat -f 在非 btrfs 上返回 ext4/overlay 等）
+    const { execFileSync } = require('child_process') as typeof import('child_process')
+    const fsType = execFileSync('stat', ['-f', '-c', '%T', dataDir()], { encoding: 'utf-8', timeout: 5000 }).trim()
+    if (fsType !== 'btrfs') return
+    // 已是子卷（btrfs subvolume show 成功）则跳过
+    try {
+      execFileSync('btrfs', ['subvolume', 'show', dir], { stdio: 'ignore', timeout: 5000 })
+      return
+    } catch { /* 非子卷 → 继续创建 */ }
+    // 空目录（仅 mkdir 产生）可直接转子卷；非空则不动（避免丢数据）
+    const entries = require('fs').readdirSync(dir) as string[]
+    if (entries.length > 0) return
+    execFileSync('btrfs', ['subvolume', 'create', dir], { stdio: 'ignore', timeout: 10_000 })
+  } catch { /* btrfs-progs 缺失/权限不足 — 快照回退 rsync，不阻断任务 */ }
+}

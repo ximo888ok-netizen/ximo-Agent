@@ -33,6 +33,15 @@ fi
 # root 密码锁死 — 入口只有 SSH 密钥（可选注入）与 Hyper-V/QEMU 控制台
 passwd -l root >/dev/null 2>&1 || true
 
+# 任务用户池（阶段 D5 按任务用户沙箱）— 每任务以专用系统用户跑 worker，
+# 任务间在工作区所有权层面隔离（进程隔离之外的第二道墙）
+for i in 1 2 3 4; do
+  if ! id -u "ximo-t$i" >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell "$NOLOGIN" "ximo-t$i"
+  fi
+done
+echo "[ximo-os] 任务用户池就绪：ximo-t1..t4（沙箱 uid 级隔离）"
+
 # DNS — mkosi 会把构建机的 resolv.conf（如 127.0.0.53 stub）拷进镜像，guest 内不可达
 # （CI 实测：agent-hostd 起来了但 LLM 请求 fetch failed）。启用 resolved：
 # DNS 由 DHCP 提供（QEMU slirp=10.0.2.3 / 云=真实 DHCP），resolv.conf 指向本地 stub

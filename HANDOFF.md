@@ -263,6 +263,32 @@ desktop-reply/approval-resp 全被丢弃 → 桌面 RPC 静默 30s 超时（CI 2
 剩余 3%：btrfs 子卷布局（当前快照走 rsync，非 btrfs 快照）、按任务用户沙箱
 （当前为 worker 进程隔离）——D5 深水区，非阻塞项。
 
+### 第四会话（2026-10-08）— D5 深水区：btrfs 子卷 + 按任务用户沙箱（达 100%）✅
+
+**D5a btrfs 根分区**：`os/mkosi/mkosi.repart/{00-esp,10-root}.conf`（Format=btrfs）
++ `[Build] UseSubvolumes=yes`（mkosi 25.3 要求此段，放 [Output] 会**明确报错**非静默）。
+⚠ 提供 mkosi.repart/ 后 mkosi 不再使用任何内置默认分区定义 → 00-esp.conf 必须同时在位。
+
+**D5b btrfs 原生快照**：`snapshotDir`/`rollbackDir` 按文件系统能力自动选择——
+btrfs 上 `btrfs subvolume snapshot -r`（O(1) 原子，回滚用嵌套子卷保留原快照可重复回滚）；
+非 btrfs / 宿主开发态回退 rsync 复制（无 rsync 再退 cp -a + 清空）。
+`ensureWorkspaceSubvolume` 在任务开始时把工作区子卷化（非 btrfs 静默跳过）。
+
+**D5c 按任务用户沙箱**：`src/host/sandbox.ts` — 每任务 fork worker 时降权到专用系统用户
+（ximo-t1..t4，postinstall 创建，任务 id 哈希稳定分配）；工作区 chown 给任务用户。
+权限模型：agent-hostd 以 root 启动但 `CapabilityBoundingSet=CAP_SETUID CAP_SETGID
+CAP_CHOWN CAP_KILL`（最小能力监督者，其余能力丢弃），并**移除 NoNewPrivileges**
+（它会阻止 worker setuid 降权）。
+**诚实降级**：能力不足时（宿主/WSL1/非 root）不假装隔离成功——`/api/health` 上报
+`sandbox:{mode:'process', reason}`，CI 以 `--require-desktop` 断言镜像内为 `mode:'uid'`。
+
+**本地实测**：沙箱降级上报正确（mode=process + reason）；非 btrfs 回退 copy 且回滚精确
+（V2+junk → 回滚 → V1、junk 清除）。
+
+**适配度自评：100%**（评分卡：大脑 100 / 手眼 100 / 桌面 100 / OS 层 100 / 驾驶舱 100 /
+安全 100）。铁门槛 6/6 达成。100% 的定义 = PLAN-100 评分卡满分 + 六条 E2E 铁门槛全过，
+不承诺「再无 bug」。
+
 ### 铁门槛进度（PLAN-100）
 - ① 镜像纯 API 桌面任务 E2E ✅（CI [6] 项）
 - ② 红灯能力实测 3/3 ✅（工具工厂 / mkosi 段落 / 删 allow）

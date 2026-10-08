@@ -10,7 +10,7 @@ import { createServer } from 'http'
 import { randomBytes } from 'crypto'
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { execFile } from 'child_process'
-import { join } from 'path'
+import { join, dirname } from 'path'
 import { WebSocketServer, WebSocket } from 'ws'
 import { parseClientMsg, HOST_VERSION, HostMsg } from './protocol'
 import { DESKTOP_ACTIONS } from '../shared/types/cockpit'
@@ -18,7 +18,8 @@ import { runTask } from './agent/task-runner'
 import { fork } from 'child_process'
 import { DesktopBus } from './desktop/bus'
 import { ScreenCapture } from './desktop/screen'
-import { HostConfig, loadConfig, tasksDir, workspaceDir, dataDir, ensureToken } from './config'
+import { HostConfig, loadConfig, tasksDir, workspaceDir, dataDir, ensureToken, ensureWorkspaceSubvolume } from './config'
+import { sandboxStatus, prepareTaskSandbox } from './sandbox'
 import type { HostTaskRecord, RunnerEvent } from '../shared/types/cockpit'
 
 /** 任务记录 — 与驾驶舱共享的类型（REST /api/tasks 与 WS 增量描述同一实体） */
@@ -40,21 +41,80 @@ export interface HostServer {
   _tasks: Map<string, { rec: TaskRecord; controller: AbortController }>
 }
 
-/** 工作区快照 —— rsync -a --delete（保留权限/时间戳，回滚为精确还原）；
- *  无 rsync 时（宿主开发态）回退 cp -a 全量拷贝（镜像内恒有 rsync） */
-function snapshotDir(src: string, dest: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    mkdirSync(dest, { recursive: true })
-    execFile('rsync', ['-a', '--delete', `${src.replace(/\/$/, '')}/`, dest], { timeout: 120_000 }, (err) => {
-      if (!err) return resolve()
-      // rsync 缺失（ENOENT）→ cp -a 回退；其他错误（权限/磁盘）如实上报
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') return reject(err)
-      // cp 回退需自行实现 --delete 语义：先清空目标再加源内容，
-      // 否则回滚后"快照里没有的文件"会残留（非精确还原）
-      const cleaned = dest.replace(/\/$/, '')
-      execFile('bash', ['-c', `rm -rf -- "${cleaned}"/* "${cleaned}"/.[!.]* 2>/dev/null; cp -a "${src.replace(/\/$/, '')}/." "${cleaned}/"`], { timeout: 120_000 }, (e2) => (e2 ? reject(e2) : resolve()))
-    })
+const execFileP = (cmd: string, args: string[], timeout = 120_000): Promise<string> =>
+  new Promise((resolve, reject) => {
+    execFile(cmd, args, { timeout, maxBuffer: 8 << 20 }, (err, stdout) => (err ? reject(err) : resolve(String(stdout))))
   })
+
+/** 判断路径是否在 btrfs 上（btrfs 原生快照优先，能力探测失败即回退） */
+async function isBtrfs(path: string): Promise<boolean> {
+  try {
+    const out = await execFileP('stat', ['-f', '-c', '%T', path], 5000)
+    return out.trim() === 'btrfs'
+  } catch { return false }
+}
+
+/**
+ * 打快照（阶段 D5）——两种实现按文件系统能力自动选择：
+ *  - btrfs：`btrfs subvolume snapshot -r` 只读快照（近零成本、O(1)、原子）
+ *    ⚠ 要求 src 本身是子卷；不是子卷时回退复制（btrfs 上非子卷目录无法快照）
+ *  - 其他 fs / 宿主开发态：rsync -a --delete 复制（无 rsync 再退 cp -a + 清空）
+ */
+async function snapshotDir(src: string, dest: string): Promise<'btrfs' | 'copy'> {
+  const srcPath = src.replace(/\/$/, '')
+  if (await isBtrfs(srcPath)) {
+    try {
+      // 先探测 src 是否子卷（btrfs subvolume show 对普通目录非零退出）
+      await execFileP('btrfs', ['subvolume', 'show', srcPath], 10_000)
+      mkdirSync(dirname(dest), { recursive: true })
+      await execFileP('btrfs', ['subvolume', 'snapshot', '-r', srcPath, dest])
+      return 'btrfs'
+    } catch { /* 非子卷或 btrfs 不可用 → 回退复制 */ }
+  }
+  mkdirSync(dest, { recursive: true })
+  try {
+    await execFileP('rsync', ['-a', '--delete', `${srcPath}/`, dest])
+    return 'copy'
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e
+    // cp 回退需自行实现 --delete 语义：先清空目标再加源内容，
+    // 否则回滚后「快照里没有的文件」会残留（非精确还原）
+    const cleaned = dest.replace(/\/$/, '')
+    await execFileP('bash', ['-c', `rm -rf -- "${cleaned}"/* "${cleaned}"/.[!.]* 2>/dev/null; cp -a "${srcPath}/." "${cleaned}/"`])
+    return 'copy'
+  }
+}
+
+/**
+ * 回滚 —— 与快照实现对应：
+ *  - btrfs 快照（只读子卷）：删当前目录 → 用快照内容建可写子卷（保留原快照供再次回滚）
+ *  - 复制快照：反向 rsync/cp（精确还原语义）
+ */
+async function rollbackDir(snap: string, dest: string): Promise<void> {
+  const snapPath = snap.replace(/\/$/, '')
+  const destPath = dest.replace(/\/$/, '')
+  let isSnapshotSubvol = false
+  try {
+    await execFileP('btrfs', ['subvolume', 'show', snapPath], 10_000)
+    isSnapshotSubvol = true
+  } catch { /* 复制快照 */ }
+
+  if (isSnapshotSubvol) {
+    // 删除现工作区（可能是子卷 → 需 subvolume delete；普通目录 → rm -rf）
+    try { await execFileP('btrfs', ['subvolume', 'delete', destPath]) }
+    catch { await execFileP('bash', ['-c', `rm -rf -- "${destPath}"`]) }
+    // 从只读快照建可写子卷（快照本身保留，可重复回滚到同一快照点）
+    await execFileP('btrfs', ['subvolume', 'snapshot', snapPath, destPath])
+    return
+  }
+  // 复制快照回滚：先清空再加回（--delete 语义）
+  mkdirSync(destPath, { recursive: true })
+  try {
+    await execFileP('rsync', ['-a', '--delete', `${snapPath}/`, destPath])
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e
+    await execFileP('bash', ['-c', `rm -rf -- "${destPath}"/* "${destPath}"/.[!.]* 2>/dev/null; cp -a "${snapPath}/." "${destPath}/"`])
+  }
 }
 
 export function createHostServer(opts?: {
@@ -132,7 +192,13 @@ export function createHostServer(opts?: {
     signal: AbortSignal,
   ): Promise<{ status: 'completed' | 'failed' | 'cancelled'; result: string; error?: string }> {
     return new Promise((resolvePromise) => {
-      const child = fork(workerPath, { env: { ...process.env, XIMO_TASK_WORKER: '1' }, silent: true })
+      // 按任务用户沙箱（阶段 D5）— 能力不足时 prepareTaskSandbox 返回 {}（仅进程隔离）
+      const sandboxIds = prepareTaskSandbox(id, workspaceDir(id))
+      const child = fork(workerPath, {
+        env: { ...process.env, XIMO_TASK_WORKER: '1' },
+        silent: true,
+        ...(sandboxIds.uid !== undefined ? { uid: sandboxIds.uid, gid: sandboxIds.gid } : {}),
+      })
       let settled = false
       const finish = (out: { status: 'completed' | 'failed' | 'cancelled'; result: string; error?: string }): void => {
         if (settled) return
@@ -213,6 +279,7 @@ function auditBoundary(action: 'start' | 'stop', taskId: string, workspace?: str
       rec.status = 'running'
       persist(rec)
       broadcast({ t: 'task.status', id, stage: 'running' })
+      ensureWorkspaceSubvolume(id) // btrfs 上使工作区可被原生快照（非 btrfs 静默跳过）
       auditBoundary('start', id, workspaceDir(id))
 
       let seq = 0
@@ -264,12 +331,15 @@ function auditBoundary(action: 'start' | 'stop', taskId: string, workspace?: str
     }
     if (req.url === '/api/health') {
       if (!authed) return json(401, { ok: false, error: '需要 Bearer 令牌' })
+      const sandbox = sandboxStatus()
       return json(200, {
         ok: true,
         name: 'ximo-host',
         version: HOST_VERSION,
         mode: config.mode,
         desktop: { enabled: desktopBus.enabled, display: config.display },
+        // 沙箱模式（阶段 D5）— 运维/CI 可断言是 uid 级还是仅进程级
+        sandbox: { mode: sandbox.mode, pool: sandbox.pool.length, reason: sandbox.reason },
       })
     }
     if (req.url === '/api/tasks') {
@@ -297,12 +367,12 @@ function auditBoundary(action: 'start' | 'stop', taskId: string, workspace?: str
           if (!/^[A-Za-z0-9_.-]+$/.test(snapId)) return json(400, { ok: false, error: 'snap 参数非法' })
           const src = join(snaps, snapId)
           if (!existsSync(src)) return json(404, { ok: false, error: `快照不存在: ${snapId}` })
-          await snapshotDir(src, ws)
+          await rollbackDir(src, ws)
           return json(200, { ok: true, rolledBack: taskId, snap: snapId })
         }
         const snapId = `snap_${Date.now()}`
-        await snapshotDir(ws, join(snaps, snapId))
-        return json(200, { ok: true, task: taskId, snap: snapId, path: join(snaps, snapId) })
+        const kind = await snapshotDir(ws, join(snaps, snapId))
+        return json(200, { ok: true, task: taskId, snap: snapId, kind, path: join(snaps, snapId) })
       } catch (e) {
         return json(500, { ok: false, error: (e as Error).message.slice(0, 200) })
       }

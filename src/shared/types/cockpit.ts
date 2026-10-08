@@ -183,6 +183,8 @@ export interface HostHealth {
   mode?: string
   /** 桌面栈状态（阶段 B）— CI 冒烟据此断言 X 会话在位 */
   desktop?: { enabled: boolean; display: string }
+  /** 沙箱模式（阶段 D5）— 'uid'=每任务专用系统用户；'process'=仅进程隔离（能力降级） */
+  sandbox?: { mode: 'uid' | 'process'; pool: number; reason?: string }
   error?: string
 }
 
