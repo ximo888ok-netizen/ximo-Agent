@@ -125,7 +125,7 @@ async function main() {
   }
   record('[2] 获取访问令牌', true, `长度 ${token.length}`)
 
-  await checkHealth(token)
+  await checkHealth(token, { requireDesktop: process.argv.includes('--require-desktop') })
 
   // [4] 派任务 → completed
   console.log('\n派发验收任务（创建工作区文件）…')
@@ -162,6 +162,9 @@ async function main() {
     const browserOk = t7.toolResults.some((r) => r.name === 'browser' && r.success)
     record('[7] 浏览器语义化 API 在环（browser navigate/extract 成功）', browserOk,
       browserOk ? `任务终态 ${t7.status}` : `status=${t7.status} tools=${t7.toolResults.map((r) => r.name + (r.success ? '✓' : '✗')).join(',') || '无'} err=${(t7.error ?? '').slice(0, 100)}`)
+    if (!browserOk) {
+      for (const r of t7.toolResults) console.log(`    [${r.name}] ${String(r.content).slice(0, 300)}`)
+    }
   }
 
   const failed = results.filter((r) => !r.ok)

@@ -24,7 +24,10 @@ export interface CdpOptions {
   headless?: boolean
 }
 
-const DEFAULT_CANDIDATES = ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable']
+const DEFAULT_CANDIDATES = [
+  'chromium', '/usr/bin/chromium', '/usr/lib/chromium/chromium',
+  'chromium-browser', 'google-chrome', 'google-chrome-stable',
+]
 
 export class CdpClient {
   private ws: WebSocket | null = null
@@ -45,25 +48,33 @@ export class CdpClient {
     if (this.starting) return this.starting
     this.starting = (async () => {
       const bin = await this.findChromium()
-      const userDir = `/tmp/ximo-chromium-${this.opts.port}`
+      // user-data-dir 按 pid 唯一 —— 并发任务各有 worker/进程，共用同一 profile 会互相锁死
+      const userDir = `/tmp/ximo-chromium-${this.opts.port}-${process.pid}`
       if (!existsSync(userDir)) mkdirSync(userDir, { recursive: true })
       // --no-sandbox：appliance 形态（专用用户 + 隔离 VM）下 chromium userns 沙箱
       // 在 Debian 默认 AppArmor 上会被拒——该沙箱由 VM 边界与按任务用户替代
+      // 捕获 chromium 的 stderr —— 启动失败时给出可诊断的原因（而非只报「端口未就绪」）
+      // 沙箱下 worker 降权到任务用户，HOME/HOME 目录不可写等常见失败都在这里显现
       this.chromiumProc = spawn(bin, [
         '--headless=new',
         `--remote-debugging-port=${this.opts.port}`,
         '--no-sandbox',
         '--disable-gpu',
+        '--disable-dev-shm-usage',
         '--no-first-run',
         `--user-data-dir=${userDir}`,
         'about:blank',
-      ], { stdio: 'ignore', detached: true })
+      ], { stdio: ['ignore', 'ignore', 'pipe'], detached: true })
+      let stderrBuf = ''
+      this.chromiumProc.stderr?.on('data', (d) => { stderrBuf = (stderrBuf + String(d)).slice(-2000) })
       this.chromiumProc.unref()
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 60; i++) {
         if (await this.portAlive()) return
+        if (this.chromiumProc.exitCode !== null) break
         await new Promise((r) => setTimeout(r, 250))
       }
-      throw new Error(`chromium CDP 端口 ${this.opts.port} 10s 内未就绪`)
+      const hint = stderrBuf.trim() ? `：${stderrBuf.trim().split('\n').slice(-3).join(' | ')}` : ''
+      throw new Error(`chromium CDP 端口 ${this.opts.port} 15s 内未就绪（bin=${bin}）${hint}`)
     })().finally(() => { this.starting = null })
     return this.starting
   }
