@@ -14,7 +14,7 @@ import { join, dirname } from 'path'
 import { WebSocketServer, WebSocket } from 'ws'
 import { parseClientMsg, HOST_VERSION, HostMsg } from './protocol'
 import { DESKTOP_ACTIONS } from '../shared/types/cockpit'
-import { runTask } from './agent/task-runner'
+import { runTask, ensureHostSettings } from './agent/task-runner'
 import { fork } from 'child_process'
 import { DesktopBus } from './desktop/bus'
 import { ScreenCapture } from './desktop/screen'
@@ -460,6 +460,9 @@ function auditBoundary(action: 'start' | 'stop', taskId: string, workspace?: str
   return {
     _tasks: tasks,
     start: () => new Promise((resolvePromise) => {
+      // 预写 settings（root 身份）— 否则降权 worker 写共享文件会 EACCES（见 D5 沙箱注释）
+      void ensureHostSettings({ baseUrl: config.baseUrl, apiKey: config.apiKey, model: config.model })
+        .catch((e: unknown) => console.warn('[ximo-host] 预写 settings 失败:', (e as Error).message))
       const [host, port] = config.listen.split(':')
       httpServer.listen(Number(port), host, () => resolvePromise())
     }),

@@ -101,6 +101,15 @@ function argsSummary(args: unknown): string {
 // settings 引导 — 把主机配置写进主应用 settings（provider 解析由此走通），只写一次
 // 返回已加载设置：vision 配置等非主机专属字段沿用主应用默认值（如免费视觉模型）
 let settingsReady: Promise<AppSettings> | null = null
+/**
+ * 父进程预写 settings（阶段 D5 沙箱）— worker 降权到任务用户后，写共享的
+ * settings.json 会因属主不同而 EACCES（首个 worker 创建的文件归它自己）。
+ * 由 supervisor（root）在 fork 前写一次，worker 读到匹配值即不再写。
+ */
+export function ensureHostSettings(cfg: { baseUrl: string; apiKey: string; model: string }): Promise<AppSettings> {
+  return ensureSettings(cfg)
+}
+
 function ensureSettings(cfg: { baseUrl: string; apiKey: string; model: string }): Promise<AppSettings> {
   settingsReady ??= (async () => {
     const s = await loadSettings()

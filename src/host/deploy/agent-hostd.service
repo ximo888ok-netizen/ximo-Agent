@@ -11,10 +11,12 @@ Wants=network-online.target xvfb@99.service ximo-wm.service
 Type=simple
 # root + 最小能力集（阶段 D5 按任务用户沙箱）—— 需 CAP_SETUID/SETGID 把 worker
 # 降权到任务用户（ximo-t1..t4）、CAP_CHOWN 移交工作区所有权、CAP_KILL 清理越界 worker。
+# ⚠ CAP_DAC_OVERRIDE 必需：root 绕过文件权限检查的能力完全来自它（不是 uid==0 自动获得）。
+#   缺它时 root 写不了属主为 ximo-host 的 /opt/ximo-host/config（实测 EACCES，CI 抓到）。
 # CapabilityBoundingSet 是白名单：未列出即不可用（其余能力全部丢弃）。
 # 注意不能用 NoNewPrivileges=true —— 它会阻止 fork 出的 worker 通过 setuid 降权。
 User=root
-CapabilityBoundingSet=CAP_SETUID CAP_SETGID CAP_CHOWN CAP_KILL
+CapabilityBoundingSet=CAP_DAC_OVERRIDE CAP_SETUID CAP_SETGID CAP_CHOWN CAP_KILL
 AmbientCapabilities=
 ExecStart=/usr/bin/node /opt/ximo-host/dist-host/agent-hostd.cjs
 Environment=XIMO_HOST_LISTEN=0.0.0.0:17890

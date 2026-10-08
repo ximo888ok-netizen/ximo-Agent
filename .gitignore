@@ -70,3 +70,6 @@ node-tar.tar.xz
 # 临时脚本（下载/调试用）
 .dl-loop.sh
 .ximo-*.mjs
+
+# hostd 运行期副产品（工作目录下的 app 数据目录，勿提交）
+/ximo-agent/

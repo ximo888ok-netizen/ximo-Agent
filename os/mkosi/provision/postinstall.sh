@@ -34,13 +34,20 @@ fi
 passwd -l root >/dev/null 2>&1 || true
 
 # 任务用户池（阶段 D5 按任务用户沙箱）— 每任务以专用系统用户跑 worker，
-# 任务间在工作区所有权层面隔离（进程隔离之外的第二道墙）
+# 任务间在工作区所有权层面隔离（进程隔离之外的第二道墙）。
+# 共享组 ximo：让任务用户能读写共享的 data 目录（settings/tasks 记录等），
+# 同时又因各组员 uid 不同，工作区目录（chown 给单一任务用户）仍互相隔离。
+if ! getent group ximo >/dev/null 2>&1; then
+  groupadd --system ximo
+fi
+usermod -aG ximo ximo-host 2>/dev/null || true
 for i in 1 2 3 4; do
   if ! id -u "ximo-t$i" >/dev/null 2>&1; then
     useradd --system --no-create-home --shell "$NOLOGIN" "ximo-t$i"
   fi
+  usermod -aG ximo "ximo-t$i" 2>/dev/null || true
 done
-echo "[ximo-os] 任务用户池就绪：ximo-t1..t4（沙箱 uid 级隔离）"
+echo "[ximo-os] 任务用户池就绪：ximo-t1..t4（沙箱 uid 级隔离）+ 共享组 ximo"
 
 # DNS — mkosi 会把构建机的 resolv.conf（如 127.0.0.53 stub）拷进镜像，guest 内不可达
 # （CI 实测：agent-hostd 起来了但 LLM 请求 fetch failed）。启用 resolved：
