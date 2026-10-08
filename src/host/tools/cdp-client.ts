@@ -62,9 +62,16 @@ export class CdpClient {
         '--disable-gpu',
         '--disable-dev-shm-usage',
         '--no-first-run',
+        // crashpad 在降权用户下无 HOME/可写目录 → 报 "--database is required" 并崩溃
+        // （CI 实测）。appliance 内不需要崩溃上报，全部关闭
+        '--disable-crash-reporter',
+        '--no-crashpad',
+        '--disable-breakpad',
+        // 沙箱用户无真实 HOME → 显式给可写的临时目录（crashpad/缓存/GPU 落盘都依赖它）
         `--user-data-dir=${userDir}`,
+        `--crash-dumps-dir=${userDir}/crashes`,
         'about:blank',
-      ], { stdio: ['ignore', 'ignore', 'pipe'], detached: true })
+      ], { stdio: ['ignore', 'ignore', 'pipe'], detached: true, env: { ...process.env, HOME: userDir } })
       let stderrBuf = ''
       this.chromiumProc.stderr?.on('data', (d) => { stderrBuf = (stderrBuf + String(d)).slice(-2000) })
       this.chromiumProc.unref()

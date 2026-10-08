@@ -42,7 +42,10 @@ export class BrowserTool implements Tool {
   private readonly cdp: CdpClient
 
   constructor(opts?: { port?: number }) {
-    this.cdp = new CdpClient({ port: opts?.port ?? (Number(process.env.XIMO_BROWSER_CDP_PORT) || 9222) })
+    // 端口按 pid 派生（9222 + pid%200）—— 并发任务的 worker 各有 chromium，
+    // 固定端口会互相抢占（沙箱下表现为随机启动失败）。env 可显式覆盖（单实例调试用）
+    const base = Number(process.env.XIMO_BROWSER_CDP_PORT) || 9222
+    this.cdp = new CdpClient({ port: opts?.port ?? (base + (process.pid % 200)) })
   }
 
   async execute(call: ToolCall, _ctx: unknown): Promise<ToolResult> {
