@@ -1,0 +1,29 @@
+# ximo-OS 开机品牌画面（控制台/串口）—— 阶段：early（在服务之前露出品牌）
+#
+# 为什么是 Type=oneshot + Before=agent-hostd：开机动画必须在服务启动前呈现，
+# 且必须**不阻塞**（脚本 ~0.5s，且不等待任何真实事件）。StandardOutput=tty 让
+# 品牌画面直接落到控制台（QEMU 串口 / 裸机 tty1 / 云串口控制台），与 journal 并存。
+#
+# 关闭：内核命令行加 ximo.splash=0（脚本自身会读，见 ximo-os-splash.sh）
+[Unit]
+Description=ximo-OS boot splash (console)
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Before=agent-hostd.service ximo-os-firstboot.service
+# 仅需本地文件系统上的脚本；挂载完成后即可运行
+Requires=local-fs.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/ximo-os-splash.sh
+StandardOutput=tty
+StandardError=journal
+TTYPath=/dev/console
+# 极轻量：不占 CPU 配额也不会拖慢启动
+Nice=10
+TimeoutStartSec=10
+
+[Install]
+WantedBy=sysinit.target

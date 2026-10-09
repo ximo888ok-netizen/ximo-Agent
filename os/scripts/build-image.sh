@@ -36,13 +36,19 @@ cp -f "$REPO_ROOT/os/mkosi/provision/ximo-os-firstboot.service" "$OVERLAY/etc/sy
 # 桌面会话单元（阶段 B1）— Xvfb :99 + openbox；由 agent-hostd 的 Wants= 依赖拉起
 cp -f "$REPO_ROOT/os/mkosi/provision/xvfb@.service" "$OVERLAY/etc/systemd/system/"
 cp -f "$REPO_ROOT/os/mkosi/provision/ximo-wm.service" "$OVERLAY/etc/systemd/system/"
+cp -f "$REPO_ROOT/os/mkosi/provision/ximo-splash.service" "$OVERLAY/etc/systemd/system/"
 cp -f "$REPO_ROOT/os/mkosi/provision/firstboot.sh" "$OVERLAY/usr/local/sbin/ximo-os-firstboot.sh"
 cp -f "$REPO_ROOT/os/mkosi/provision/ximo-os-audit.sh" "$OVERLAY/usr/local/sbin/ximo-os-audit.sh"
+cp -f "$REPO_ROOT/os/mkosi/provision/ximo-os-splash.sh" "$OVERLAY/usr/local/sbin/ximo-os-splash.sh"
 chmod 755 "$OVERLAY/usr/local/sbin/ximo-os-firstboot.sh"
 chmod 755 "$OVERLAY/usr/local/sbin/ximo-os-audit.sh"
+chmod 755 "$OVERLAY/usr/local/sbin/ximo-os-splash.sh"
 # 相对软链 = systemctl enable 的等价物（不依赖 mkosi 脚本时序）
 ln -sfn ../agent-hostd.service "$OVERLAY/etc/systemd/system/multi-user.target.wants/agent-hostd.service"
 ln -sfn ../ximo-os-firstboot.service "$OVERLAY/etc/systemd/system/multi-user.target.wants/ximo-os-firstboot.service"
+# 开机品牌画面 — sysinit.target 阶段（服务之前露出）；目录按需创建
+mkdir -p "$OVERLAY/etc/systemd/system/sysinit.target.wants"
+ln -sfn ../ximo-splash.service "$OVERLAY/etc/systemd/system/sysinit.target.wants/ximo-splash.service" 
 # CI 注入 apiKey（构建前写入 overlay — mkosi 会缓存树，构建后追加 overlay 不生效）
 if [ -n "${DEEPSEEK_API_KEY:-}" ]; then
   mkdir -p "$OVERLAY/opt/ximo-host/config"
