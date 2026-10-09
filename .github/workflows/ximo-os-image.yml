@@ -122,6 +122,17 @@ jobs:
             echo "⚠ 无 DEEPSEEK_API_KEY secret — 跳过 WS 派任务（health 200 已通过）"
             VRC=0
           fi
+          # 启动期不得出现 electron 解析失败 —— store.saveSettings 的动态
+          # import('electron') 会被 shim 的 CJS 钩子漏掉（ESM 解析），异常被
+          # catch 吞掉导致 settings.json 从未写入（本轮 CI 实测抓到）。这是 CI
+          # 侧独有的可复现环境（单测里 electron 被 mock，测不出来）。
+          if sudo grep -q 'Cannot find package .electron.' /tmp/guest-console.log; then
+            echo "❌ 启动日志出现 electron 解析失败 —— settings 未落盘（见 store.ts 主机运行时分支）"
+            sudo grep -n 'Cannot find package' /tmp/guest-console.log | head -5
+            sudo pkill -f qemu-system-x86_64 || true
+            exit 1
+          fi
+          echo "✅ 启动日志无 electron 解析失败"
           sudo pkill -f qemu-system-x86_64 || true
           exit $VRC
 

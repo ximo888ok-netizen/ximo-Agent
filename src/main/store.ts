@@ -25,7 +25,9 @@ export async function loadSettings(): Promise<AppSettings> {
       subAgentModel: normalizeModelId(merged.subAgentModel) ?? merged.subAgentModel,
     }
   } catch (e) {
-    console.error('加载设置失败：', e)
+    // 首次运行（文件尚不存在）是预期路径，静默兜底为默认值；
+    // 其他错误（JSON 损坏 / 权限）才值得告警——否则每次首启都刷一堆假错误
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') console.error('加载设置失败：', e)
   }
   return { ...DEFAULT_SETTINGS }
 }
@@ -38,8 +40,17 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     saveEncryptedFields(settings as unknown as Record<string, unknown>)
     // settings.json 仍然保存完整数据（含明文），保持向后兼容
     // 安全提升：safeStorage 可用时从 settings.json 中擦除敏感字段
-    const safeStorage = await import('electron')
-    const isEncAvailable = safeStorage.safeStorage?.isEncryptionAvailable?.()
+    //
+    // ⚠ 主机运行时（XIMO_HOST_RUNTIME=1）**不做动态 import('electron')**：
+    //   electron-shim 的 Module._resolveFilename 钩子只接管 CJS require，而这里的
+    //   动态 import 走 ESM 解析（esbuild CJS 产物里是 import() 调用）→ 解析失败抛
+    //   ERR_MODULE_NOT_FOUND。该异常会被下方 catch 吞掉，导致**整个 saveSettings
+    //   提前返回、settings.json 根本没写入**（CI 串口日志实测）。
+    //   主机侧语义明确：无真实 safeStorage（shim 恒报不可用）→ 直接走脱敏分支。
+    const isHostRuntime = process.env.XIMO_HOST_RUNTIME === '1'
+    const isEncAvailable = isHostRuntime
+      ? false
+      : await import('electron').then((m) => m.safeStorage?.isEncryptionAvailable?.() ?? false).catch(() => false)
     if (isEncAvailable) {
       const redacted = { ...settings }
       // 敏感字段已加密到 secure.enc，settings.json 中置空
@@ -49,14 +60,10 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
       if (redacted.hostToken) redacted.hostToken = ''
       await writeFile(settingsFile, JSON.stringify(redacted, null, 2), 'utf-8')
     } else {
-      // 主机运行时（真实 safeStorage 不可用）— 敏感字段禁止明文落盘：
-      // settings.json 中置空，secure.enc 也未写入（secure-storage 同样跳过）。
-      // 内存中的 settings 仍持有真实值（provider 解析不受影响）；主机每次任务
-      // 会经 ensureSettings 用 config 重写并再次走到本分支 redact。
-      // Electron 主进程侧本分支是无 safeStorage 环境的兼容路径，保持原行为。
-      // 判别标记：主机入口（src/host/index.ts）显式设置，避免误伤 vitest/其他 Node 环境
-      if (process.env.XIMO_HOST_RUNTIME === '1') {
-        console.warn('[store] safeStorage 不可用（主机运行时）— settings.json 敏感字段已脱敏，不落盘明文')
+      // safeStorage 不可用的两条路径：
+      //  - 主机运行时（XIMO_HOST_RUNTIME=1）：显式脱敏，敏感字段不落盘（见上方说明）
+      //  - Electron 主进程无 safeStorage 的环境：保持原行为（完整写入）
+      if (isHostRuntime) {
         const redacted = { ...settings }
         if (redacted.apiKey) redacted.apiKey = ''
         if (redacted.visionApiKey) redacted.visionApiKey = ''
