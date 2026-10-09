@@ -82,12 +82,22 @@ jobs:
             exit 1
           fi
           echo "✅ 令牌已提取（长度 ${#TOKEN}）"
-          # 开机品牌画面必须在控制台出现（防「防线是死的」——曾有过断言从未真正执行的教训）
-          if grep -q 'ximo-OS' /tmp/guest-console.log; then
-            echo "✅ 开机品牌画面已呈现（控制台可见 ximo-OS 字标）"
+          # 开机品牌画面必须在控制台出现。
+          # ⚠ 断言必须匹配 splash **独有**字符串：先前用 'ximo-OS' 会命中别处
+          # （尤其 run: 块源码本身会被回显进日志）→ 假阳性。'Agent-Native' 与
+          # 块字符 '◉' 只可能来自 splash 脚本。
+          # 无论成败都打印命中片段 —— 断言必须自证，不能只看 ✅/❌
+          echo "---- 开机品牌画面检查（guest 控制台）----"
+          if grep -q 'Agent-Native Linux' /tmp/guest-console.log; then
+            echo "✅ 开机品牌画面已呈现"
           else
+            echo "⚠ 未匹配到 splash 独有标记，打印含 ximo 的上下文供核对："
+          fi
+          grep -n 'ximo\|Agent-Native\|◉' /tmp/guest-console.log | head -30 || echo "（无匹配行）"
+          if ! grep -q 'Agent-Native Linux' /tmp/guest-console.log; then
             echo "❌ 开机品牌画面缺失 — ximo-splash.service 未生效或被静默跳过"
-            sudo tail -40 /tmp/guest-console.log || true
+            echo "---- 控制台头部 40 行（引导最早阶段）----"
+            sudo head -40 /tmp/guest-console.log || true
             sudo pkill -f qemu-system-x86_64 || true
             exit 1
           fi
